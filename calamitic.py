@@ -38,13 +38,13 @@ class PointParticle:
 
 class CalamiticParticle(PointParticle):
     def __init__(self, position, width, length, angle):
-        '''
+        """
         A calamitic (rod-like) particle in real space
         :param position: Position of the particle in Cartesian coordinates
         :param width: Width of the particle
         :param length: Length of the particle
         :param angle: Angle of the particle in real space
-        '''
+        """
         super().__init__(position)
         self.size = (width, length)  # Width and length of the particle
         self.__set_angle__(angle)
@@ -66,12 +66,12 @@ class CalamiticParticle(PointParticle):
 
 
 def generate_positions(x_change, y_change):
-    '''
+    """
     Generate a position inside cartesian coordinates, given a rough lattice with random spacial oscillations
     :param x_change: Maximum change in x
     :param y_change: Maximum change in y
     :return: A position in Cartesian coordinates inside the grid
-    '''
+    """
     # Initial positions, just inside the box
     x = x_spacing
     y = y_spacing
@@ -93,16 +93,16 @@ def generate_positions(x_change, y_change):
             x = x_spacing
 
 
-def generate_angles(unit_vector, angle_stdev):
-    '''
+def generate_angles(mean_angle: int, angle_stddev: int):
+    """
     Generate an angle from a normal distribution, with a given mean and standard deviation
-    :param unit_vector: mean angle
-    :param angle_stdev: standard deviation for the angle
+    :param mean_angle: Mean value of the angle
+    :param angle_stddev: standard deviation for the angle
     :return:
-    '''
-    angle = unit_vector
+    """
+    angle = mean_angle
     while True:
-        angle = np.random.normal(unit_vector, angle_stdev)
+        angle = np.random.normal(mean_angle, angle_stddev)
         if angle >= 360:
             angle -= 360
         if angle < 0:
@@ -116,7 +116,7 @@ if __name__ == "__main__":
     grid_size = (x_max, y_max)
     real_space = np.zeros(grid_size)
 
-    # Initialise single particle
+    # Initialise single particle parameters
     particle_width = 2
     particle_length = 15
     unit_vector = 90  # unit vector of the particle, starting point up
@@ -129,7 +129,7 @@ if __name__ == "__main__":
     # Initialise how the particles sit in real space
     standard_spacing = 3
     x_spacing = particle_width + standard_spacing
-    y_spacing = int(np.ceil((particle_length) * np.cos(np.deg2rad(unit_vector - 90)))) + standard_spacing
+    y_spacing = int(np.ceil(particle_length * np.cos(np.deg2rad(unit_vector - 90)))) + standard_spacing
     print(f'x spacing: {x_spacing}, y spacing: {y_spacing}')
 
     # Generate the particles
@@ -138,8 +138,4 @@ if __name__ == "__main__":
     angles = generate_angles(unit_vector, 5)
     particles = [CalamiticParticle(position, particle_width, particle_length, angle)
                  for position, angle in zip(positions, angles)]
-    '''
-    for particle in particles:
-        print(f'Position: {particle.__get_position__()}, Angle:{particle.__get_angle__()}')
-    '''
     print(f'No. of Particles: {len(particles)}')
