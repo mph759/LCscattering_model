@@ -127,7 +127,7 @@ if __name__ == "__main__":
     # Note: The unit vector is not the exact angle all the particles will have, but the mean of all the angles
 
     # Initialise how the particles sit in real space
-    standard_spacing = 3
+    standard_spacing = 4
     x_spacing = particle_width + standard_spacing
     y_spacing = int(np.ceil((particle_length) * np.cos(np.deg2rad(unit_vector - 90)))) + standard_spacing
     print(f'x spacing: {x_spacing}, y spacing: {y_spacing}')
