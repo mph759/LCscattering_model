@@ -17,9 +17,9 @@ class RealSpace:
         self.img = Image.new('L', grid, 0)
         self.array = np.asarray(self.img)
 
-    def add(self, particles):
+    def add(self, particle_list):
         add_to_real_space = ImageDraw.Draw(self.img)
-        for particle in particles:
+        for particle in particle_list:
             # print(f'Start: {particle.position}, End: {particle.end_position}')
             add_to_real_space.line([particle.position, particle.end_position], fill=1, width=particle.get_width())
         self.__set_array__()
