@@ -18,10 +18,10 @@ class RealSpace:
         self.array = np.asarray(self.img)
 
     def add(self, particle_list):
-        add_to_real_space = ImageDraw.Draw(self.img)
+        in_real_space = ImageDraw.Draw(self.img)
         for particle in particle_list:
             # print(f'Start: {particle.position}, End: {particle.end_position}')
-            add_to_real_space.line([particle.position, particle.end_position], fill=1, width=particle.get_width())
+            particle.create(in_real_space)
         self.__set_array__()
 
     def __set_array__(self):
@@ -53,6 +53,9 @@ class PointParticle:
 
     def __set_y__(self, new_y: int):
         self.__set_position__([self.position[0], new_y])
+
+    def create(self, draw_object):
+        return draw_object.point(self.position, fill=1)
 
 
 class CalamiticParticle(PointParticle):
@@ -90,6 +93,9 @@ class CalamiticParticle(PointParticle):
         x2, y2 = [int(x1 + self.__get_len__() * np.cos(angle_rad)),
                   int(y1 + self.__get_len__() * np.sin(angle_rad))]
         return x2, y2
+
+    def create(self, draw_object):
+        return draw_object.line([self.position, self.end_position], fill=1, width=self.get_width())
 
 
 def generate_positions(x_change, y_change):
