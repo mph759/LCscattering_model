@@ -12,6 +12,22 @@ import matplotlib.pyplot as plt
 from pyFAI.azimuthalIntegrator import AzimuthalIntegrator
 
 
+class RealSpace:
+    def __init__(self, grid):
+        self.img = Image.new('L', grid, 0)
+        self.array = np.asarray(self.img)
+
+    def add(self, particles):
+        add_to_real_space = ImageDraw.Draw(self.img)
+        for particle in particles:
+            # print(f'Start: {particle.position}, End: {particle.end_position}')
+            add_to_real_space.line([particle.position, particle.end_position], fill=1, width=particle.get_width())
+        self.__set_array__()
+
+    def __set_array__(self):
+        self.array = np.asarray(self.img)
+
+
 class PointParticle:
     def __init__(self, position: list[int, int]):
         '''
@@ -84,8 +100,8 @@ def generate_positions(x_change, y_change):
     :return: A position in Cartesian coordinates inside the grid
     """
     # Initial positions, just inside the box
-    x = int(x_spacing/2)
-    y = int(y_spacing/2)
+    x = int(x_spacing / 2)
+    y = int(y_spacing / 2)
 
     # Loop while the positions are still inside the box
     while y < y_max:
@@ -125,30 +141,32 @@ def angle_correction(angle):
 
 
 if __name__ == "__main__":
-    tic = time.perf_counter()
-    # Initialise real space grid
+    tic = time.perf_counter()  # Start timer
+
+    # Initialise real space parameters
     x_max = y_max = 1000
     grid_size = (x_max, y_max)
-    real_space = Image.new('L', grid_size, 0)
-    add_to_real_space = ImageDraw.Draw(real_space)
 
     # Initialise particle parameters
     particle_width = 2
     particle_length = 15
     unit_vector = 90  # unit vector of the particle, starting point up
     vector_range = 40  # Full angular range for the unit vector
+    vector_stddev = 5
 
+    # Initialise how the particles sit in real space
+    standard_spacing = 5
+    wobble_allowance = np.floor((standard_spacing - 1) / 2)
+
+    # Randomise unit_vector within given range
     vector_min, vector_max = (unit_vector + change for change in (-vector_range / 2, vector_range / 2))
     unit_vector = np.random.randint(vector_min, vector_max)
     # print(f'Min. Angle: {vector_min}\N{DEGREE SIGN}, Max. Angle: {vector_max}\N{DEGREE SIGN}')
     print(f'Unit Vector: {unit_vector}\N{DEGREE SIGN}')
     # Note: The unit vector is not the exact angle all the particles will have, but the mean of all the angles
 
-    # Initialise how the particles sit in real space
-    unit_vector_radians = np.deg2rad(unit_vector)
-    standard_spacing = 5
-    wobble_allowance = np.floor((standard_spacing-1) / 2)
     # Allow spacing in x and y to account for the size and angle of the particle
+    unit_vector_radians = np.deg2rad(unit_vector)
     x_spacing = standard_spacing + (int(abs(np.round(particle_length * np.cos(unit_vector_radians)))) +
                                     int(abs(np.round(particle_width * np.sin(unit_vector_radians)))))
     y_spacing = standard_spacing + (int(abs(np.round(particle_length * np.sin(unit_vector_radians)))) +
@@ -157,25 +175,23 @@ if __name__ == "__main__":
 
     # Generate the particles
     positions = generate_positions(wobble_allowance, wobble_allowance)
-    angles = generate_angles(unit_vector, 5)
+    angles = generate_angles(unit_vector, vector_stddev)
     particles = [CalamiticParticle(position, particle_width, particle_length, angle)
                  for position, angle in zip(positions, angles)]
     print(f'No. of Particles: {len(particles)}')
 
-    # Put particles in real space
-    for particle in particles:
-        # print(f'Start: {particle.position}, End: {particle.end_position}')
-        add_to_real_space.line([particle.position, particle.end_position], fill=1, width=particle.get_width())
-    real_space = np.asarray(real_space)
+    # Place particles in real space
+    real_space = RealSpace(grid_size)
+    real_space.add(particles)
 
-    # Plot real_space
+    # Plot particles in real_space
     plt.figure(figsize=(12, 12))
-    plt.imshow(real_space, extent=[0, x_max, 0, y_max])
+    plt.imshow(real_space.array, extent=[0, x_max, 0, y_max])
     plt.title(f'Liquid Crystal Phase of Calamitic Liquid crystals, with unit vector {unit_vector}$^\circ$')
     plt.xlabel('X')
     plt.ylabel('Y')
     plt.tight_layout()
 
     toc = time.perf_counter()
-    print(f'Generating the real space with particles took {toc-tic:0.4f} seconds')
+    print(f'Generating the particles in real space took {toc - tic:0.4f} seconds')
     plt.show()
