@@ -128,16 +128,8 @@ def generate_angles(mean_angle: int, angle_stddev: int):
     :return:
     """
     while True:
-        angle = angle_correction(np.random.normal(mean_angle, angle_stddev))
+        angle = np.random.normal(mean_angle, angle_stddev) % 360
         yield angle
-
-
-def angle_correction(angle):
-    while angle > 360:
-        angle -= 360
-    while angle < 0:
-        angle += 360
-    return angle
 
 
 if __name__ == "__main__":
@@ -160,7 +152,7 @@ if __name__ == "__main__":
 
     # Randomise unit_vector within given range
     vector_min, vector_max = (unit_vector + change for change in (-vector_range / 2, vector_range / 2))
-    unit_vector = np.random.randint(vector_min, vector_max)
+    unit_vector = np.random.randint(vector_min, vector_max) % 360
     # print(f'Min. Angle: {vector_min}\N{DEGREE SIGN}, Max. Angle: {vector_max}\N{DEGREE SIGN}')
     print(f'Unit Vector: {unit_vector}\N{DEGREE SIGN}')
     # Note: The unit vector is not the exact angle all the particles will have, but the mean of all the angles
