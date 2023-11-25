@@ -14,7 +14,8 @@ from pyFAI.azimuthalIntegrator import AzimuthalIntegrator
 
 class RealSpace:
     def __init__(self, grid):
-        self.img = Image.new('L', grid, 0)
+        self.grid = grid
+        self.img = Image.new('L', self.grid, 0)
         self.array = np.asarray(self.img)
 
     def add(self, particle_list):
@@ -26,6 +27,19 @@ class RealSpace:
 
     def __set_array__(self):
         self.array = np.asarray(self.img)
+
+    def plot(self, title):
+        """
+        Plot the 2D real space image
+        :param title: Title text for figure
+        :return: Figure object
+        """
+        plt.figure(figsize=(12, 12))
+        plt.imshow(self.array, extent=[0, self.grid[0], 0, self.grid[1]])
+        plt.title(title)
+        plt.xlabel('X')
+        plt.ylabel('Y')
+        plt.tight_layout()
 
 
 class PointParticle:
@@ -181,14 +195,7 @@ if __name__ == "__main__":
     # Place particles in real space
     real_space = RealSpace(grid_size)
     real_space.add(particles)
-
-    # Plot particles in real_space
-    plt.figure(figsize=(12, 12))
-    plt.imshow(real_space.array, extent=[0, x_max, 0, y_max])
-    plt.title(f'Liquid Crystal Phase of Calamitic Liquid crystals, with unit vector {unit_vector}$^\circ$')
-    plt.xlabel('X')
-    plt.ylabel('Y')
-    plt.tight_layout()
+    real_space.plot(f'Liquid Crystal Phase of Calamitic Liquid crystals, with unit vector {unit_vector}$^\circ$')
 
     toc = time.perf_counter()
     print(f'Generating the particles in real space took {toc - tic:0.4f} seconds')
