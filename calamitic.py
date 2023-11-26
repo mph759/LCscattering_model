@@ -154,6 +154,12 @@ def generate_angles(mean_angle: int, angle_stddev: int):
         yield angle
 
 
+def pythagorean_sides(a, b, theta):
+    theta_radians = np.deg2rad(theta)
+    x = (abs(np.round(a * np.cos(theta_radians))) + abs(np.round(b * np.sin(theta_radians))))
+    y = (abs(np.round(a * np.sin(theta_radians))) + abs(np.round(b * np.cos(theta_radians))))
+    return x, y
+
 
 class DiffractionPattern:
     def __init__(self, space_object: RealSpace, wavelength, pixel_size, npt):
@@ -238,12 +244,14 @@ class DiffractionPattern:
         if 'show' in kwargs and kwargs['show']:
             plt.show()
 
-def circular_mask(grid_size, mask_radius):
-    kernel = np.zeros(grid_size)
+
+def circular_mask(grid, mask_radius):
+    kernel = np.zeros(grid)
     filter_y, filter_x = np.ogrid[-mask_radius:mask_radius, -mask_radius:mask_radius]
-    mask = filter_x**2 + filter_y**2 <= mask_radius**2
+    mask = filter_x ** 2 + filter_y ** 2 <= mask_radius ** 2
     kernel[mask] = 1
     return kernel
+
 
 if __name__ == "__main__":
     tic = time.perf_counter()  # Start timer
@@ -260,22 +268,20 @@ if __name__ == "__main__":
     vector_stddev = 5
 
     # Initialise how the particles sit in real space
-    standard_spacing = 5
+    standard_spacing = 6
     wobble_allowance = np.floor((standard_spacing - 1) / 2)
 
     # Randomise unit_vector within given range
     vector_min, vector_max = (unit_vector + change for change in (-vector_range / 2, vector_range / 2))
-    unit_vector = np.random.randint(vector_min, vector_max) % 360
+    #unit_vector = np.random.randint(vector_min, vector_max) % 360
     # print(f'Min. Angle: {vector_min}\N{DEGREE SIGN}, Max. Angle: {vector_max}\N{DEGREE SIGN}')
     print(f'Unit Vector: {unit_vector}\N{DEGREE SIGN}')
     # Note: The unit vector is not the exact angle all the particles will have, but the mean of all the angles
 
     # Allow spacing in x and y to account for the size and angle of the particle
-    unit_vector_radians = np.deg2rad(unit_vector)
-    x_spacing = standard_spacing + (int(abs(np.round(particle_length * np.cos(unit_vector_radians)))) +
-                                    int(abs(np.round(particle_width * np.sin(unit_vector_radians)))))
-    y_spacing = standard_spacing + (int(abs(np.round(particle_length * np.sin(unit_vector_radians)))) +
-                                    int(abs(np.round(particle_width * np.cos(unit_vector_radians)))))
+    x_spacing, y_spacing = pythagorean_sides(particle_length, particle_width, unit_vector)
+    x_spacing += standard_spacing
+    y_spacing += standard_spacing
     print(f'x spacing: {x_spacing}, y spacing: {y_spacing}')
 
     # Generate the particles
