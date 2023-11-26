@@ -34,8 +34,8 @@ class RealSpace:
         :param title: Title text for figure
         :return: Figure object
         """
-        plt.figure(figsize=(12, 12))
-        plt.imshow(self.array, extent=[0, self.grid[0], 0, self.grid[1]])
+        plt.figure()
+        plt.imshow(self.array, extent=(0, self.grid[0], 0, self.grid[1]))
         plt.title(title)
         plt.xlabel('X')
         plt.ylabel('Y')
@@ -154,11 +154,16 @@ def generate_angles(mean_angle: int, angle_stddev: int):
         yield angle
 
 
-class DiffractionPattern:
-    def __init__(self, space_object: RealSpace):
-        self.pattern = self.create_diffraction_pattern(space_object)
 
-    def create_diffraction_pattern(self, space_object):
+class DiffractionPattern:
+    def __init__(self, space_object: RealSpace, wavelength, pixel_size, npt):
+        self.space = space_object
+        self.pattern_2d = self.create_2d_diffraction(self.space)
+        self.wavelength = wavelength
+        self.pixel_size = pixel_size
+        self.pattern_1d = self.create_1d_diffraction(npt)
+
+    def create_2d_diffraction(self, space_object):
         '''
         Create the diffraction pattern from the given real space object
         :param space_object: RealSpace object
@@ -174,18 +179,71 @@ class DiffractionPattern:
         diffraction_image[space_object.grid[1] // 2][space_object.grid[0] // 2] = 0
         return diffraction_image
 
-    def plot(self, title, **kwargs):
+    def plot_2d(self, title, **kwargs):
         # Plot the diffraction image
-        plt.figure(figsize=(12, 12))
-        plt.imshow(self.pattern ** 2)
+        plt.figure()
+        plt.imshow(self.pattern_2d ** 2)
         plt.title(title)
         plt.colorbar()
-        plt.tight_layout
+        plt.tight_layout()
         if 'clim' in kwargs:
-            plt.clim([0, kwargs['clim']])
+            plt.clim(0, kwargs['clim'])
         if 'show' in kwargs and kwargs['show']:
             plt.show()
 
+    def frm_integration(self, frame, unit="q_nm^-1", npt=2250):
+        """
+        Perform azimuthal integration of frame array
+        :param frame: numpy array containing 2D intensity
+        :param unit:
+        :param npt:
+        :return: two-col array of q & intensity.
+        """
+        # print("Debug - ", self.cam_length, self.pixel_size, self.wavelength)
+        cam_length = self.pixel_size * self.space.grid[0] / self.wavelength
+        image_center = (self.space.grid[0] / 2, self.space.grid[1] / 2)
+        ai = AzimuthalIntegrator()
+        ai.setFit2D(directDist=cam_length / 1000,
+                    centerX=image_center[0],
+                    centerY=image_center[1],
+                    pixelX=self.pixel_size, pixelY=self.pixel_size)
+        ai.wavelength = self.wavelength
+        integrated_profile = ai.integrate1d(data=frame, npt=npt, unit=unit)
+        return np.transpose(np.array(integrated_profile))
+
+    def create_1d_diffraction(self, npt):
+        radius = self.space.grid[0] // 2  # Assuming you have defined xmax and ymax somewhere
+        diffraction_image_cone = circular_mask(self.space.grid, radius) * self.pattern_2d
+        diffraction_plot = self.frm_integration(diffraction_image_cone, unit="q_nm^-1", npt=npt)
+
+        non_zero = diffraction_plot[:, 1] != 0  # Removes data points which = 0 due to the cone restriction
+        diffraction_plot_filtered = diffraction_plot[non_zero]
+        return diffraction_plot_filtered
+
+    def plot_1d(self, title, **kwargs):
+        """
+        Plot a 1D diffraction pattern
+        :param title: Title text for the plotting
+        :param kwargs:
+        :return:
+        """
+
+        # Plot 1D integration
+        plt.figure()
+        plt.title(title)
+        plt.plot(self.pattern_1d[int(npt // 20):, 0], self.pattern_1d[int(npt // 20):, 1])
+        plt.xlabel(f'q / nm$^{-1}$')
+        plt.ylabel('Arbitrary Intensity')
+        plt.tight_layout()
+        if 'show' in kwargs and kwargs['show']:
+            plt.show()
+
+def circular_mask(grid_size, mask_radius):
+    kernel = np.zeros(grid_size)
+    filter_y, filter_x = np.ogrid[-mask_radius:mask_radius, -mask_radius:mask_radius]
+    mask = filter_x**2 + filter_y**2 <= mask_radius**2
+    kernel[mask] = 1
+    return kernel
 
 if __name__ == "__main__":
     tic = time.perf_counter()  # Start timer
@@ -232,11 +290,18 @@ if __name__ == "__main__":
     real_space.add(particles)
     toc = time.perf_counter()
     print(f'Generating the particles in real space took {toc - tic:0.4f} seconds')
-    real_space.plot(f'Liquid Crystal Phase of Calamitic Liquid crystals, with unit vector {unit_vector}$^\circ$')
+    real_space_title = f'Liquid Crystal Phase of Calamitic Liquid crystals, with unit vector {unit_vector}$^\circ$'
+    real_space.plot(real_space_title)
 
     tic = time.perf_counter()
-    diffraction_pattern = DiffractionPattern(real_space)
+    wavelength = 1e-10
+    pixel_size = 5e-5
+    npt = 2000
+    diffraction_pattern_of_real_space = DiffractionPattern(real_space, wavelength, pixel_size, npt)
+    diffraction_pattern_title = f'Diffraction pattern of Liquid Crystal Phase of Calamitic Particles'
+    diffraction_pattern_of_real_space.plot_2d(diffraction_pattern_title, clim=1e7)
+    diff_1D_title = f'1D Radial Integration'
+    diffraction_pattern_of_real_space.plot_1d(diff_1D_title)
     toc = time.perf_counter()
     print(f'Generating the diffraction pattern took {toc - tic:0.4f} seconds')
-    diffraction_pattern.plot(f'Diffraction pattern of Liquid Crystal Phase of Calamitic Liquid crystals', clim=1e7)
     plt.show()
