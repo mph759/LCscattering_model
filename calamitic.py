@@ -154,16 +154,23 @@ def generate_positions(change):
             x = x_spacing
 
 
-def generate_angles(mean_angle: int, angle_stddev: int):
+def generate_angles(mean_angle: int, angle_range, angle_stddev: int):
     """
     Generate an angle from a normal distribution, with a given mean and standard deviation
     :param mean_angle: Mean value of the angle
+    :param angle_range: Range for starting angle
     :param angle_stddev: standard deviation for the angle
     :return:
     """
-    while True:
-        angle = np.random.normal(mean_angle, angle_stddev) % 360
+    if angle_range != 0:
+        angle_min, angle_max = (mean_angle + change for change in (-angle_range / 2, angle_range / 2))
+        angle = np.random.randint(angle_min, angle_max) % 360  # Randomise unit vector in given range
         yield angle
+        # print(f'Min. Angle: {vector_min}\N{DEGREE SIGN}, Max. Angle: {vector_max}\N{DEGREE SIGN}')
+        print(f'Unit Vector: {angle}\N{DEGREE SIGN}')
+    while True:
+        yield angle
+        angle = np.random.normal(mean_angle, angle_stddev) % 360
 
 
 def pythagorean_sides(a, b, theta):
@@ -305,14 +312,15 @@ if __name__ == "__main__":
     tic = time.perf_counter()  # Start timer
 
     # Initialise real space parameters
-    x_max = y_max = 1000
+    x_max = y_max = int(1e4)
 
     # Initialise particle parameters
     particle_width = 2
     particle_length = 15
+    # Note: The unit vector is not the exact angle all the particles will have, but the mean of all the angles
     unit_vector = 90  # Unit vector of the particles, starting point up
     vector_range = 40  # Full angular range for the unit vector to be randomised in
-    vector_stddev = 5
+    vector_stddev = 5   # Standard Deviation of the angle, used to generate angles for individual particles
 
     # Initialise how the particles sit in real space
     padding_spacing = (5, 5)
@@ -323,16 +331,7 @@ if __name__ == "__main__":
     npt = 2000
 
     figure_size = (10, 10)
-
     ##################### ONLY MODIFY ABOVE #####################
-    # Randomise unit_vector within given range
-    if vector_range != 0:
-        vector_min, vector_max = (unit_vector + change for change in (-vector_range / 2, vector_range / 2))
-        unit_vector = np.random.randint(vector_min, vector_max) % 360  # Randomise unit vector in given range
-        # print(f'Min. Angle: {vector_min}\N{DEGREE SIGN}, Max. Angle: {vector_max}\N{DEGREE SIGN}')
-    print(f'Unit Vector: {unit_vector}\N{DEGREE SIGN}')
-    # Note: The unit vector is not the exact angle all the particles will have, but the mean of all the angles
-
     # Allow spacing in x and y to account for the size and angle of the particle
     x_spacing, y_spacing = (spacing + padding
                             for spacing, padding
@@ -347,7 +346,7 @@ if __name__ == "__main__":
 
     # Generate the particles
     positions = generate_positions(wobble_allowance)
-    angles = generate_angles(unit_vector, vector_stddev)
+    angles = generate_angles(unit_vector, vector_range, vector_stddev)
     particles = [CalamiticParticle(position, particle_width, particle_length, angle)
                  for position, angle in zip(positions, angles)]
     print(f'No. of Particles: {len(particles)}')
@@ -363,7 +362,7 @@ if __name__ == "__main__":
     tic = time.perf_counter()
     diffraction_pattern_of_real_space = DiffractionPattern(real_space, wavelength, pixel_size, npt)
     diffraction_pattern_title = f'2D Diffraction pattern of Liquid Crystal Phase of Calamitic Particles'
-    diffraction_pattern_of_real_space.plot_2d(diffraction_pattern_title, clim=1e7)
+    diffraction_pattern_of_real_space.plot_2d(diffraction_pattern_title, clim=1e8)
     diff_1D_title = f'1D Diffraction pattern of Liquid Crystal Phase of Calamitic Particles'
     diffraction_pattern_of_real_space.plot_1d(diff_1D_title)
     toc = time.perf_counter()
