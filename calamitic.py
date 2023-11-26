@@ -28,7 +28,7 @@ class RealSpace:
     def __set_array__(self):
         self.array = np.asarray(self.img)
 
-    def plot(self, title):
+    def plot(self, title, **kwargs):
         """
         Plot the 2D real space image
         :param title: Title text for figure
@@ -40,7 +40,8 @@ class RealSpace:
         plt.xlabel('X')
         plt.ylabel('Y')
         plt.tight_layout()
-        plt.show()
+        if 'show' in kwargs and kwargs['show']:
+            plt.show()
 
 
 class PointParticle:
@@ -154,11 +155,15 @@ def generate_angles(mean_angle: int, angle_stddev: int):
 
 
 class DiffractionPattern:
-    def __init__(self, space_object):
+    def __init__(self, space_object: RealSpace):
         self.pattern = self.create_diffraction_pattern(space_object)
 
     def create_diffraction_pattern(self, space_object):
-        ## Applying the Fourier transform to create a diffraction image
+        '''
+        Create the diffraction pattern from the given real space object
+        :param space_object: RealSpace object
+        :return: Diffraction pattern of the real space object
+        '''
         fourier_of_space = np.fft.fft2(space_object.array)
         fourier_of_space = np.roll(fourier_of_space, space_object.grid[0] // 2, 0)
         fourier_of_space = np.roll(fourier_of_space, space_object.grid[1] // 2, 1)
@@ -174,14 +179,12 @@ class DiffractionPattern:
         plt.figure(figsize=(12, 12))
         plt.imshow(self.pattern ** 2)
         plt.title(title)
-        plt.xlabel(r'X')
-        plt.ylabel(r'Y')
-        # plt.xlabel(r'X (in units of nm$^{-1}$)')
-        # plt.ylabel(r'Y (in units of nm$^{-1}$)')
         plt.colorbar()
+        plt.tight_layout
         if 'clim' in kwargs:
             plt.clim([0, kwargs['clim']])
-        plt.show()
+        if 'show' in kwargs and kwargs['show']:
+            plt.show()
 
 
 if __name__ == "__main__":
@@ -236,3 +239,4 @@ if __name__ == "__main__":
     toc = time.perf_counter()
     print(f'Generating the diffraction pattern took {toc - tic:0.4f} seconds')
     diffraction_pattern.plot(f'Diffraction pattern of Liquid Crystal Phase of Calamitic Liquid crystals', clim=1e7)
+    plt.show()
