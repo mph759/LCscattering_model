@@ -341,8 +341,7 @@ if __name__ == "__main__":
     wobble_allowance = tuple([np.floor((spacing - 1) / 2) for spacing in padding_spacing])
 
     # Create the space for the particles
-    grid_size = (x_max, y_max)
-    real_space = RealSpace(grid_size)
+    real_space = RealSpace((x_max, y_max))
 
     # Generate the particles
     positions = generate_positions(wobble_allowance)
