@@ -259,7 +259,6 @@ if __name__ == "__main__":
 
     # Initialise real space parameters
     x_max = y_max = 1000
-    grid_size = (x_max, y_max)
 
     # Initialise particle parameters
     particle_width = 2
@@ -276,6 +275,7 @@ if __name__ == "__main__":
     pixel_size = 5e-5
     npt = 2000
 
+    ##################### ONLY MODIFY ABOVE #####################
     # Randomise unit_vector within given range
     if vector_range != 0:
         vector_min, vector_max = (unit_vector + change for change in (-vector_range / 2, vector_range / 2))
@@ -289,10 +289,14 @@ if __name__ == "__main__":
                             for spacing, padding
                             in zip(pythagorean_sides(particle_length, particle_width, unit_vector), padding_spacing))
     print(f'x spacing: {x_spacing}, y spacing: {y_spacing}')
+    # Allow for particles to move slightly in x and y, depending on the spacing
+    wobble_allowance = tuple([np.floor((spacing - 1) / 2) for spacing in padding_spacing])
+
+    # Create the space for the particles
+    grid_size = (x_max, y_max)
+    real_space = RealSpace(grid_size)
 
     # Generate the particles
-    wobble_allowance = [np.floor((spacing - 1) / 2) for spacing in padding_spacing]
-    print(wobble_allowance)
     positions = generate_positions(wobble_allowance)
     angles = generate_angles(unit_vector, vector_stddev)
     particles = [CalamiticParticle(position, particle_width, particle_length, angle)
@@ -300,13 +304,13 @@ if __name__ == "__main__":
     print(f'No. of Particles: {len(particles)}')
 
     # Place particles in real space
-    real_space = RealSpace(grid_size)
     real_space.add(particles)
     toc = time.perf_counter()
     print(f'Generating the particles in real space took {toc - tic:0.4f} seconds')
     real_space_title = f'Liquid Crystal Phase of Calamitic Liquid crystals, with unit vector {unit_vector}$^\circ$'
     real_space.plot(real_space_title)
 
+    # Generate diffraction patterns in 2D and 1D of real space
     tic = time.perf_counter()
     diffraction_pattern_of_real_space = DiffractionPattern(real_space, wavelength, pixel_size, npt)
     diffraction_pattern_title = f'2D Diffraction pattern of Liquid Crystal Phase of Calamitic Particles'
