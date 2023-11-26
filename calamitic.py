@@ -40,6 +40,7 @@ class RealSpace:
         plt.xlabel('X')
         plt.ylabel('Y')
         plt.tight_layout()
+        plt.show()
 
 
 class PointParticle:
@@ -152,6 +153,37 @@ def generate_angles(mean_angle: int, angle_stddev: int):
         yield angle
 
 
+class DiffractionPattern:
+    def __init__(self, space_object):
+        self.pattern = self.create_diffraction_pattern(space_object)
+
+    def create_diffraction_pattern(self, space_object):
+        ## Applying the Fourier transform to create a diffraction image
+        fourier_of_space = np.fft.fft2(space_object.array)
+        fourier_of_space = np.roll(fourier_of_space, space_object.grid[0] // 2, 0)
+        fourier_of_space = np.roll(fourier_of_space, space_object.grid[1] // 2, 1)
+
+        diffraction_image = np.abs(fourier_of_space)
+
+        # Elimintate the centre pixel
+        diffraction_image[space_object.grid[1] // 2][space_object.grid[0] // 2] = 0
+        return diffraction_image
+
+    def plot(self, title, **kwargs):
+        # Plot the diffraction image
+        plt.figure(figsize=(12, 12))
+        plt.imshow(self.pattern ** 2)
+        plt.title(title)
+        plt.xlabel(r'X')
+        plt.ylabel(r'Y')
+        # plt.xlabel(r'X (in units of nm$^{-1}$)')
+        # plt.ylabel(r'Y (in units of nm$^{-1}$)')
+        plt.colorbar()
+        if 'clim' in kwargs:
+            plt.clim([0, kwargs['clim']])
+        plt.show()
+
+
 if __name__ == "__main__":
     tic = time.perf_counter()  # Start timer
 
@@ -195,8 +227,12 @@ if __name__ == "__main__":
     # Place particles in real space
     real_space = RealSpace(grid_size)
     real_space.add(particles)
-    real_space.plot(f'Liquid Crystal Phase of Calamitic Liquid crystals, with unit vector {unit_vector}$^\circ$')
-
     toc = time.perf_counter()
     print(f'Generating the particles in real space took {toc - tic:0.4f} seconds')
-    plt.show()
+    real_space.plot(f'Liquid Crystal Phase of Calamitic Liquid crystals, with unit vector {unit_vector}$^\circ$')
+
+    tic = time.perf_counter()
+    diffraction_pattern = DiffractionPattern(real_space)
+    toc = time.perf_counter()
+    print(f'Generating the diffraction pattern took {toc - tic:0.4f} seconds')
+    diffraction_pattern.plot(f'Diffraction pattern of Liquid Crystal Phase of Calamitic Liquid crystals', clim=1e7)
