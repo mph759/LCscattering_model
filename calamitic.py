@@ -34,7 +34,7 @@ class RealSpace:
         :param title: Title text for figure
         :return: Figure object
         """
-        plt.figure()
+        plt.figure(figsize=figure_size)
         plt.imshow(self.array, extent=(0, self.grid[0], 0, self.grid[1]))
         plt.title(title)
         plt.xlabel('X')
@@ -71,6 +71,11 @@ class PointParticle:
         self.__set_position__([self.position[0], new_y])
 
     def create(self, draw_object):
+        """
+        Draw the particle onto real space
+        :param draw_object: The RealSpace draw object
+        :return: The point to be drawn on the real space object
+        """
         return draw_object.point(self.position, fill=1)
 
 
@@ -91,26 +96,32 @@ class CalamiticParticle(PointParticle):
     def get_width(self):
         return self.size[0]
 
-    def __get_len__(self):
+    def get_len(self):
         return self.size[1]
 
-    def __len__(self):
-        return self.__get_len__()
-
-    def __get_angle__(self):
+    def get_angle(self):
         return self.angle
 
     def __set_angle__(self, input_angle):
         self.angle = input_angle
 
     def get_end_points(self):
+        """
+        Calculate the coordinates of the end of the particle, given its length and angle
+        :return: The end coordinates of the particle
+        """
         angle_rad = np.deg2rad(self.angle)
         x1, y1 = self.position
-        x2, y2 = [int(x1 + self.__get_len__() * np.cos(angle_rad)),
-                  int(y1 + self.__get_len__() * np.sin(angle_rad))]
+        x2, y2 = [int(x1 + self.get_len() * np.cos(angle_rad)),
+                  int(y1 + self.get_len() * np.sin(angle_rad))]
         return x2, y2
 
     def create(self, draw_object):
+        """
+        Draw the particle onto real space
+        :param draw_object: The RealSpace draw object
+        :return: The line to be drawn on the real space object
+        """
         return draw_object.line([self.position, self.end_position], fill=1, width=self.get_width())
 
 
@@ -156,6 +167,13 @@ def generate_angles(mean_angle: int, angle_stddev: int):
 
 
 def pythagorean_sides(a, b, theta):
+    """
+    Calculates the side lengths of a right angle triangle using the Pythagorean formulae
+    :param a: Length of triangle (a)
+    :param b: Width of the triangle (b)
+    :param theta: Angle of the triangle
+    :return: x and y coordinates of the end point
+    """
     theta_radians = np.deg2rad(theta)
     x = (abs(np.round(a * np.cos(theta_radians))) + abs(np.round(b * np.sin(theta_radians))))
     y = (abs(np.round(a * np.sin(theta_radians))) + abs(np.round(b * np.cos(theta_radians))))
@@ -164,31 +182,45 @@ def pythagorean_sides(a, b, theta):
 
 class DiffractionPattern:
     def __init__(self, space_object: RealSpace, wavelength, pixel_size, npt):
+        """
+        Performs simulated diffraction in 1D and 2D on a real space object
+        :param space_object: RealSpace object with particles to be diffracted
+        :param wavelength: Wavelength of the beam
+        :param pixel_size: Size of the pixels on the simulated detector
+        :param npt: Number of points in radial dimension
+        """
         self.space = space_object
-        self.pattern_2d = self.create_2d_diffraction(self.space)
+        self.pattern_2d = self.create_2d_diffraction()
         self.wavelength = wavelength
         self.pixel_size = pixel_size
         self.pattern_1d = self.create_1d_diffraction(npt)
 
-    def create_2d_diffraction(self, space_object):
-        '''
-        Create the diffraction pattern from the given real space object
+    def create_2d_diffraction(self):
+        """
+        Simulate the 2D diffraction from the given real space object
         :param space_object: RealSpace object
         :return: Diffraction pattern of the real space object
-        '''
-        fourier_of_space = np.fft.fft2(space_object.array)
-        fourier_of_space = np.roll(fourier_of_space, space_object.grid[0] // 2, 0)
-        fourier_of_space = np.roll(fourier_of_space, space_object.grid[1] // 2, 1)
+        """
+        fourier_of_space = np.fft.fft2(self.space.array)
+        fourier_of_space = np.roll(fourier_of_space, self.space.grid[0] // 2, 0)
+        fourier_of_space = np.roll(fourier_of_space, self.space.grid[1] // 2, 1)
 
         diffraction_image = np.abs(fourier_of_space)
 
-        # Elimintate the centre pixel
-        diffraction_image[space_object.grid[1] // 2][space_object.grid[0] // 2] = 0
+        # Eliminate the centre pixel
+        diffraction_image[self.space.grid[1] // 2][self.space.grid[0] // 2] = 0
         return diffraction_image
 
     def plot_2d(self, title, **kwargs):
+        """
+        Plot the 2D Diffraction image
+        :param title: String to be placed as a title on the figure
+        :param clim (Optional): Colour bar limit
+        :param show (Optional): Boolean for whether to show the plot immediately. Default False
+        :return:
+        """
         # Plot the diffraction image
-        plt.figure()
+        plt.figure(figsize=figure_size)
         plt.imshow(self.pattern_2d ** 2)
         plt.title(title)
         plt.colorbar()
@@ -202,8 +234,8 @@ class DiffractionPattern:
         """
         Perform azimuthal integration of frame array
         :param frame: numpy array containing 2D intensity
-        :param unit:
-        :param npt:
+        :param unit: Unit used in the radial integration
+        :param npt: Number of points used in the radial integration
         :return: two-col array of q & intensity.
         """
         # print("Debug - ", self.cam_length, self.pixel_size, self.wavelength)
@@ -219,6 +251,11 @@ class DiffractionPattern:
         return np.transpose(np.array(integrated_profile))
 
     def create_1d_diffraction(self, npt):
+        """
+        Simulate the 1D diffraction from the given real space object, through radial integration
+        :param npt: Number of points used in the radial integration
+        :return:
+        """
         radius = self.space.grid[0] // 2  # Assuming you have defined xmax and ymax somewhere
         diffraction_image_cone = circular_mask(self.space.grid, radius) * self.pattern_2d
         diffraction_plot = self.frm_integration(diffraction_image_cone, unit="q_nm^-1", npt=npt)
@@ -231,12 +268,12 @@ class DiffractionPattern:
         """
         Plot a 1D diffraction pattern
         :param title: Title text for the plotting
-        :param kwargs:
+        :param show (Optional): Boolean for whether to show the plot immediately. Default False
         :return:
         """
 
         # Plot 1D integration
-        plt.figure()
+        plt.figure(figsize=figure_size)
         plt.title(title)
         plt.plot(self.pattern_1d[int(npt // 20):, 0], self.pattern_1d[int(npt // 20):, 1])
         plt.xlabel(f'q / nm$^{-1}$')
@@ -246,11 +283,21 @@ class DiffractionPattern:
             plt.show()
 
 
-def circular_mask(grid, mask_radius):
+def circular_mask(grid, mask_radius, **kwargs):
+    """
+    Create a circular mask over an image
+    :param grid: x and y grid size which the mask will fit over
+    :param mask_radius: Radius that the mask should sit on
+    :return:
+    """
     kernel = np.zeros(grid)
     filter_y, filter_x = np.ogrid[-mask_radius:mask_radius, -mask_radius:mask_radius]
     mask = filter_x ** 2 + filter_y ** 2 <= mask_radius ** 2
     kernel[mask] = 1
+    if 'show' in kwargs and kwargs['show']:
+        plt.figure(figsize=figure_size)
+        plt.imshow(kernel)
+        plt.plot
     return kernel
 
 
@@ -274,6 +321,8 @@ if __name__ == "__main__":
     wavelength = 1e-10
     pixel_size = 5e-5
     npt = 2000
+
+    figure_size = (10, 10)
 
     ##################### ONLY MODIFY ABOVE #####################
     # Randomise unit_vector within given range
