@@ -283,7 +283,7 @@ class DiffractionPattern:
         plt.figure(figsize=figure_size)
         plt.title(title)
         plt.plot(self.pattern_1d[int(npt // 20):, 0], self.pattern_1d[int(npt // 20):, 1])
-        plt.xlabel(f'q / nm$^{-1}$')
+        plt.xlabel(f'q') # / nm$^{-1}$')
         plt.ylabel('Arbitrary Intensity')
         plt.tight_layout()
         if 'show' in kwargs and kwargs['show']:
@@ -333,19 +333,21 @@ if __name__ == "__main__":
     figure_size = (10, 10)
     ##################### ONLY MODIFY ABOVE #####################
     # Allow spacing in x and y to account for the size and angle of the particle
+    angles = generate_angles(unit_vector, vector_range, vector_stddev)
+    unit_vector = next(angles)
     x_spacing, y_spacing = (spacing + padding
                             for spacing, padding
                             in zip(pythagorean_sides(particle_length, particle_width, unit_vector), padding_spacing))
     print(f'x spacing: {x_spacing}, y spacing: {y_spacing}')
+
     # Allow for particles to move slightly in x and y, depending on the spacing
     wobble_allowance = tuple([np.floor((spacing - 1) / 2) for spacing in padding_spacing])
+    positions = generate_positions(wobble_allowance)
 
     # Create the space for the particles
     real_space = RealSpace((x_max, y_max))
 
     # Generate the particles
-    positions = generate_positions(wobble_allowance)
-    angles = generate_angles(unit_vector, vector_range, vector_stddev)
     particles = [CalamiticParticle(position, particle_width, particle_length, angle)
                  for position, angle in zip(positions, angles)]
     print(f'No. of Particles: {len(particles)}')
