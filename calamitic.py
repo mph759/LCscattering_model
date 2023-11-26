@@ -1,7 +1,6 @@
 """
 Generating 2D scattering pattern for modelled liquid crystals
-Original Author: Campbell Tims
-Edited by Michael Hassett from 2023-11-23
+Authored by Michael Hassett from 2023-11-23
 """
 
 import time
