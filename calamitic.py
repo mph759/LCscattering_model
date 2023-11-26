@@ -117,8 +117,7 @@ class CalamiticParticle(PointParticle):
 def generate_positions(change):
     """
     Generate a position inside cartesian coordinates, given a rough lattice with random spacial oscillations
-    :param x_change: Maximum change in x
-    :param y_change: Maximum change in y
+    :param change: Tuple of allowed change in x and y
     :return: A position in Cartesian coordinates inside the grid
     """
     # Initial positions, just inside the box
@@ -280,7 +279,7 @@ if __name__ == "__main__":
     # Randomise unit_vector within given range
     if vector_range != 0:
         vector_min, vector_max = (unit_vector + change for change in (-vector_range / 2, vector_range / 2))
-        unit_vector = np.random.randint(vector_min, vector_max) % 360   # Randomise unit vector in given range
+        unit_vector = np.random.randint(vector_min, vector_max) % 360  # Randomise unit vector in given range
         # print(f'Min. Angle: {vector_min}\N{DEGREE SIGN}, Max. Angle: {vector_max}\N{DEGREE SIGN}')
     print(f'Unit Vector: {unit_vector}\N{DEGREE SIGN}')
     # Note: The unit vector is not the exact angle all the particles will have, but the mean of all the angles
