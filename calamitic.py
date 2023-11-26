@@ -304,7 +304,7 @@ def circular_mask(grid, mask_radius, **kwargs):
     if 'show' in kwargs and kwargs['show']:
         plt.figure(figsize=figure_size)
         plt.imshow(kernel)
-        plt.plot
+        plt.plot()
     return kernel
 
 
