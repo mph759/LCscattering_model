@@ -14,6 +14,7 @@ from pyFAI.azimuthalIntegrator import AzimuthalIntegrator
 class RealSpace:
     def __init__(self, grid):
         self.grid = grid
+        print(f"Generating real space array with dimensions {self.grid}")
         self.img = Image.new('L', self.grid, 0)
         self.__set_array__()
 
@@ -33,6 +34,7 @@ class RealSpace:
         :param title: Title text for figure
         :return: Figure object
         """
+        print("Plotting real space figure...")
         plt.figure(figsize=figure_size)
         plt.imshow(self.array, extent=(0, self.grid[0], 0, self.grid[1]))
         plt.title(title)
@@ -195,11 +197,14 @@ class DiffractionPattern:
         :param pixel_size: Size of the pixels on the simulated detector
         :param npt: Number of points in radial dimension
         """
+        self.tic = time.perf_counter()
         self.space = space_object
         self.pattern_2d = self.create_2d_diffraction()
         self.wavelength = wavelength
         self.pixel_size = pixel_size
         self.pattern_1d = self.create_1d_diffraction(npt)
+        self.toc = time.perf_counter()
+        print(f'Generating the diffraction patterns took {self.toc - self.tic:0.4f} seconds')
 
     def create_2d_diffraction(self):
         """
@@ -207,6 +212,7 @@ class DiffractionPattern:
         :param space_object: RealSpace object
         :return: Diffraction pattern of the real space object
         """
+        print("Generating 2D diffraction image...")
         fourier_of_space = np.fft.fft2(self.space.array)
         fourier_of_space = np.roll(fourier_of_space, self.space.grid[0] // 2, 0)
         fourier_of_space = np.roll(fourier_of_space, self.space.grid[1] // 2, 1)
@@ -215,6 +221,7 @@ class DiffractionPattern:
 
         # Eliminate the centre pixel
         diffraction_image[self.space.grid[1] // 2][self.space.grid[0] // 2] = 0
+        print("2D diffraction image complete")
         return diffraction_image
 
     def plot_2d(self, title, **kwargs):
@@ -225,6 +232,7 @@ class DiffractionPattern:
         :param show (Optional): Boolean for whether to show the plot immediately. Default False
         :return:
         """
+        print("Plotting 2D diffraction figure...")
         # Plot the diffraction image
         plt.figure(figsize=figure_size)
         plt.imshow(self.pattern_2d ** 2)
@@ -262,12 +270,14 @@ class DiffractionPattern:
         :param npt: Number of points used in the radial integration
         :return:
         """
+        print("Generating 1D diffraction image...")
         radius = self.space.grid[0] // 2  # Assuming you have defined xmax and ymax somewhere
         diffraction_image_cone = circular_mask(self.space.grid, radius) * self.pattern_2d
         diffraction_plot = self.frm_integration(diffraction_image_cone, unit="q_nm^-1", npt=npt)
 
         non_zero = diffraction_plot[:, 1] != 0  # Removes data points which = 0 due to the cone restriction
         diffraction_plot_filtered = diffraction_plot[non_zero]
+        print("1D diffraction image complete")
         return diffraction_plot_filtered
 
     def plot_1d(self, title, **kwargs):
@@ -277,8 +287,8 @@ class DiffractionPattern:
         :param show (Optional): Boolean for whether to show the plot immediately. Default False
         :return:
         """
-
         # Plot 1D integration
+        print("Plotting 1D diffraction figure...")
         plt.figure(figsize=figure_size)
         plt.title(title)
         plt.plot(self.pattern_1d[int(npt // 20):, 0], self.pattern_1d[int(npt // 20):, 1])
@@ -352,7 +362,7 @@ if __name__ == "__main__":
     print(f'No. of Particles: {len(particles)}')
     # Check unit vector matches expected value
     particles_unit_vector = np.mean([particle.angle for particle in particles])
-    print(f"Collective unit vector: {particles_unit_vector:0.1f}")
+    # print(f"Collective unit vector: {particles_unit_vector:0.2f}")
 
     # Place particles in real space
     real_space.add(particles)
@@ -362,12 +372,9 @@ if __name__ == "__main__":
     real_space.plot(real_space_title)
 
     # Generate diffraction patterns in 2D and 1D of real space
-    tic = time.perf_counter()
     diffraction_pattern_of_real_space = DiffractionPattern(real_space, wavelength, pixel_size, npt)
     diffraction_pattern_title = f'2D Diffraction pattern of Liquid Crystal Phase of Calamitic Particles'
     diffraction_pattern_of_real_space.plot_2d(diffraction_pattern_title, clim=1e8)
     diff_1D_title = f'1D Diffraction pattern of Liquid Crystal Phase of Calamitic Particles'
     diffraction_pattern_of_real_space.plot_1d(diff_1D_title)
-    toc = time.perf_counter()
-    print(f'Generating the diffraction patterns took {toc - tic:0.4f} seconds')
     plt.show()
