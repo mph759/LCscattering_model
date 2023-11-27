@@ -32,7 +32,7 @@ class RealSpace:
         """
         Plot the 2D real space image
         :param title: Title text for figure
-        :return: Figure object
+        :return:
         """
         print("Plotting real space figure...")
         plt.figure(figsize=figure_size)
@@ -47,10 +47,10 @@ class RealSpace:
 
 class PointParticle:
     def __init__(self, position: list[int, int]):
-        '''
+        """
         A point particle in real space
         :param position: Position of the particle in Cartesian coordinates
-        '''
+        """
         self.position = position  # Position of the particle in real space using cartesian coordinates
 
     def __get_position__(self):
@@ -84,7 +84,7 @@ class CalamiticParticle(PointParticle):
     def __init__(self, init_position, width, length, angle):
         """
         A calamitic (rod-like) particle in real space
-        :param position: Position of the particle in Cartesian coordinates
+        :param init_position: Position of the particle in Cartesian coordinates
         :param width: Width of the particle
         :param length: Length of the particle
         :param angle: Angle of the particle in real space
@@ -158,7 +158,7 @@ def generate_positions(change):
 def generate_angles(init_angle: int, angle_range, angle_stddev: int):
     """
     Generate an angle from a normal distribution, with a given mean and standard deviation
-    :param mean_angle: Mean value of the angle
+    :param init_angle: Mean value of the angle
     :param angle_range: Range for starting angle
     :param angle_stddev: standard deviation for the angle
     :return:
@@ -168,7 +168,9 @@ def generate_angles(init_angle: int, angle_range, angle_stddev: int):
         mean_angle = np.random.randint(angle_min, angle_max) % 360  # Randomise unit vector in given range
         yield mean_angle
         # print(f'Min. Angle: {vector_min}\N{DEGREE SIGN}, Max. Angle: {vector_max}\N{DEGREE SIGN}')
-        print(f'Unit Vector: {mean_angle}\N{DEGREE SIGN}')
+    else:
+        mean_angle = init_angle
+    print(f'Unit Vector: {mean_angle}\N{DEGREE SIGN}')
     while True:
         angle = np.random.normal(mean_angle, angle_stddev) % 360
         yield angle
@@ -209,7 +211,6 @@ class DiffractionPattern:
     def create_2d_diffraction(self):
         """
         Simulate the 2D diffraction from the given real space object
-        :param space_object: RealSpace object
         :return: Diffraction pattern of the real space object
         """
         print("Generating 2D diffraction image...")
@@ -271,11 +272,11 @@ class DiffractionPattern:
         :return:
         """
         print("Generating 1D diffraction image...")
-        radius = self.space.grid[0] // 2  # Assuming you have defined xmax and ymax somewhere
+        radius = self.space.grid[0] // 2
         diffraction_image_cone = circular_mask(self.space.grid, radius) * self.pattern_2d
         diffraction_plot = self.frm_integration(diffraction_image_cone, unit="q_nm^-1", npt=npt)
 
-        non_zero = diffraction_plot[:, 1] != 0  # Removes data points which = 0 due to the cone restriction
+        non_zero = diffraction_plot[:, 1] != 0  # Removes data points at = 0 due to the cone restriction
         diffraction_plot_filtered = diffraction_plot[non_zero]
         print("1D diffraction image complete")
         return diffraction_plot_filtered
@@ -292,7 +293,7 @@ class DiffractionPattern:
         plt.figure(figsize=figure_size)
         plt.title(title)
         plt.plot(self.pattern_1d[int(npt // 20):, 0], self.pattern_1d[int(npt // 20):, 1])
-        plt.xlabel(f'q')   # / nm$^{-1}$')
+        plt.xlabel(f'q')  # / nm$^{-1}$')
         plt.ylabel('Arbitrary Intensity')
         plt.tight_layout()
         if 'show' in kwargs and kwargs['show']:
@@ -329,7 +330,7 @@ if __name__ == "__main__":
     # Note: The unit vector is not the exact angle all the particles will have, but the mean of all the angles
     unit_vector = 90  # Unit vector of the particles, starting point up
     vector_range = 40  # Full angular range for the unit vector to be randomised in
-    vector_stddev = 5   # Standard Deviation of the angle, used to generate angles for individual particles
+    vector_stddev = 5  # Standard Deviation of the angle, used to generate angles for individual particles
 
     # Initialise how the particles sit in real space
     padding_spacing = (5, 5)
