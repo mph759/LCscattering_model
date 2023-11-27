@@ -15,7 +15,7 @@ class RealSpace:
     def __init__(self, grid):
         self.grid = grid
         self.img = Image.new('L', self.grid, 0)
-        self.array = np.asarray(self.img)
+        self.__set_array__()
 
     def add(self, particle_list):
         in_real_space = ImageDraw.Draw(self.img)
@@ -153,7 +153,7 @@ def generate_positions(change):
             x = x_spacing
 
 
-def generate_angles(mean_angle: int, angle_range, angle_stddev: int):
+def generate_angles(init_angle: int, angle_range, angle_stddev: int):
     """
     Generate an angle from a normal distribution, with a given mean and standard deviation
     :param mean_angle: Mean value of the angle
@@ -162,14 +162,14 @@ def generate_angles(mean_angle: int, angle_range, angle_stddev: int):
     :return:
     """
     if angle_range != 0:
-        angle_min, angle_max = (mean_angle + change for change in (-angle_range / 2, angle_range / 2))
-        angle = np.random.randint(angle_min, angle_max) % 360  # Randomise unit vector in given range
-        yield angle
+        angle_min, angle_max = (init_angle + change for change in (-angle_range / 2, angle_range / 2))
+        mean_angle = np.random.randint(angle_min, angle_max) % 360  # Randomise unit vector in given range
+        yield mean_angle
         # print(f'Min. Angle: {vector_min}\N{DEGREE SIGN}, Max. Angle: {vector_max}\N{DEGREE SIGN}')
-        print(f'Unit Vector: {angle}\N{DEGREE SIGN}')
+        print(f'Unit Vector: {mean_angle}\N{DEGREE SIGN}')
     while True:
-        yield angle
         angle = np.random.normal(mean_angle, angle_stddev) % 360
+        yield angle
 
 
 def pythagorean_sides(a, b, theta):
@@ -282,7 +282,7 @@ class DiffractionPattern:
         plt.figure(figsize=figure_size)
         plt.title(title)
         plt.plot(self.pattern_1d[int(npt // 20):, 0], self.pattern_1d[int(npt // 20):, 1])
-        plt.xlabel(f'q') # / nm$^{-1}$')
+        plt.xlabel(f'q')   # / nm$^{-1}$')
         plt.ylabel('Arbitrary Intensity')
         plt.tight_layout()
         if 'show' in kwargs and kwargs['show']:
@@ -350,6 +350,9 @@ if __name__ == "__main__":
     particles = [CalamiticParticle(position, particle_width, particle_length, angle)
                  for position, angle in zip(positions, angles)]
     print(f'No. of Particles: {len(particles)}')
+    # Check unit vector matches expected value
+    particles_unit_vector = np.mean([particle.angle for particle in particles])
+    print(f"Collective unit vector: {particles_unit_vector:0.1f}")
 
     # Place particles in real space
     real_space.add(particles)
