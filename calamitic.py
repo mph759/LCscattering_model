@@ -302,6 +302,16 @@ class DiffractionPattern:
         if 'show' in kwargs and kwargs['show']:
             plt.show()
 
+    def save_1d(self, file_name):
+        """
+        Save the 1D diffraction pattern as a numpy file
+        :param file_name: Output file name
+        :return:
+        """
+        full_file_name = f'{file_name}.npy'
+        np.save(full_file_name, self.pattern_1d)
+        print(f'Saved 1D diffraction pattern as {full_file_name}')
+
 
 def circular_mask(grid, mask_radius, **kwargs):
     """
@@ -339,8 +349,8 @@ if __name__ == "__main__":
     padding_spacing = (5, 5)
 
     # Initialise beam and detector parameters
-    wavelength = 1e-10
-    pixel_size = 5e-5
+    wavelength = 0.67018e-10
+    pixel_size = 75e-6
     npt = 2000
 
     figure_size = (10, 10)
@@ -372,13 +382,16 @@ if __name__ == "__main__":
     real_space.add(particles)
     toc = time.perf_counter()
     print(f'Generating the particles in real space took {toc - tic:0.4f} seconds')
-    real_space_title = f'Liquid Crystal Phase of Calamitic Liquid crystals, with unit vector {unit_vector}$^\circ$'
-    real_space.plot(real_space_title)
+    #real_space_title = f'Liquid Crystal Phase of Calamitic Liquid crystals, with unit vector {unit_vector}$^\circ$'
+    #real_space.plot(real_space_title)
 
     # Generate diffraction patterns in 2D and 1D of real space
     diffraction_pattern_of_real_space = DiffractionPattern(real_space, wavelength, pixel_size, npt)
-    diffraction_pattern_title = f'2D Diffraction pattern of Liquid Crystal Phase of Calamitic Particles'
-    diffraction_pattern_of_real_space.plot_2d(diffraction_pattern_title, clim=1e8)
+    # diffraction_pattern_title = f'2D Diffraction pattern of Liquid Crystal Phase of Calamitic Particles'
+    # diffraction_pattern_of_real_space.plot_2d(diffraction_pattern_title, clim=1e8)
     diff_1D_title = f'1D Diffraction pattern of Liquid Crystal Phase of Calamitic Particles'
     diffraction_pattern_of_real_space.plot_1d(diff_1D_title)
     plt.show()
+
+    filename = f'calamitic_p{particle_length}x{particle_width}_uv{unit_vector}'
+    diffraction_pattern_of_real_space.save_1d(filename)
