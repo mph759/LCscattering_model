@@ -169,7 +169,7 @@ def generate_positions(change):
             x = x_spacing
 
 
-def generate_angles(init_angle: int, angle_range, angle_stddev: int):
+def generate_angles(mean_angle: int, angle_stddev: int):
     """
     Generate an angle from a normal distribution, with a given mean and standard deviation
     :param init_angle: Mean value of the angle
@@ -177,17 +177,20 @@ def generate_angles(init_angle: int, angle_range, angle_stddev: int):
     :param angle_stddev: standard deviation for the angle
     :return:
     """
+    while True:
+        angle = np.random.normal(mean_angle, angle_stddev) % 360
+        yield angle
+
+
+def initialise_angle(init_angle, angle_range):
     if angle_range != 0:
         angle_min, angle_max = (init_angle + change for change in (-angle_range / 2, angle_range / 2))
         mean_angle = np.random.randint(angle_min, angle_max) % 360  # Randomise unit vector in given range
-        yield mean_angle
         # print(f'Min. Angle: {vector_min}\N{DEGREE SIGN}, Max. Angle: {vector_max}\N{DEGREE SIGN}')
     else:
         mean_angle = init_angle
     print(f'Unit Vector: {mean_angle}\N{DEGREE SIGN}')
-    while True:
-        angle = np.random.normal(mean_angle, angle_stddev) % 360
-        yield angle
+    return mean_angle
 
 
 def pythagorean_sides(a, b, theta):
@@ -311,6 +314,16 @@ class DiffractionPattern:
         if 'show' in kwargs and kwargs['show']:
             plt.show()
 
+    def save_1d(self, file_name):
+        """
+        Save the 1D diffraction pattern as a numpy file
+        :param file_name: Output file name
+        :return:
+        """
+        full_file_name = f'{file_name}.npy'
+        np.save(full_file_name, self.pattern_1d)
+        print(f'Saved 1D diffraction pattern as {full_file_name}')
+
 
 def circular_mask(grid, mask_radius, **kwargs):
     """
@@ -346,15 +359,15 @@ if __name__ == "__main__":
     padding_spacing = (5, 5)
 
     # Initialise beam and detector parameters
-    wavelength = 1e-10
-    pixel_size = 5e-5
+    wavelength = 0.67018e-10
+    pixel_size = 75e-6
     npt = 2000
 
     figure_size = (10, 10)
     ##################### ONLY MODIFY ABOVE #####################
     # Allow spacing in x and y to account for the size and angle of the particle
-    angles = generate_angles(unit_vector, vector_range, vector_stddev)
-    unit_vector = next(angles)
+    unit_vector = initialise_angle(unit_vector, vector_range)
+    angles = generate_angles(unit_vector, vector_stddev)
     x_spacing, y_spacing = (spacing + padding
                             for spacing, padding
                             in zip(pythagorean_sides(particle_length, particle_width, unit_vector), padding_spacing))
@@ -387,3 +400,6 @@ if __name__ == "__main__":
     diff_1D_title = f'1D Diffraction pattern of Liquid Crystal Phase of Calamitic Particles'
     diffraction_pattern_of_real_space.plot_1d(diff_1D_title)
     plt.show()
+
+    filename = f'calamitic_p{particle_length}x{particle_width}_uv{unit_vector}'
+    diffraction_pattern_of_real_space.save_1d(filename)
