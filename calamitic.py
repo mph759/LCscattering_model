@@ -36,6 +36,7 @@ class RealSpace:
         """Adding particles to real space
         :param particle_list: List of particle objects to be added to the real space object
         """
+        print(f'No. of Particles: {len(particles)}')
         in_real_space = ImageDraw.Draw(self.img)
         for particle in particle_list:
             # print(f'Start: {particle.position}, End: {particle.end_position}')
@@ -175,25 +176,13 @@ def generate_positions(change):
 def generate_angles(mean_angle: int, angle_stddev: int):
     """
     Generate an angle from a normal distribution, with a given mean and standard deviation
-    :param init_angle: Mean value of the angle
-    :param angle_range: Range for starting angle
-    :param angle_stddev: standard deviation for the angle
+    :param mean_angle: Mean angle of the normal distribution
+    :param angle_stddev: standard deviation of the normal distribution
     :return:
     """
     while True:
         angle = np.random.normal(mean_angle, angle_stddev) % 360
         yield angle
-
-
-def initialise_angle(init_angle, angle_range):
-    if angle_range != 0:
-        angle_min, angle_max = (init_angle + change for change in (-angle_range / 2, angle_range / 2))
-        mean_angle = np.random.randint(angle_min, angle_max) % 360  # Randomise unit vector in given range
-        # print(f'Min. Angle: {vector_min}\N{DEGREE SIGN}, Max. Angle: {vector_max}\N{DEGREE SIGN}')
-    else:
-        mean_angle = init_angle
-    print(f'Unit Vector: {mean_angle}\N{DEGREE SIGN}')
-    return mean_angle
 
 
 def pythagorean_sides(a, b, theta):
@@ -357,7 +346,6 @@ if __name__ == "__main__":
     particle_length = 15
     # Note: The unit vector is not the exact angle all the particles will have, but the mean of all the angles
     unit_vector = 70  # Unit vector of the particles, starting point up
-    vector_range = 0  # Full angular range for the unit vector to be randomised in
     vector_stddev = 5  # Standard Deviation of the angle, used to generate angles for individual particles
 
     # Initialise how the particles sit in real space
@@ -371,7 +359,6 @@ if __name__ == "__main__":
     figure_size = (10, 10)
     ##################### ONLY MODIFY ABOVE #####################
     # Allow spacing in x and y to account for the size and angle of the particle
-    unit_vector = initialise_angle(unit_vector, vector_range)
     angles = generate_angles(unit_vector, vector_stddev)
     x_spacing, y_spacing = (spacing + padding
                             for spacing, padding
@@ -388,7 +375,6 @@ if __name__ == "__main__":
     # Generate the particles
     particles = [CalamiticParticle(position, particle_width, particle_length, angle)
                  for position, angle in zip(positions, angles)]
-    print(f'No. of Particles: {len(particles)}')
     # Check unit vector matches expected value
     particles_unit_vector = np.mean([particle.angle for particle in particles])
     # print(f"Collective unit vector: {particles_unit_vector:0.2f}")
