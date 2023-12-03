@@ -144,17 +144,19 @@ class CalamiticParticle(PointParticle):
         return draw_object.line([self.position, self.end_position], fill=1, width=self.get_width())
 
 
-def generate_positions(change):
+def generate_positions(x_space, y_space, change):
     """
     Generate a position inside cartesian coordinates, given a rough lattice with random spacial oscillations
-    :param change: Tuple of allowed change in x and y
+    :param x_space: Spacing in x-dimension between positions
+    :param y_space: Spacing in y-dimension between positions
+    :param change: Tuple of allowed deviation from initial lattice spacing
     :return: A position in Cartesian coordinates inside the grid
     """
     # Initial positions, just inside the box
     x_change = change[0]
     y_change = change[1]
-    x = int(x_spacing / 2)
-    y = int(y_spacing / 2)
+    x = int(x_space / 2)
+    y = int(y_space / 2)
 
     # Loop while the positions are still inside the box
     while y < y_max:
@@ -165,12 +167,12 @@ def generate_positions(change):
         if y_change != 0:
             y_pos += np.random.randint(-y_change, y_change)
         yield x_pos, y_pos
-        x += x_spacing
+        x += x_space
 
         # When the position is at the edge of the box, adjust y and reset x
         if x >= x_max:
-            y += y_spacing
-            x = x_spacing
+            y += y_space
+            x = x_space
 
 
 def generate_angles(mean_angle: int, angle_stddev: int):
@@ -359,7 +361,6 @@ if __name__ == "__main__":
     figure_size = (10, 10)
     ##################### ONLY MODIFY ABOVE #####################
     # Allow spacing in x and y to account for the size and angle of the particle
-    angles = generate_angles(unit_vector, vector_stddev)
     x_spacing, y_spacing = (spacing + padding
                             for spacing, padding
                             in zip(pythagorean_sides(particle_length, particle_width, unit_vector), padding_spacing))
@@ -367,7 +368,10 @@ if __name__ == "__main__":
 
     # Allow for particles to move slightly in x and y, depending on the spacing
     wobble_allowance = tuple([np.floor((spacing - 1) / 2) for spacing in padding_spacing])
-    positions = generate_positions(wobble_allowance)
+
+    # Initialise the generators of the positions and angles for the particles
+    positions = generate_positions(x_spacing, y_spacing, wobble_allowance)
+    angles = generate_angles(unit_vector, vector_stddev)
 
     # Create the space for the particles
     real_space = RealSpace((x_max, y_max))
