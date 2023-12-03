@@ -9,6 +9,18 @@ from PIL import Image
 from PIL import ImageDraw
 import matplotlib.pyplot as plt
 from pyFAI.azimuthalIntegrator import AzimuthalIntegrator
+import inspect
+
+def timer(func):
+    def wrapper(*args, **kwargs):
+        t_start = time.perf_counter()
+        result = func(*args, **kwargs)
+        t_end = time.perf_counter()
+        t_total = t_end - t_start
+        func_description = inspect.getdoc(func).split('\n')[0]
+        print(f'{func_description} took {t_total:0.4f}s')
+        return result
+    return wrapper
 
 
 class RealSpace:
@@ -18,7 +30,9 @@ class RealSpace:
         self.img = Image.new('L', self.grid, 0)
         self.__set_array__()
 
+    @timer
     def add(self, particle_list):
+        """Adding particles to real space"""
         in_real_space = ImageDraw.Draw(self.img)
         for particle in particle_list:
             # print(f'Start: {particle.position}, End: {particle.end_position}')
@@ -191,22 +205,20 @@ def pythagorean_sides(a, b, theta):
 
 
 class DiffractionPattern:
+    @timer
     def __init__(self, space_object: RealSpace, wavelength, pixel_size, npt):
         """
-        Performs simulated diffraction in 1D and 2D on a real space object
+        Generating 1D and 2D diffraction patterns on a real space object
         :param space_object: RealSpace object with particles to be diffracted
         :param wavelength: Wavelength of the beam
         :param pixel_size: Size of the pixels on the simulated detector
         :param npt: Number of points in radial dimension
         """
-        self.tic = time.perf_counter()
         self.space = space_object
         self.pattern_2d = self.create_2d_diffraction()
         self.wavelength = wavelength
         self.pixel_size = pixel_size
         self.pattern_1d = self.create_1d_diffraction(npt)
-        self.toc = time.perf_counter()
-        print(f'Generating the diffraction patterns took {self.toc - self.tic:0.4f} seconds')
 
     def create_2d_diffraction(self):
         """
@@ -319,8 +331,6 @@ def circular_mask(grid, mask_radius, **kwargs):
 
 
 if __name__ == "__main__":
-    tic = time.perf_counter()  # Start timer
-
     # Initialise real space parameters
     x_max = y_max = int(1e4)
 
@@ -367,8 +377,6 @@ if __name__ == "__main__":
 
     # Place particles in real space
     real_space.add(particles)
-    toc = time.perf_counter()
-    print(f'Generating the particles in real space took {toc - tic:0.4f} seconds')
     real_space_title = f'Liquid Crystal Phase of Calamitic Liquid crystals, with unit vector {unit_vector}$^\circ$'
     real_space.plot(real_space_title)
 
