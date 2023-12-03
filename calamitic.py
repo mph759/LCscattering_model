@@ -10,9 +10,16 @@ from PIL import ImageDraw
 import matplotlib.pyplot as plt
 from pyFAI.azimuthalIntegrator import AzimuthalIntegrator
 import inspect
+from functools import wraps
 
 
 def timer(func):
+    """
+    Function timer
+    :param func: Function to be timed
+    :return:
+    """
+    @wraps(func)
     def wrapper(*args, **kwargs):
         t_start = time.perf_counter()
         result = func(*args, **kwargs)
