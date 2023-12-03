@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 from pyFAI.azimuthalIntegrator import AzimuthalIntegrator
 import inspect
 
+
 def timer(func):
     def wrapper(*args, **kwargs):
         t_start = time.perf_counter()
@@ -32,7 +33,9 @@ class RealSpace:
 
     @timer
     def add(self, particle_list):
-        """Adding particles to real space"""
+        """Adding particles to real space
+        :param particle_list: List of particle objects to be added to the real space object
+        """
         in_real_space = ImageDraw.Draw(self.img)
         for particle in particle_list:
             # print(f'Start: {particle.position}, End: {particle.end_position}')
@@ -320,9 +323,11 @@ class DiffractionPattern:
         :param file_name: Output file name
         :return:
         """
-        full_file_name = f'{file_name}.npy'
-        np.save(full_file_name, self.pattern_1d)
-        print(f'Saved 1D diffraction pattern as {full_file_name}')
+        if file_name[-4:] != ".npy":
+            file_name = file_name.split('.')[0]
+            file_name = f'{file_name}.npy'
+        np.save(file_name, self.pattern_1d)
+        print(f'Saved 1D diffraction pattern as {file_name}')
 
 
 def circular_mask(grid, mask_radius, **kwargs):
@@ -351,8 +356,8 @@ if __name__ == "__main__":
     particle_width = 2
     particle_length = 15
     # Note: The unit vector is not the exact angle all the particles will have, but the mean of all the angles
-    unit_vector = 90  # Unit vector of the particles, starting point up
-    vector_range = 40  # Full angular range for the unit vector to be randomised in
+    unit_vector = 70  # Unit vector of the particles, starting point up
+    vector_range = 0  # Full angular range for the unit vector to be randomised in
     vector_stddev = 5  # Standard Deviation of the angle, used to generate angles for individual particles
 
     # Initialise how the particles sit in real space
@@ -401,5 +406,6 @@ if __name__ == "__main__":
     diffraction_pattern_of_real_space.plot_1d(diff_1D_title)
     plt.show()
 
+    # Save 1D diffraction pattern as a numpy file
     filename = f'calamitic_p{particle_length}x{particle_width}_uv{unit_vector}'
     diffraction_pattern_of_real_space.save_1d(filename)
