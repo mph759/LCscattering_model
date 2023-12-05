@@ -60,7 +60,7 @@ class RealSpace:
         :return:
         """
         print("Plotting real space figure...")
-        plt.figure(figsize=figure_size)
+        plt.figure()
         plt.imshow(self.array, extent=(0, self.grid[0], 0, self.grid[1]))
         plt.title(title)
         plt.xlabel('X')
@@ -251,7 +251,7 @@ class DiffractionPattern:
         """
         print("Plotting 2D diffraction figure...")
         # Plot the diffraction image
-        plt.figure(figsize=figure_size)
+        plt.figure()
         plt.imshow(self.pattern_2d ** 2)
         plt.title(title)
         plt.colorbar()
@@ -306,7 +306,7 @@ class DiffractionPattern:
         """
         # Plot 1D integration
         print("Plotting 1D diffraction figure...")
-        plt.figure(figsize=figure_size)
+        plt.figure()
         plt.title(title)
         plt.plot(self.pattern_1d[int(npt // 20):, 0], self.pattern_1d[int(npt // 20):, 1])
         plt.xlabel(f'q')  # / nm$^{-1}$')
@@ -340,7 +340,7 @@ def circular_mask(grid, mask_radius, **kwargs):
     mask = filter_x ** 2 + filter_y ** 2 <= mask_radius ** 2
     kernel[mask] = 1
     if 'show' in kwargs and kwargs['show']:
-        plt.figure(figsize=figure_size)
+        plt.figure()
         plt.imshow(kernel)
         plt.plot()
     return kernel
@@ -365,7 +365,7 @@ if __name__ == "__main__":
     pixel_size = 75e-6
     npt = 2000
 
-    figure_size = (10, 10)
+    plt.rcParams['figure.figsize'] = [10, 10]
     ##################### ONLY MODIFY ABOVE #####################
     # Allow spacing in x and y to account for the size and angle of the particle
     x_spacing, y_spacing = (spacing + padding
