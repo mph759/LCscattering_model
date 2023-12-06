@@ -13,13 +13,13 @@ from particles import CalamiticParticle
 
 if __name__ == "__main__":
     # Initialise real space parameters
-    x_max = y_max = int(1e4)
+    x_max = y_max = int(1e3)
 
     # Initialise particle parameters
     particle_width = 2
     particle_length = 15
     # Note: The unit vector is not the exact angle all the particles will have, but the mean of all the angles
-    unit_vector = 70  # Unit vector of the particles, starting point up
+    unit_vector = 65  # Unit vector of the particles, starting point up
     vector_stddev = 5  # Standard Deviation of the angle, used to generate angles for individual particles
 
     # Initialise how the particles sit in real space
@@ -69,7 +69,7 @@ if __name__ == "__main__":
 
     # Save 1D diffraction pattern as a numpy file
     filename = f'calamitic_p{particle_length}x{particle_width}_uv{unit_vector}'
-    diffraction_pattern_of_real_space.save_1d(filename, file_type="png", dpi=300)
+    diffraction_pattern_of_real_space.save_1d(filename, file_type="jpeg", dpi=300)
 
     plt.show()
 

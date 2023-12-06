@@ -87,7 +87,33 @@ def pythagorean_sides(a, b, theta):
     return x, y
 
 
-def append_file_ext(file_name, file_type):
+def fix_file_ext(file_name, file_type):
     if file_name[-4:] != f".{file_type}":
         file_name = file_name.split('.')[0]
         return f'{file_name}.{file_type}'
+
+
+def check_existing_ext(file_name):
+    file_name_array = file_name.split('.')
+    file_name = file_name_array[0]
+    if len(file_name_array) > 2:
+        raise ValueError("File name cannot include full stop, unless before an extension")
+    elif len(file_name_array) > 1:
+        file_ext = file_name_array[1]
+    else:
+        file_ext = None
+    return file_name, file_ext
+
+
+def save(fig, array, file_name, file_type, **kwargs):
+    if file_type is None:
+        file_name, file_type = check_existing_ext(file_name)
+        if file_type is None:
+            file_type = "npy"
+    if file_type == "npy":
+        file_name = fix_file_ext(file_name, file_type)
+        np.save(file_name, array)
+    else:
+        file_name = fix_file_ext(file_name, file_type)
+        fig.savefig(file_name, format=file_type, **kwargs)
+    return file_name

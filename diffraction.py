@@ -5,7 +5,7 @@ Authored by Michael Hassett from 2023-11-23
 """
 import matplotlib.pyplot as plt
 import numpy as np
-from utils import timer, append_file_ext
+from utils import timer, save
 from pyFAI.azimuthalIntegrator import AzimuthalIntegrator
 from spatial import RealSpace
 
@@ -73,14 +73,7 @@ class DiffractionPattern:
         :param file_type: Type of file you want to save (e.g. npy or jpg)
         :return:
         """
-        if file_type == "npy":
-            file_name = append_file_ext(file_name, file_type)
-            np.save(file_name, self.pattern_2d)
-        elif self.fig_2d:
-            file_name = append_file_ext(file_name, file_type)
-            self.fig_2d.savefig(file_name, format=file_type, **kwargs)
-        else:
-            raise AttributeError("Plot has not been generated to be able to be saved")
+        file_name = save(self.fig_2d, self.pattern_2d, file_name, file_type, **kwargs)
         print(f'Saved 2D diffraction pattern as {file_name}')
 
     def frm_integration(self, frame, unit="q_nm^-1"):
@@ -133,19 +126,14 @@ class DiffractionPattern:
         self.ax_1d.set_ylabel('Arbitrary Intensity')
         self.fig_1d.tight_layout()
 
-    def save_1d(self, file_name, file_type="npy", **kwargs):
+    def save_1d(self, file_name, file_type=None, **kwargs):
         """
         Save the 1D diffraction pattern as a numpy file
         :param file_name: Output file name
         :param file_type: Type of file you want to save (e.g. npy or jpg)
         :return:
         """
-        if file_type == "npy":
-            file_name = append_file_ext(file_name, file_type)
-            np.save(file_name, self.pattern_1d)
-        else:
-            file_name = append_file_ext(file_name, file_type)
-            self.fig_1d.savefig(file_name, format=file_type, **kwargs)
+        file_name = save(self.fig_1d, self.pattern_1d, file_name, file_type, **kwargs)
         print(f'Saved 1D diffraction pattern as {file_name}')
 
 

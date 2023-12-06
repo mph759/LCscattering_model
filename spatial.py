@@ -3,7 +3,7 @@ Generating a 2D real space array image to impose particles on, and functions ass
 Project: Generating 2D scattering pattern for modelled liquid crystals
 Authored by Michael Hassett from 2023-11-23
 """
-from utils import timer, append_file_ext
+from utils import timer, save
 from PIL import Image
 from PIL import ImageDraw
 import numpy as np
@@ -55,12 +55,5 @@ class RealSpace:
         :param file_type: Type of file you want to save (e.g. npy or jpg)
         :return:
         """
-        if file_type == "npy":
-            file_name = append_file_ext(file_name, file_type)
-            np.save(file_name, self.array)
-        elif self.fig:
-            file_name = append_file_ext(file_name, file_type)
-            self.fig.savefig(file_name, format=file_type, **kwargs)
-        else:
-            raise AttributeError("Plot has not been generated to be able to be saved")
+        file_name = save(self.fig, self.array, file_name, file_type, **kwargs)
         print(f'Saved real space as {file_name}')
