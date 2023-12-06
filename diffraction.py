@@ -5,7 +5,7 @@ Authored by Michael Hassett from 2023-11-23
 """
 import matplotlib.pyplot as plt
 import numpy as np
-from utils import timer
+from utils import timer, append_file_ext
 from pyFAI.azimuthalIntegrator import AzimuthalIntegrator
 from spatial import RealSpace
 
@@ -20,12 +20,17 @@ class DiffractionPattern:
         :param pixel_size: Size of the pixels on the simulated detector
         :param npt: Number of points in radial dimension for radial integration
         """
+
         self.space = space_object
         self.pattern_2d = self.create_2d_diffraction()
         self.wavelength = wavelength
         self.pixel_size = pixel_size
         self.npt = npt
         self.pattern_1d = self.create_1d_diffraction()
+        self.fig_1d = None
+        self.ax_1d = None
+        self.fig_2d = None
+        self.ax_2d = None
 
     def create_2d_diffraction(self):
         """
@@ -44,25 +49,39 @@ class DiffractionPattern:
         print("2D diffraction image complete")
         return diffraction_image
 
-    def plot_2d(self, title, **kwargs):
+    def plot_2d(self, title, clim: float = None):
         """
         Plot the 2D Diffraction image
         :param title: String to be placed as a title on the figure
-        :param clim (Optional): Colour bar limit
-        :param show (Optional): Boolean for whether to show the plot immediately. Default False
+        :param clim: Colour bar limit
         :return:
         """
         print("Plotting 2D diffraction figure...")
         # Plot the diffraction image
-        plt.figure()
-        plt.imshow(self.pattern_2d ** 2)
-        plt.title(title)
-        plt.colorbar()
-        plt.tight_layout()
-        if 'clim' in kwargs:
-            plt.clim(0, kwargs['clim'])
-        if 'show' in kwargs and kwargs['show']:
-            plt.show()
+        self.fig_2d, self.ax_2d = plt.subplots()
+        plot = self.ax_2d.imshow(self.pattern_2d ** 2)
+        self.ax_2d.set_title(title)
+        self.fig_2d.colorbar(plot)
+        self.fig_2d.tight_layout()
+        if clim:
+            plot.set_clim(0, clim)
+
+    def save_2d(self, file_name, file_type="npy", **kwargs):
+        """
+        Save the 1D diffraction pattern as a numpy file
+        :param file_name: Output file name
+        :param file_type: Type of file you want to save (e.g. npy or jpg)
+        :return:
+        """
+        if file_type == "npy":
+            file_name = append_file_ext(file_name, file_type)
+            np.save(file_name, self.pattern_2d)
+        elif self.fig_2d:
+            file_name = append_file_ext(file_name, file_type)
+            self.fig_2d.savefig(file_name, format=file_type, **kwargs)
+        else:
+            raise AttributeError("Plot has not been generated to be able to be saved")
+        print(f'Saved 2D diffraction pattern as {file_name}')
 
     def frm_integration(self, frame, unit="q_nm^-1"):
         """
@@ -98,7 +117,7 @@ class DiffractionPattern:
         print("1D diffraction image complete")
         return diffraction_plot_filtered
 
-    def plot_1d(self, title: str, show: bool = False):
+    def plot_1d(self, title: str):
         """
         Plot a 1D diffraction pattern
         :param title: Title text for the plotting
@@ -107,47 +126,43 @@ class DiffractionPattern:
         """
         # Plot 1D integration
         print("Plotting 1D diffraction figure...")
-        plt.figure()
-        plt.title(title)
-        plt.plot(self.pattern_1d[int(self.npt // 20):, 0], self.pattern_1d[int(self.npt // 20):, 1])
-        plt.xlabel(f'q')  # / nm$^{-1}$')
-        plt.ylabel('Arbitrary Intensity')
-        plt.tight_layout()
-        if show:
-            plt.show()
+        self.fig_1d, self.ax_1d = plt.subplots()
+        self.ax_1d.plot(self.pattern_1d[int(self.npt // 20):, 0], self.pattern_1d[int(self.npt // 20):, 1])
+        self.ax_1d.set_title(title)
+        self.ax_1d.set_xlabel(f'q')  # / nm$^{-1}$')
+        self.ax_1d.set_ylabel('Arbitrary Intensity')
+        self.fig_1d.tight_layout()
 
-    def save_1d(self, file_name, file_type="npy"):
+    def save_1d(self, file_name, file_type="npy", **kwargs):
         """
         Save the 1D diffraction pattern as a numpy file
         :param file_name: Output file name
         :param file_type: Type of file you want to save (e.g. npy or jpg)
         :return:
         """
-        # if file_type in plt.gcf().canvas.get_supported_filetypes():
-        #     plt.
         if file_type == "npy":
-            if file_name[-4:] != ".npy":
-                file_name = file_name.split('.')[0]
-                file_name = f'{file_name}.npy'
+            file_name = append_file_ext(file_name, file_type)
             np.save(file_name, self.pattern_1d)
         else:
-            raise ValueError("Non-acceptable file type given")
+            file_name = append_file_ext(file_name, file_type)
+            self.fig_1d.savefig(file_name, format=file_type, **kwargs)
         print(f'Saved 1D diffraction pattern as {file_name}')
 
 
-def circular_mask(grid, mask_radius, **kwargs):
+def circular_mask(grid, mask_radius, show: bool = False):
     """
     Create a circular mask over an image
     :param grid: x and y grid size which the mask will fit over
     :param mask_radius: Radius that the mask should sit on
+    :param show: Boolean for whether to show the plot immediately. Default False
     :return:
     """
     kernel = np.zeros(grid)
     filter_y, filter_x = np.ogrid[-mask_radius:mask_radius, -mask_radius:mask_radius]
     mask = filter_x ** 2 + filter_y ** 2 <= mask_radius ** 2
     kernel[mask] = 1
-    if 'show' in kwargs and kwargs['show']:
-        plt.figure()
-        plt.imshow(kernel)
-        plt.plot()
+    if show:
+        fig, ax = plt.subplots()
+        ax.imshow(kernel)
+        fig.plot(block=False)
     return kernel

@@ -3,7 +3,7 @@ Generating a 2D real space array image to impose particles on, and functions ass
 Project: Generating 2D scattering pattern for modelled liquid crystals
 Authored by Michael Hassett from 2023-11-23
 """
-from utils import timer
+from utils import timer, append_file_ext
 from PIL import Image
 from PIL import ImageDraw
 import numpy as np
@@ -16,6 +16,7 @@ class RealSpace:
         print(f"Generating real space array with dimensions {self.grid}")
         self.img = Image.new('L', self.grid, 0)
         self.__set_array__()
+        self.fig = self.ax = None
 
     @timer
     def add(self, particle_list):
@@ -32,18 +33,34 @@ class RealSpace:
     def __set_array__(self):
         self.array = np.asarray(self.img)
 
-    def plot(self, title, **kwargs):
+    def plot(self, title):
         """
         Plot the 2D real space image
         :param title: Title text for figure
+        :param show: Boolean for whether to show the plot immediately. Default False
         :return:
         """
         print("Plotting real space figure...")
-        plt.figure()
-        plt.imshow(self.array, extent=(0, self.grid[0], 0, self.grid[1]))
-        plt.title(title)
-        plt.xlabel('X')
-        plt.ylabel('Y')
-        plt.tight_layout()
-        if 'show' in kwargs and kwargs['show']:
-            plt.show()
+        self.fig, self.ax = plt.subplots()
+        self.ax.imshow(self.array, extent=(0, self.grid[0], 0, self.grid[1]))
+        self.ax.set_title(title)
+        self.ax.set_xlabel('X')
+        self.ax.set_ylabel('Y')
+        self.fig.tight_layout()
+
+    def save(self, file_name, file_type="npy", **kwargs):
+        """
+        Save the 1D diffraction pattern as a numpy file
+        :param file_name: Output file name
+        :param file_type: Type of file you want to save (e.g. npy or jpg)
+        :return:
+        """
+        if file_type == "npy":
+            file_name = append_file_ext(file_name, file_type)
+            np.save(file_name, self.array)
+        elif self.fig:
+            file_name = append_file_ext(file_name, file_type)
+            self.fig.savefig(file_name, format=file_type, **kwargs)
+        else:
+            raise AttributeError("Plot has not been generated to be able to be saved")
+        print(f'Saved real space as {file_name}')

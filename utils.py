@@ -85,3 +85,9 @@ def pythagorean_sides(a, b, theta):
     x = (abs(np.round(a * np.cos(theta_radians))) + abs(np.round(b * np.sin(theta_radians))))
     y = (abs(np.round(a * np.sin(theta_radians))) + abs(np.round(b * np.cos(theta_radians))))
     return x, y
+
+
+def append_file_ext(file_name, file_type):
+    if file_name[-4:] != f".{file_type}":
+        file_name = file_name.split('.')[0]
+        return f'{file_name}.{file_type}'
