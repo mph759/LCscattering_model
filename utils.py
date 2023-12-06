@@ -88,12 +88,23 @@ def pythagorean_sides(a, b, theta):
 
 
 def fix_file_ext(file_name, file_type):
+    """
+    Fixes file extension if there is one on the file name which does not match the extension provided
+    :param file_name: Potential file name
+    :param file_type: Requested file extension
+    :return:
+    """
     if file_name[-4:] != f".{file_type}":
         file_name = file_name.split('.')[0]
         return f'{file_name}.{file_type}'
 
 
 def check_existing_ext(file_name):
+    """
+    Checks for an existing file extension on a file name
+    :param file_name:
+    :return: file name and file extension
+    """
     file_name_array = file_name.split('.')
     file_name = file_name_array[0]
     if len(file_name_array) > 2:
@@ -105,7 +116,16 @@ def check_existing_ext(file_name):
     return file_name, file_ext
 
 
-def save(fig, array, file_name, file_type, **kwargs):
+def save(fig, array, file_name, file_type=None, **kwargs):
+    """
+    Save the figure as a numpy file or as an image
+    :param fig: Figure object to be saved
+    :param array: numpy array to be saved
+    :param file_name: Output file name
+    :param file_type: Type of file you want to save (e.g. npy or jpg).
+    If not given, file name is checked for existing extension. Otherwise, default npy file
+    :return:
+    """
     if file_type is None:
         file_name, file_type = check_existing_ext(file_name)
         if file_type is None:

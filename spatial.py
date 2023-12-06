@@ -48,11 +48,11 @@ class RealSpace:
         self.ax.set_ylabel('Y')
         self.fig.tight_layout()
 
-    def save(self, file_name, file_type="npy", **kwargs):
+    def save(self, file_name, file_type=None, **kwargs):
         """
         Save the 1D diffraction pattern as a numpy file
         :param file_name: Output file name
-        :param file_type: Type of file you want to save (e.g. npy or jpg)
+        :param file_type: Type of file you want to save (e.g. npy or jpg). Default npy file
         :return:
         """
         file_name = save(self.fig, self.array, file_name, file_type, **kwargs)

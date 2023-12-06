@@ -66,11 +66,11 @@ class DiffractionPattern:
         if clim:
             plot.set_clim(0, clim)
 
-    def save_2d(self, file_name, file_type="npy", **kwargs):
+    def save_2d(self, file_name, file_type=None, **kwargs):
         """
         Save the 1D diffraction pattern as a numpy file
         :param file_name: Output file name
-        :param file_type: Type of file you want to save (e.g. npy or jpg)
+        :param file_type: Type of file you want to save (e.g. npy or jpg). Default npy file
         :return:
         """
         file_name = save(self.fig_2d, self.pattern_2d, file_name, file_type, **kwargs)
@@ -130,7 +130,7 @@ class DiffractionPattern:
         """
         Save the 1D diffraction pattern as a numpy file
         :param file_name: Output file name
-        :param file_type: Type of file you want to save (e.g. npy or jpg)
+        :param file_type: Type of file you want to save (e.g. npy or jpg). Default npy file
         :return:
         """
         file_name = save(self.fig_1d, self.pattern_1d, file_name, file_type, **kwargs)
