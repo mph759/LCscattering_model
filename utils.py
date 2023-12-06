@@ -135,5 +135,9 @@ def save(fig, array, file_name, file_type=None, **kwargs):
         np.save(file_name, array)
     else:
         file_name = fix_file_ext(file_name, file_type)
-        fig.savefig(file_name, format=file_type, **kwargs)
+        try:
+            fig.savefig(file_name, format=file_type, **kwargs)
+        except ValueError:
+            raise ValueError(f"Format \'{file_type}\' is not supported (supported formats: npy, eps, jpeg, jpg, pdf, "
+                             f"pgf, png, ps, raw, rgba, svg, svgz, tif, tiff, webp)")
     return file_name
