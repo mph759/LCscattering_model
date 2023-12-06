@@ -9,7 +9,7 @@ import numpy as np
 from spatial import RealSpace
 from diffraction import DiffractionPattern
 from utils import generate_positions, generate_angles, pythagorean_sides
-from particles import CalamiticParticle
+from particle_types import CalamiticParticle
 
 if __name__ == "__main__":
     # Initialise real space parameters
