@@ -4,6 +4,8 @@ Project: Generating 2D scattering pattern for modelled liquid crystals
 Authored by Michael Hassett from 2023-11-23
 """
 import time
+import logging
+from pathlib import Path
 import inspect
 from functools import wraps
 import numpy as np
@@ -27,6 +29,21 @@ def timer(func):
         return result
 
     return wrapper
+
+def init_logger(file_name='LCscattering_model'):
+    Path(f'logs').mkdir(parents=True, exist_ok=True)
+    file_name = Path(f'{file_name}-{time.strftime("%Y%m%d-%H")}.log')
+    logging.basicConfig(filename=file_name)
+'''
+def log(func):
+    """
+    Logging decorator
+    :param func: Function to be logged
+    :return:
+    """
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+'''
 
 
 def generate_positions(space, max, change):
@@ -85,6 +102,25 @@ def pythagorean_sides(a, b, theta):
     x = (abs(np.round(a * np.cos(theta_radians))) + abs(np.round(b * np.sin(theta_radians))))
     y = (abs(np.round(a * np.sin(theta_radians))) + abs(np.round(b * np.cos(theta_radians))))
     return x, y
+
+
+def init_spacing(particle_length, particle_width, unit_vector, padding_spacing):
+    """
+    Initializes the spacing of the particles based on the particle length and particle width
+    :param particle_length:
+    :param particle_width:
+    :param unit_vector:
+    :param padding_spacing:
+    :return:
+    """
+    x_spacing, y_spacing = (spacing + padding
+                            for spacing, padding
+                            in zip(pythagorean_sides(particle_length, particle_width, unit_vector), padding_spacing))
+    print(f'x spacing: {x_spacing}, y spacing: {y_spacing}')
+
+    # Allow for particles to move slightly in x and y, depending on the spacing
+    displacement = tuple([np.floor((spacing - 1) / 2) for spacing in padding_spacing])
+    return x_spacing, y_spacing, displacement
 
 
 def fix_file_ext(file_name, file_type):
