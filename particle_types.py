@@ -6,6 +6,7 @@ Authored by Michael Hassett from 2023-11-23
 import numpy as np
 from utils import pythagorean_sides
 
+
 class PointParticle:
     def __init__(self, position: tuple[int, int]):
         """
@@ -66,14 +67,29 @@ class CalamiticParticle(PointParticle):
     def end_position(self):
         return self._end_position
 
+    @property
+    def x1(self):
+        return self.position[0]
+
+    @property
+    def y1(self):
+        return self.position[1]
+
+    @property
+    def x2(self):
+        return self._end_position[0]
+
+    @property
+    def y2(self):
+        return self._end_position[1]
+
     def _get_end_points(self):
         """
         Calculate the coordinates of the end of the particle, given its length and angle
         :return: The end coordinates of the particle
         """
-        x1, y1 = self.position
         x2, y2 = pythagorean_sides(self.length, self.width, self.angle)
-        self._end_position = (int(x2) + x1, int(y2) + y1)
+        self._end_position = (int(x2) + self.x1, int(y2) + self.y1)
 
     def create(self, draw_object):
         """
