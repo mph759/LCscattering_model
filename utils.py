@@ -35,6 +35,8 @@ def init_logger(file_name='LCscattering_model'):
     Path(f'logs').mkdir(parents=True, exist_ok=True)
     file_name = Path(f'{file_name}-{time.strftime("%Y%m%d-%H")}.log')
     logging.basicConfig(filename=file_name)
+
+
 '''
 def log(func):
     """
@@ -47,18 +49,18 @@ def log(func):
 '''
 
 
-def generate_positions(space, max, change):
+def generate_positions(space, maximum, change):
     """
     Generate a position inside cartesian coordinates, given a rough lattice with random spacial oscillations
-    :param x_space: Spacing in x-dimension between positions
-    :param y_space: Spacing in y-dimension between positions
+    :param space: Spacing in x and y-dimensions between positions
+    :param maximum: Maximum values in x and y-dimensions
     :param change: Tuple of allowed deviation from initial lattice spacing
     :return: A position in Cartesian coordinates inside the grid
     """
     # Initial positions, just inside the box
     x_space, y_space = space
     x_change, y_change = change
-    x_max, y_max = max
+    x_max, y_max = maximum
     x = int(x_space / 2)
     y = int(y_space / 2)
 
@@ -77,18 +79,6 @@ def generate_positions(space, max, change):
         if x >= x_max:
             y += y_space
             x = x_space
-
-
-def generate_angles(mean_angle: int, angle_stddev: int):
-    """
-    Generate an angle from a normal distribution, with a given mean and standard deviation
-    :param mean_angle: Mean angle of the normal distribution
-    :param angle_stddev: standard deviation of the normal distribution
-    :return:
-    """
-    while True:
-        angle = np.random.normal(mean_angle, angle_stddev) % 360
-        yield angle
 
 
 def pythagorean_sides(a, b, theta):
@@ -120,10 +110,11 @@ def init_spacing(particle_length, particle_width, unit_vector, padding_spacing):
     print(f'x spacing: {x_spacing}, y spacing: {y_spacing}')
 
     # Allow for particles to move slightly in x and y, depending on the spacing
-    displacement = tuple([np.floor((spacing - 1) / 2) for spacing in padding_spacing])
+    displacement = tuple([np.floor(spacing / 2) for spacing in padding_spacing])
     return x_spacing, y_spacing, displacement
 
 
+# File handling
 def fix_file_ext(file_name, file_type):
     """
     Fixes file extension if there is one on the file name which does not match the extension provided

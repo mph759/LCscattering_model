@@ -16,7 +16,7 @@ class RealSpace:
         print(f"Generating real space array with dimensions {self.grid}")
         self.img = Image.new('L', self.grid, 0)
         self.__set_array__()
-        self.fig = self.ax = None
+        self.__fig__ = self.__ax__ = None
 
     @timer
     def add(self, particle_list):
@@ -41,12 +41,13 @@ class RealSpace:
         :return:
         """
         print("Plotting real space figure...")
-        self.fig, self.ax = plt.subplots()
-        self.ax.imshow(self.array, extent=(0, self.grid[0], 0, self.grid[1]))
-        self.ax.set_title(title)
-        self.ax.set_xlabel('X')
-        self.ax.set_ylabel('Y')
-        self.fig.tight_layout()
+        self.__fig__, self.__ax__ = plt.subplots()
+        self.__ax__.imshow(self.array)
+        self.__ax__.invert_yaxis()
+        self.__ax__.set_title(title)
+        self.__ax__.set_xlabel('X')
+        self.__ax__.set_ylabel('Y')
+        self.__fig__.tight_layout()
 
     def save(self, file_name, file_type=None, **kwargs):
         """
@@ -55,5 +56,5 @@ class RealSpace:
         :param file_type: Type of file you want to save (e.g. npy or jpg). Default npy file
         :return:
         """
-        file_name = save(self.fig, self.array, file_name, file_type, **kwargs)
+        file_name = save(self.__fig__, self.array, file_name, file_type, **kwargs)
         print(f'Saved real space as {file_name}')

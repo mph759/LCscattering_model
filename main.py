@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from spatial import RealSpace
 from diffraction import DiffractionPattern
-from utils import generate_positions, generate_angles, init_spacing
+from utils import generate_positions, init_spacing
 from particle_types import CalamiticParticle
 
 if __name__ == "__main__":
@@ -40,14 +40,14 @@ if __name__ == "__main__":
 
     # Initialise the generators of the positions and angles for the particles
     positions = generate_positions((x_spacing, y_spacing), (x_max, y_max), allowed_displacement)
-    angles = generate_angles(unit_vector, vector_stddev)
+    # TODO: find a way to move the generation of particles into an ensemble class or into the RealSpace class
 
     # Create the space for the particles
     real_space = RealSpace((x_max, y_max))
 
     # Generate the particles
-    particles = [CalamiticParticle(position, particle_width, particle_length, angle)
-                 for position, angle in zip(positions, angles)]
+    particles = [CalamiticParticle(position, particle_width, particle_length, unit_vector, vector_stddev)
+                 for position in positions]
     # Check unit vector matches expected value
     particles_unit_vector = np.mean([particle.angle for particle in particles])
     # print(f"Collective unit vector: {particles_unit_vector:0.2f}")
@@ -66,6 +66,6 @@ if __name__ == "__main__":
 
     # Save 1D diffraction pattern as a numpy file
     filename = f'calamitic_p{particle_length}x{particle_width}_uv{unit_vector}'
-    # diffraction_pattern_of_real_space.save_1d(filename)
+    diffraction_pattern_of_real_space.save_1d(filename)
 
     plt.show()
