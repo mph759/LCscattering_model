@@ -51,8 +51,10 @@ class CalamiticParticle(PointParticle):
         :param angle: Angle of the particle in real space
         """
         super().__init__(init_position)
-        self.size = (width, length)  # Width and length of the particle
-        self.__set_angle__(angle)
+        self.width = width
+        self.length = length
+        self.size = (self.width, self.length)  # Width and length of the particle
+        self.angle = angle
         self.end_position = self.get_end_points()
 
     def get_width(self):
@@ -63,9 +65,6 @@ class CalamiticParticle(PointParticle):
 
     def get_angle(self):
         return self.angle
-
-    def __set_angle__(self, input_angle):
-        self.angle = input_angle
 
     def get_end_points(self):
         """

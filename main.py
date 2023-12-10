@@ -29,10 +29,14 @@ if __name__ == "__main__":
     pixel_size = 75e-6          # metres
     npt = 2000                  # No. of points for the radial integration
     dx = 2e-10                  # metres
+
+    # Figure formatting - change to suit preference
     plt.rcParams['figure.figsize'] = [10, 10]
+    plt.rcParams['mathtext.default'] = 'regular'
     ##################### ONLY MODIFY ABOVE #####################
     # Initialise the spacing in x and y, and the allowed displacement from that lattice
-    x_spacing, y_spacing, allowed_displacement = init_spacing(particle_length, particle_width, unit_vector, padding_spacing)
+    x_spacing, y_spacing, allowed_displacement = init_spacing(particle_length, particle_width,
+                                                              unit_vector, padding_spacing)
 
     # Initialise the generators of the positions and angles for the particles
     positions = generate_positions((x_spacing, y_spacing), (x_max, y_max), allowed_displacement)
@@ -65,4 +69,3 @@ if __name__ == "__main__":
     # diffraction_pattern_of_real_space.save_1d(filename)
 
     plt.show()
-

@@ -30,6 +30,7 @@ def timer(func):
 
     return wrapper
 
+
 def init_logger(file_name='LCscattering_model'):
     Path(f'logs').mkdir(parents=True, exist_ok=True)
     file_name = Path(f'{file_name}-{time.strftime("%Y%m%d-%H")}.log')
@@ -166,11 +167,10 @@ def save(fig, array, file_name, file_type=None, **kwargs):
         file_name, file_type = check_existing_ext(file_name)
         if file_type is None:
             file_type = "npy"
+    file_name = fix_file_ext(file_name, file_type)
     if file_type == "npy":
-        file_name = fix_file_ext(file_name, file_type)
         np.save(file_name, array)
     else:
-        file_name = fix_file_ext(file_name, file_type)
         try:
             fig.savefig(file_name, format=file_type, **kwargs)
         except ValueError:
