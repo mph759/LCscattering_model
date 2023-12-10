@@ -25,19 +25,19 @@ class DiffractionPattern:
         self.space = space_object
         self.pattern_2d = self.create_2d_diffraction()
         self.wavelength = wavelength
-        self.pixel_size = pixel_size
-        self.dx = dx
-        self.npt = npt
-        self.no_pixels = self.space.grid[0]
+        self._pixel_size = pixel_size
+        self._dx = dx
+        self._npt = npt
+        self._no_pixels = self.space.grid[0]
         # self.detector_dist = self.pixel_size * self.space.grid[0] / self.wavelength
-        self.detector_dist = (self.no_pixels * self.pixel_size) / (
-                    2 * np.tan(2 * np.arcsin(self.wavelength / (4 * self.dx))))
-        self.pattern_1d = self.create_1d_diffraction()
+        self._detector_dist = (self._no_pixels * self._pixel_size) / (
+                    2 * np.tan(2 * np.arcsin(self.wavelength / (4 * self._dx))))
+        self._pattern_1d = self.create_1d_diffraction()
         # Initialise plotting objects
-        self.fig_1d = None
-        self.ax_1d = None
-        self.fig_2d = None
-        self.ax_2d = None
+        self.__fig_1d__ = None
+        self.__ax_1d__ = None
+        self.__fig_2d__ = None
+        self.__ax_2d__ = None
 
     def create_2d_diffraction(self):
         """
@@ -65,11 +65,11 @@ class DiffractionPattern:
         """
         print("Plotting 2D diffraction figure...")
         # Plot the diffraction image
-        self.fig_2d, self.ax_2d = plt.subplots()
-        plot = self.ax_2d.imshow(self.pattern_2d ** 2)
-        self.ax_2d.set_title(title)
-        self.fig_2d.colorbar(plot)
-        self.fig_2d.tight_layout()
+        self.__fig_2d__, self.__ax_2d__ = plt.subplots()
+        plot = self.__ax_2d__.imshow(self.pattern_2d ** 2)
+        self.__ax_2d__.set_title(title)
+        self.__fig_2d__.colorbar(plot)
+        self.__fig_2d__.tight_layout()
         if clim:
             plot.set_clim(0, clim)
 
@@ -80,7 +80,7 @@ class DiffractionPattern:
         :param file_type: Type of file you want to save (e.g. npy or jpg). Default npy file
         :return:
         """
-        file_name = save(self.fig_2d, self.pattern_2d, file_name, file_type, **kwargs)
+        file_name = save(self.__fig_2d__, self.pattern_2d, file_name, file_type, **kwargs)
         print(f'Saved 2D diffraction pattern as {file_name}')
 
     def frm_integration(self, frame, unit="q_nm^-1"):
@@ -94,12 +94,12 @@ class DiffractionPattern:
 
         image_center = [dimension / 2 for dimension in self.space.grid]
         ai = AzimuthalIntegrator()
-        ai.setFit2D(directDist=self.detector_dist / 1000,
+        ai.setFit2D(directDist=self._detector_dist / 1000,
                     centerX=image_center[0],
                     centerY=image_center[1],
-                    pixelX=self.pixel_size, pixelY=self.pixel_size)
+                    pixelX=self._pixel_size, pixelY=self._pixel_size)
         ai.wavelength = self.wavelength
-        integrated_profile = ai.integrate1d(data=frame, npt=self.npt, unit=unit)
+        integrated_profile = ai.integrate1d(data=frame, npt=self._npt, unit=unit)
         return np.transpose(np.array(integrated_profile))
 
     def create_1d_diffraction(self):
@@ -125,12 +125,12 @@ class DiffractionPattern:
         """
         # Plot 1D integration
         print("Plotting 1D diffraction figure...")
-        self.fig_1d, self.ax_1d = plt.subplots()
-        self.ax_1d.plot(self.pattern_1d[int(self.npt // 20):, 0], self.pattern_1d[int(self.npt // 20):, 1])
-        self.ax_1d.set_title(title)
-        self.ax_1d.set_xlabel('q / nm$^{-1}$')
-        self.ax_1d.set_ylabel('Arbitrary Intensity')
-        self.fig_1d.tight_layout()
+        self.__fig_1d__, self.__ax_1d__ = plt.subplots()
+        self.__ax_1d__.plot(self._pattern_1d[int(self._npt // 20):, 0], self._pattern_1d[int(self._npt // 20):, 1])
+        self.__ax_1d__.set_title(title)
+        self.__ax_1d__.set_xlabel('q / nm$^{-1}$')
+        self.__ax_1d__.set_ylabel('Arbitrary Intensity')
+        self.__fig_1d__.tight_layout()
 
     def save_1d(self, file_name, file_type=None, **kwargs):
         """
@@ -139,7 +139,7 @@ class DiffractionPattern:
         :param file_type: Type of file you want to save (e.g. npy or jpg). Default npy file
         :return:
         """
-        file_name = save(self.fig_1d, self.pattern_1d, file_name, file_type, **kwargs)
+        file_name = save(self.__fig_1d__, self._pattern_1d, file_name, file_type, **kwargs)
         print(f'Saved 1D diffraction pattern as {file_name}')
 
 
