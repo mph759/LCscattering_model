@@ -19,18 +19,18 @@ class DiffractionPattern:
         :param wavelength: Wavelength of the beam
         :param pixel_size: Size of the pixels on the simulated detector
         :param npt: Number of points in radial dimension for radial integration
-        :param dx: Ratio of real length in metres to number of pixels
+        :param dx: Ratio of real length in metres to  number of pixels
         """
 
         self.space = space_object
-        self.pattern_2d = self.create_2d_diffraction()
+        self._pattern_2d = self.create_2d_diffraction()
         self.wavelength = wavelength
         self._pixel_size = pixel_size
         self._dx = dx
         self._npt = npt
-        self._no_pixels = self.space.grid[0]
+        self._num_pixels = self.space.grid[0]
         # self.detector_dist = self.pixel_size * self.space.grid[0] / self.wavelength
-        self._detector_dist = (self._no_pixels * self._pixel_size) / (
+        self._detector_dist = (self._num_pixels * self.pixel_size) / (
                     2 * np.tan(2 * np.arcsin(self.wavelength / (4 * self._dx))))
         self._pattern_1d = self.create_1d_diffraction()
         # Initialise plotting objects
@@ -55,6 +55,18 @@ class DiffractionPattern:
         diffraction_image[self.space.grid[1] // 2][self.space.grid[0] // 2] = 0
         print("2D diffraction image complete")
         return diffraction_image
+
+    @property
+    def pattern_2d(self):
+        return self._pattern_2d
+
+    @property
+    def pixel_size(self):
+        return self._pixel_size
+
+    @property
+    def detector_dist(self):
+        return self._detector_dist
 
     def plot_2d(self, title, clim: float = None):
         """
@@ -116,6 +128,9 @@ class DiffractionPattern:
         diffraction_plot_filtered = diffraction_plot[non_zero]
         print("1D diffraction image complete")
         return diffraction_plot_filtered
+
+    def pattern_1d(self):
+        return self._pattern_1d
 
     def plot_1d(self, title: str):
         """
