@@ -5,8 +5,9 @@ Authored by Michael Hassett from 2023-11-23
 """
 import matplotlib.pyplot as plt
 import numpy as np
-from spatial import RealSpace
+from correlation import AngularCorrelation
 from diffraction import DiffractionPattern
+from spatial import RealSpace
 from utils import generate_positions, init_spacing
 from particle_types import CalamiticParticle
 
@@ -34,19 +35,25 @@ def main():
 
     # Place particles in real space
     real_space.add(particles)
-    # real_space_title = f'Liquid Crystal Phase of Calamitic Liquid crystals, with unit vector {unit_vector}$^\circ$'
-    # real_space.plot(real_space_title)
+
 
     # Generate diffraction patterns in 2D and 1D of real space
     diffraction_pattern_of_real_space = DiffractionPattern(real_space, wavelength, pixel_size, dx, npt)
+    correlation = AngularCorrelation(diffraction_pattern_of_real_space)
+    correlation.polar_plot(300, 720, subtract_mean=True, show=True)
+    correlation.polarplot_angular_correlation()
+
+    # Plot all figures showing, real space, diffraction in 2D and 1D, and the correlation
+    # real_space_title = f'Liquid Crystal Phase of Calamitic Liquid crystals, with unit vector {unit_vector}$^\circ$'
+    # real_space.plot(real_space_title)
     # diffraction_pattern_title = f'2D Diffraction pattern of Liquid Crystal Phase of Calamitic Particles'
     # diffraction_pattern_of_real_space.plot_2d(diffraction_pattern_title, clim=1e8)
-    diff_1D_title = f'1D Diffraction pattern of Liquid Crystal Phase of Calamitic Particles'
-    diffraction_pattern_of_real_space.plot_1d(diff_1D_title)
+    # diff_1D_title = f'1D Diffraction pattern of Liquid Crystal Phase of Calamitic Particles'
+    # diffraction_pattern_of_real_space.plot_1d(diff_1D_title)
 
     # Save 1D diffraction pattern as a numpy file
-    filename = f'calamitic_p{particle_length}x{particle_width}_uv{unit_vector}'
-    diffraction_pattern_of_real_space.save_1d(filename)
+    # filename = f'calamitic_p{particle_length}x{particle_width}_uv{unit_vector}'
+    # diffraction_pattern_of_real_space.save_1d(filename)
 
     plt.show()
 

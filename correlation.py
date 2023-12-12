@@ -2,20 +2,26 @@
 Author: Andrew Martin, Edited by Michael Hassett
 Created: 2023-12-11, copied from pypadf/fxstools/correlationTools.py
 """
+from matplotlib import pyplot as plt
 from diffraction import DiffractionPattern
 import numpy as np
 import scipy.ndimage as sdn
+from utils import timer
 
 
 class AngularCorrelation:
     """Contains useful methods for calculating angular correlations
     """
+
     def __init__(self, diffraction_object: DiffractionPattern):
         self._data_2d = diffraction_object.pattern_2d
         self._centre = tuple([dimension / 2 for dimension in diffraction_object.space.grid])
         self._pixel_size = diffraction_object.pixel_size
         self._wavelength = diffraction_object.wavelength
         self._detector_dist = diffraction_object.detector_dist
+        self._polar_plot = None
+        self._fig_polar = None
+        self._ax_polar = None
 
     @property
     def centre_x(self):
@@ -37,9 +43,10 @@ class AngularCorrelation:
     def detector_dist(self):
         return self._detector_dist
 
-    def create_polar_plot(self, num_r, num_th, r_min=0, r_max=None, th_min=0, th_max=360, num_q_bins=None, *,
-                          subtract_mean: bool = False, real_only: bool = False):
-        """Convert a 2D image into an r v. theta plot
+    @timer
+    def polar_plot(self, num_r, num_th, r_min=0, r_max=None, th_min=0, th_max=360, *,
+                   q_instead: bool = False, subtract_mean: bool = False, real_only: bool = False, show: bool = False):
+        """Converting a 2D diffraction image into an r v. theta plot
         :param num_r: number of radial bins
         :type num_r: int
         :param num_th: number of angular bins
@@ -52,34 +59,44 @@ class AngularCorrelation:
         :type th_min: float
         :param th_max: value of largest angular bin (radians
         :type th_max: float
-        :param num_q_bins: Number of q bins (If blank, assumed not using q bins)
-        :param subtract_mean: Whether to subtract mean from the radial ring (Default False)
+        :param q_instead: Whether to use q bins instead of r (default: False)
+        :param subtract_mean: Whether to subtract mean from the radial ring (default: False)
         :type subtract_mean: bool
-        :param real_only: Whether to return only the real component of the array (Default False)
+        :param real_only: Whether to return only the real component of the array (default: False)
         :type real_only: bool
+        :param show: Whether to show the figure (default: False)
+        :type show: bool
         :return Data interpolated onto an r vs theta grid
         :rtype numpy array (float)
         """
+        th_min_rad, th_max_rad = map(np.deg2rad, (th_min, th_max))
         if r_max is None:
-            r_max = self.centre_x
-        if num_q_bins is not None:
-            q_bins = self.q_bins(num_q_bins)
+            r_max = num_r
+        if q_instead is not None:
+            q_bins = self.q_bins(num_r)
             num_r = q_bins.size
             r_array = np.outer(q_bins, np.ones(num_th))
         else:
             r_array = np.outer(np.arange(num_r) * (r_max - r_min) / float(num_r) + r_min, np.ones(num_th))
-        th_array = np.outer(np.ones(num_r), np.arange(num_th) * (th_max - th_min) / float(num_th) + th_min)
+        th_array = np.outer(np.ones(num_r), np.arange(num_th) * (th_max_rad - th_min_rad) / float(num_th) + th_min_rad)
 
         new_x = r_array * np.cos(th_array) + self.centre_x
         new_y = r_array * np.sin(th_array) + self.centre_y
 
         data = sdn.map_coordinates(self._data_2d, [new_x.flatten(), new_y.flatten()], order=3)
-        pplot = data.reshape(num_r, num_th)
+        self._polar_plot = data.reshape(num_r, num_th)
         if subtract_mean:
-            pplot = self.subtract_mean_r(pplot)
+            self.subtract_mean_r()
         if real_only:
-            pplot = np.real(pplot)
-        return pplot
+            self._polar_plot = np.real(self._polar_plot)
+        if show:
+            self._fig_polar, self._ax_polar = plt.subplots()
+            self._ax_polar.imshow(self._polar_plot)
+            self._ax_polar.invert_yaxis()
+            self._ax_polar.set_xlabel('$\Theta$ / $^\circ$')
+            self._ax_polar.set_ylabel('r')
+            self._ax_polar.set_xticks(np.arange(0, num_th, (num_th/th_max)*45), np.arange(th_min, th_max, 45))
+            self._ax_polar.set_yticks(np.arange(0, num_r, 100), np.arange(r_min, r_max, 100))
 
     def q_bins(self, nq):
         """
@@ -95,8 +112,7 @@ class AngularCorrelation:
         q_pixels = (self.detector_dist / self.pixel_size) * np.tan(2.0 * np.arcsin(q_ind * (self.wavelength / 2.0)))
         return np.floor(q_pixels)
 
-    @staticmethod
-    def subtract_mean_r(pplot):
+    def subtract_mean_r(self):
         """
         Subtract the mean value in each q-ring from a polar plot
 
@@ -110,55 +126,17 @@ class AngularCorrelation:
         out : numpy array (float)
             polar plot with q-ring mean value subtracted
         """
+        av = np.average(self._polar_plot, 1)
+        self._polar_plot -= np.outer(av, np.ones(self._polar_plot.shape[1]))
 
-        av = np.average(pplot, 1)
-        pplot -= np.outer(av, np.ones(pplot.shape[1]))
-        return pplot
-
-    def pearsonCorrelation_2D(self, arr1, arr2, *, lim=None, angular: bool = False):
-        """
-        Computes the Pearson correlation between two polar plots
-        as a function of radial q-bin.
-
-        Parameters
-        ----------
-        arr1, arr2 : numpy arrays (floats)
-            Arrays with the same number of elenments
-
-        Returns
-        -------
-        pc : numpy array
-            Pearson correlation values as a function of q (1D)
-        """
-        if lim is None:
-            lim = [0, arr1.shape[0], 0, arr1.shape[1]]
-
-        a1 = arr1[lim[0]:lim[1], lim[2]:lim[3]]
-        a2 = arr2[lim[0]:lim[1], lim[2]:lim[3]]
-
-        if angular:
-            c1 = a1 - np.outer(np.average(a1, 1), np.ones(a1.shape[1]))
-            c2 = a2 - np.outer(np.average(a2, 1), np.ones(a2.shape[1]))
-            pc = np.sum(c1 * c2, 1) / np.sqrt(np.sum(c1 * c1, 1) * np.sum(c2 * c2, 1))
-        else:
-            c1 = a1 - np.average(a1)
-            c2 = a2 - np.average(a2)
-            pc = np.sum(c1 * c2) / np.sqrt(np.sum(c1 * c1) * np.sum(c2 * c2))
-        return pc
-
-    #
     # performs the angular correlation of each q-shell with itself
-    #
-    def polarplot_angular_correlation(self, polar, polar2=None):
+    def polarplot_angular_correlation(self, polar2=None):
         """
         Calculate the 2D angular correlation of a polar plot
         or cross-correlation of two polar plots
 
         Parameters
         ----------
-        polar : numpy array (float)
-            input polar plot
-
         polar2 : numpy array (float)
             second input polar plot.
             If provided, then cross-correlation is computed
@@ -172,14 +150,13 @@ class AngularCorrelation:
             angular correlation function
         """
 
-        fpolar = np.fft.fft(polar, axis=1)
+        fpolar = np.fft.fft(self._polar_plot, axis=1)
 
         if polar2 is not None:
             fpolar2 = np.fft.fft(polar2, axis=1)
             out = np.fft.ifft(fpolar2.conjugate() * fpolar, axis=1)
         else:
             out = np.fft.ifft(fpolar.conjugate() * fpolar, axis=1)
-
         return out
 
     #
@@ -281,3 +258,34 @@ class AngularCorrelation:
         """
         out = np.outer(arr1.flatten(), arr2.flatten())
         return out
+
+    def pearsonCorrelation_2D(self, arr1, arr2, *, lim=None, angular: bool = False):
+        """
+        Computes the Pearson correlation between two polar plots
+        as a function of radial q-bin.
+
+        Parameters
+        ----------
+        arr1, arr2 : numpy arrays (floats)
+            Arrays with the same number of elenments
+
+        Returns
+        -------
+        pc : numpy array
+            Pearson correlation values as a function of q (1D)
+        """
+        if lim is None:
+            lim = [0, arr1.shape[0], 0, arr1.shape[1]]
+
+        a1 = arr1[lim[0]:lim[1], lim[2]:lim[3]]
+        a2 = arr2[lim[0]:lim[1], lim[2]:lim[3]]
+
+        if angular:
+            c1 = a1 - np.outer(np.average(a1, 1), np.ones(a1.shape[1]))
+            c2 = a2 - np.outer(np.average(a2, 1), np.ones(a2.shape[1]))
+            pc = np.sum(c1 * c2, 1) / np.sqrt(np.sum(c1 * c1, 1) * np.sum(c2 * c2, 1))
+        else:
+            c1 = a1 - np.average(a1)
+            c2 = a2 - np.average(a2)
+            pc = np.sum(c1 * c2) / np.sqrt(np.sum(c1 * c1) * np.sum(c2 * c2))
+        return pc

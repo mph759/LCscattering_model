@@ -30,8 +30,8 @@ class DiffractionPattern:
         self._npt = npt
         self._num_pixels = self.space.grid[0]
         # self.detector_dist = self.pixel_size * self.space.grid[0] / self.wavelength
-        self._detector_dist = (self._num_pixels * self.pixel_size) / (
-                    2 * np.tan(2 * np.arcsin(self.wavelength / (4 * self._dx))))
+        self._detector_dist = ((self._num_pixels * self.pixel_size) /
+                               (2 * np.tan(2 * np.arcsin(self.wavelength / (4 * self._dx)))))
         self._pattern_1d = self.create_1d_diffraction()
         # Initialise plotting objects
         self.__fig_1d__ = None
@@ -41,7 +41,7 @@ class DiffractionPattern:
 
     def create_2d_diffraction(self):
         """
-        Simulate the 2D diffraction from the given real space object
+        Simulating the 2D diffraction from the given real space object
         :return: Diffraction pattern of the real space object
         """
         print("Generating 2D diffraction image...")
