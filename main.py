@@ -5,7 +5,7 @@ Authored by Michael Hassett from 2023-11-23
 """
 import matplotlib.pyplot as plt
 import numpy as np
-from correlation import AngularCorrelation
+from correlation import PolarPlot_AngularCorrelation
 from diffraction import DiffractionPattern
 from spatial import RealSpace
 from utils import generate_positions, init_spacing
@@ -36,12 +36,11 @@ def main():
     # Place particles in real space
     real_space.add(particles)
 
-
     # Generate diffraction patterns in 2D and 1D of real space
     diffraction_pattern_of_real_space = DiffractionPattern(real_space, wavelength, pixel_size, dx, npt)
-    correlation = AngularCorrelation(diffraction_pattern_of_real_space)
-    correlation.polar_plot(300, 720, subtract_mean=True, show=True)
-    correlation.polarplot_angular_correlation()
+    pplot = PolarPlot_AngularCorrelation(diffraction_pattern_of_real_space,
+                                         300, 720, subtract_mean=True)
+    corr = pplot.angular_correlation()
 
     # Plot all figures showing, real space, diffraction in 2D and 1D, and the correlation
     # real_space_title = f'Liquid Crystal Phase of Calamitic Liquid crystals, with unit vector {unit_vector}$^\circ$'
@@ -73,10 +72,10 @@ if __name__ == "__main__":
     padding_spacing = (5, 5)
 
     # Initialise beam and detector parameters
-    wavelength = 0.67018e-10    # metres
-    pixel_size = 75e-6          # metres
-    npt = 2000                  # No. of points for the radial integration
-    dx = 5e-9                   # metres
+    wavelength = 0.67018e-10  # metres
+    pixel_size = 75e-6  # metres
+    npt = 2000  # No. of points for the radial integration
+    dx = 5e-9  # metres
     # TODO: Implement logging of parameters
 
     # Figure formatting - change to suit preference

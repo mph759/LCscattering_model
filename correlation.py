@@ -9,19 +9,80 @@ import scipy.ndimage as sdn
 from utils import timer
 
 
-class AngularCorrelation:
+class PolarPlot_AngularCorrelation:
     """Contains useful methods for calculating angular correlations
     """
-
-    def __init__(self, diffraction_object: DiffractionPattern):
+    @timer
+    def __init__(self, diffraction_object: DiffractionPattern, num_r, num_th, r_min=0, r_max=None, th_min=0, th_max=360, *,
+                 q_instead: bool = False, subtract_mean: bool = False, real_only: bool = False):
+        """Converting a 2D diffraction image into an r v. theta plot
+        :param num_r: number of radial bins
+        :type num_r: int
+        :param num_th: number of angular bins
+        :type num_th: int
+        :param r_min: value of smallest radial bin. (arbitrary units)
+        :type r_min: float
+        :param r_max: value of largest radial bin
+        :type r_max: float
+        :param th_min: value of smallest angular bin (radians)
+        :type th_min: float
+        :param th_max: value of largest angular bin (radians
+        :type th_max: float
+        :param q_instead: Whether to use q bins instead of r (default: False)
+        :param subtract_mean: Whether to subtract mean from the radial ring (default: False)
+        :type subtract_mean: bool
+        :param real_only: Whether to return only the real component of the array (default: False)
+        :type real_only: bool
+        :return Data interpolated onto an r vs theta grid
+        :rtype numpy array (float)
+        """
         self._data_2d = diffraction_object.pattern_2d
         self._centre = tuple([dimension / 2 for dimension in diffraction_object.space.grid])
         self._pixel_size = diffraction_object.pixel_size
         self._wavelength = diffraction_object.wavelength
         self._detector_dist = diffraction_object.detector_dist
+
         self._polar_plot = None
         self._fig_polar = None
         self._ax_polar = None
+        self.num_r = num_r
+        self.num_th = num_th
+        self.r_min = r_min
+        if r_max is None:
+            self.r_max = num_r
+        else:
+            self.r_max = r_max
+        self.th_min = th_min
+        self.th_max = th_max
+        self.th_min_rad, self.th_max_rad = map(np.deg2rad, (th_min, th_max))
+        self.q_instead = q_instead
+
+        self.fig_corr = None
+        self.ax_corr = None
+
+        if q_instead is not None:
+            self.q_bins = self.q_bins(self.num_r)
+            num_r = self.q_bins.size
+            r_array = np.outer(self.q_bins, np.ones(num_th))
+        else:
+            r_array = np.outer(np.arange(num_r) * (r_max - r_min) / float(num_r) + r_min, np.ones(num_th))
+        th_array = np.outer(np.ones(num_r),
+                            np.arange(num_th) * (self.th_max_rad - self.th_min_rad) /
+                            float(num_th) + self.th_min_rad)
+
+        new_x = r_array * np.cos(th_array) + self.centre_x
+        new_y = r_array * np.sin(th_array) + self.centre_y
+
+        data = sdn.map_coordinates(self.data_2d, [new_x.flatten(), new_y.flatten()], order=3)
+        self._polar_plot = data.reshape(num_r, num_th)
+        if subtract_mean:
+            self.subtract_mean_r()
+        if real_only:
+            self._polar_plot = np.real(self._polar_plot)
+
+    @property
+    def data_2d(self):
+        return self._data_2d
 
     @property
     def centre_x(self):
@@ -43,60 +104,19 @@ class AngularCorrelation:
     def detector_dist(self):
         return self._detector_dist
 
-    @timer
-    def polar_plot(self, num_r, num_th, r_min=0, r_max=None, th_min=0, th_max=360, *,
-                   q_instead: bool = False, subtract_mean: bool = False, real_only: bool = False, show: bool = False):
-        """Converting a 2D diffraction image into an r v. theta plot
-        :param num_r: number of radial bins
-        :type num_r: int
-        :param num_th: number of angular bins
-        :type num_th: int
-        :param r_min: value of smallest radial bin. (arbitrary units)
-        :type r_min: float
-        :param r_max: value of largest radial bin
-        :type r_max: float
-        :param th_min: value of smallest angular bin (radians)
-        :type th_min: float
-        :param th_max: value of largest angular bin (radians
-        :type th_max: float
-        :param q_instead: Whether to use q bins instead of r (default: False)
-        :param subtract_mean: Whether to subtract mean from the radial ring (default: False)
-        :type subtract_mean: bool
-        :param real_only: Whether to return only the real component of the array (default: False)
-        :type real_only: bool
-        :param show: Whether to show the figure (default: False)
-        :type show: bool
-        :return Data interpolated onto an r vs theta grid
-        :rtype numpy array (float)
-        """
-        th_min_rad, th_max_rad = map(np.deg2rad, (th_min, th_max))
-        if r_max is None:
-            r_max = num_r
-        if q_instead is not None:
-            q_bins = self.q_bins(num_r)
-            num_r = q_bins.size
-            r_array = np.outer(q_bins, np.ones(num_th))
+    def plot(self):
+        self._fig_polar, self._ax_polar = plt.subplots()
+        self._ax_polar.imshow(self._polar_plot)
+        self._ax_polar.invert_yaxis()
+        self._ax_polar.set_xlabel('$\Theta$ / $^\circ$')
+        if self.q_instead:
+            self._ax_polar.set_ylabel('q')
         else:
-            r_array = np.outer(np.arange(num_r) * (r_max - r_min) / float(num_r) + r_min, np.ones(num_th))
-        th_array = np.outer(np.ones(num_r), np.arange(num_th) * (th_max_rad - th_min_rad) / float(num_th) + th_min_rad)
-
-        new_x = r_array * np.cos(th_array) + self.centre_x
-        new_y = r_array * np.sin(th_array) + self.centre_y
-
-        data = sdn.map_coordinates(self._data_2d, [new_x.flatten(), new_y.flatten()], order=3)
-        self._polar_plot = data.reshape(num_r, num_th)
-        if subtract_mean:
-            self.subtract_mean_r()
-        if real_only:
-            self._polar_plot = np.real(self._polar_plot)
-        if show:
-            self._fig_polar, self._ax_polar = plt.subplots()
-            self._ax_polar.imshow(self._polar_plot)
-            self._ax_polar.invert_yaxis()
-            self._ax_polar.set_xlabel('$\Theta$ / $^\circ$')
             self._ax_polar.set_ylabel('r')
-            self._ax_polar.set_xticks(np.arange(0, num_th, (num_th/th_max)*45), np.arange(th_min, th_max, 45))
-            self._ax_polar.set_yticks(np.arange(0, num_r, 100), np.arange(r_min, r_max, 100))
+        self._ax_polar.set_xticks(np.arange(0, self.num_th, (self.num_th / self.th_max) * 45),
+                                  np.arange(self.th_min, self.th_max, 45))
+        self._ax_polar.set_yticks(np.arange(0, self.num_r, 100),
+                                  np.arange(self.r_min, self.r_max, 100))
 
     def q_bins(self, nq):
         """
@@ -107,9 +127,11 @@ class AngularCorrelation:
         :rtype: numpy array (float)
         """
         pixel_max = self.centre_x
-        q_max = (2 / self.wavelength) * np.sin(np.arctan(pixel_max * self.pixel_size / self.detector_dist) / 2.0)
+        q_max = (2 / self.wavelength) * np.sin(
+            np.arctan(pixel_max * self.pixel_size / self.detector_dist) / 2.0)
         q_ind = np.arange(nq) * q_max / float(nq)
-        q_pixels = (self.detector_dist / self.pixel_size) * np.tan(2.0 * np.arcsin(q_ind * (self.wavelength / 2.0)))
+        q_pixels = (self.detector_dist / self.pixel_size) * np.tan(
+            2.0 * np.arcsin(q_ind * (self.wavelength / 2.0)))
         return np.floor(q_pixels)
 
     def subtract_mean_r(self):
@@ -130,7 +152,7 @@ class AngularCorrelation:
         self._polar_plot -= np.outer(av, np.ones(self._polar_plot.shape[1]))
 
     # performs the angular correlation of each q-shell with itself
-    def polarplot_angular_correlation(self, polar2=None):
+    def angular_correlation(self, polar2=None):
         """
         Calculate the 2D angular correlation of a polar plot
         or cross-correlation of two polar plots
@@ -154,15 +176,17 @@ class AngularCorrelation:
 
         if polar2 is not None:
             fpolar2 = np.fft.fft(polar2, axis=1)
-            out = np.fft.ifft(fpolar2.conjugate() * fpolar, axis=1)
+            corr = np.fft.ifft(fpolar2.conjugate() * fpolar, axis=1)
         else:
-            out = np.fft.ifft(fpolar.conjugate() * fpolar, axis=1)
-        return out
+            corr = np.fft.ifft(fpolar.conjugate() * fpolar, axis=1)
+        return corr
 
-    #
+    def plot_angular_correlation(self):
+        raise NotImplementedError
+        # TODO: Implement plotting of angular correlation
     # angular correlation of each q-shell with all other q-shells
     #
-    def polarplot_angular_intershell_correlation(self, polar, polar2=None, real_only=True):
+    def angular_intershell_correlation(self, polar, polar2=None, real_only=True):
         """
         Calculate the 3D angular correlation [C(q,q',theta)] of a polar plot
         or cross-correlation of two polar plots.
@@ -267,7 +291,7 @@ class AngularCorrelation:
         Parameters
         ----------
         arr1, arr2 : numpy arrays (floats)
-            Arrays with the same number of elenments
+            Arrays with the same number of elements
 
         Returns
         -------
@@ -276,7 +300,6 @@ class AngularCorrelation:
         """
         if lim is None:
             lim = [0, arr1.shape[0], 0, arr1.shape[1]]
-
         a1 = arr1[lim[0]:lim[1], lim[2]:lim[3]]
         a2 = arr2[lim[0]:lim[1], lim[2]:lim[3]]
 

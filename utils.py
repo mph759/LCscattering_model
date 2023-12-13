@@ -11,44 +11,7 @@ from functools import wraps
 import numpy as np
 
 
-def timer(func):
-    """
-    Function timer
-    :param func: Function to be timed
-    :return:
-    """
-
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        t_start = time.perf_counter()
-        result = func(*args, **kwargs)
-        t_end = time.perf_counter()
-        t_total = t_end - t_start
-        func_description = inspect.getdoc(func).split('\n')[0]
-        print(f'{func_description} took {t_total:0.4f}s')
-        return result
-
-    return wrapper
-
-
-def init_logger(file_name='LCscattering_model'):
-    Path(f'logs').mkdir(parents=True, exist_ok=True)
-    file_name = Path(f'{file_name}-{time.strftime("%Y%m%d-%H")}.log')
-    logging.basicConfig(filename=file_name)
-
-
-'''
-def log(func):
-    """
-    Logging decorator
-    :param func: Function to be logged
-    :return:
-    """
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-'''
-
-
+# Specific functions
 def generate_positions(space, maximum, change):
     """
     Generate a position inside cartesian coordinates, given a rough lattice with random spacial oscillations
@@ -112,6 +75,47 @@ def init_spacing(particle_length, particle_width, unit_vector, padding_spacing):
     # Allow for particles to move slightly in x and y, depending on the spacing
     displacement = tuple([np.floor(spacing / 2) for spacing in padding_spacing])
     return x_spacing, y_spacing, displacement
+
+
+# General functions
+
+def timer(func):
+    """
+    Function timer
+    :param func: Function to be timed
+    :return:
+    """
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        t_start = time.perf_counter()
+        result = func(*args, **kwargs)
+        t_end = time.perf_counter()
+        t_total = t_end - t_start
+        func_description = inspect.getdoc(func).split('\n')[0]
+        print(f'{func_description} took {t_total:0.4f}s')
+        return result
+
+    return wrapper
+
+
+# Logging
+def init_logger(file_name='LCscattering_model'):
+    Path(f'logs').mkdir(parents=True, exist_ok=True)
+    file_name = Path(f'{file_name}-{time.strftime("%Y%m%d-%H")}.log')
+    logging.basicConfig(filename=file_name)
+
+
+'''
+def log(func):
+    """
+    Logging decorator
+    :param func: Function to be logged
+    :return:
+    """
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+'''
 
 
 # File handling
