@@ -14,7 +14,7 @@ class DiffractionPattern:
     @timer
     def __init__(self, space_object: RealSpace, wavelength: float, pixel_size: float, dx: float, npt: int = 2250):
         """
-        Generating 1D and 2D diffraction patterns on a real space object
+        Generating 2D diffraction patterns on a real space object
         :param space_object: RealSpace object with particles to be diffracted
         :param wavelength: Wavelength of the beam
         :param pixel_size: Size of the pixels on the simulated detector
@@ -32,7 +32,7 @@ class DiffractionPattern:
         # self.detector_dist = self.pixel_size * self.space.grid[0] / self.wavelength
         self._detector_dist = ((self._num_pixels * self.pixel_size) /
                                (2 * np.tan(2 * np.arcsin(self.wavelength / (4 * self._dx)))))
-        self._pattern_1d = self.create_1d_diffraction()
+        self._pattern_1d = None
         # Initialise plotting objects
         self.__fig_1d__ = None
         self.__ax_1d__ = None
@@ -114,9 +114,10 @@ class DiffractionPattern:
         integrated_profile = ai.integrate1d(data=frame, npt=self._npt, unit=unit)
         return np.transpose(np.array(integrated_profile))
 
+    @timer
     def create_1d_diffraction(self):
         """
-        Simulate the 1D diffraction from the given real space object, through radial integration
+        Generating the 1D diffraction from the 2D diffraction image through radial integration
         :return:
         """
         print("Generating 1D diffraction image...")
