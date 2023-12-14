@@ -12,8 +12,10 @@ from utils import timer
 class PolarPlot_AngularCorrelation:
     """Contains useful methods for calculating angular correlations
     """
+
     @timer
-    def __init__(self, diffraction_object: DiffractionPattern, num_r, num_th, r_min=0, r_max=None, th_min=0, th_max=360, *,
+    def __init__(self, diffraction_object: DiffractionPattern, num_r, num_th, r_min=0, r_max=None, th_min=0, th_max=360,
+                 *,
                  q_instead: bool = False, subtract_mean: bool = False, real_only: bool = False):
         """Converting a 2D diffraction image into an r v. theta plot
         :param num_r: number of radial bins
@@ -57,8 +59,11 @@ class PolarPlot_AngularCorrelation:
         self.th_min_rad, self.th_max_rad = map(np.deg2rad, (th_min, th_max))
         self.q_instead = q_instead
 
-        self.fig_corr = None
-        self.ax_corr = None
+        self.ang_corr = None
+        self.__fig_corr__ = None
+        self.__ax_corr__ = None
+        self.__fig_corr_point__ = None
+        self.__ax_corr_point__ = None
 
         if q_instead is not None:
             self.q_bins = self.q_bins(self.num_r)
@@ -104,9 +109,9 @@ class PolarPlot_AngularCorrelation:
     def detector_dist(self):
         return self._detector_dist
 
-    def plot(self):
+    def plot(self, title=None, clim=None):
         self._fig_polar, self._ax_polar = plt.subplots()
-        self._ax_polar.imshow(self._polar_plot)
+        plot = self._ax_polar.imshow(self._polar_plot)
         self._ax_polar.invert_yaxis()
         self._ax_polar.set_xlabel('$\Theta$ / $^\circ$')
         if self.q_instead:
@@ -117,6 +122,11 @@ class PolarPlot_AngularCorrelation:
                                   np.arange(self.th_min, self.th_max, 45))
         self._ax_polar.set_yticks(np.arange(0, self.num_r, 100),
                                   np.arange(self.r_min, self.r_max, 100))
+        if title is not None:
+            self._ax_polar.set_title(title)
+        self._fig_polar.tight_layout()
+        if clim is not None:
+            plot.set_clim(0, clim)
 
     def q_bins(self, nq):
         """
@@ -179,11 +189,42 @@ class PolarPlot_AngularCorrelation:
             corr = np.fft.ifft(fpolar2.conjugate() * fpolar, axis=1)
         else:
             corr = np.fft.ifft(fpolar.conjugate() * fpolar, axis=1)
-        return corr
+        self.ang_corr = corr
+        return self.ang_corr
 
-    def plot_angular_correlation(self):
-        raise NotImplementedError
-        # TODO: Implement plotting of angular correlation
+    def plot_angular_correlation(self, title=None, clim=None):
+        self.__fig_corr__, self.__ax_corr__ = plt.subplots()
+        plot = self.__ax_corr__.imshow(np.real(self.ang_corr))
+        self.__ax_corr__.invert_yaxis()
+        if title is not None:
+            self.__ax_corr__.set_title(title)
+        self.__ax_corr__.set_xlabel('$\Theta$ / $^\circ$')
+        if self.q_instead:
+            self.__ax_corr__.set_ylabel('q')
+        else:
+            self.__ax_corr__.set_ylabel('r')
+        self.__ax_corr__.set_xticks(np.arange(0, self.num_th, (self.num_th / self.th_max) * 45),
+                                    np.arange(self.th_min, self.th_max, 45))
+        self.__ax_corr__.set_yticks(np.arange(0, self.num_r, 100),
+                                    np.arange(self.r_min, self.r_max, 100))
+        self.__fig_corr__.tight_layout()
+        if clim:
+            plot.set_clim(0, clim)
+
+    def plot_angular_correlation_point(self, point: float, title=None, y_lim=None):
+        self.__fig_corr_point__, self.__ax_corr_point__ = plt.subplots()
+        self.__ax_corr_point__.plot(np.real(self.ang_corr[point, :]))
+        if title is not None:
+            self.__ax_corr_point__.set_title(title)
+        self.__ax_corr_point__.set_xlabel('$\Theta$ / $^\circ$')
+        self.__ax_corr_point__.set_ylabel('Intensity (arb. units)')
+        self.__ax_corr_point__.set_xticks(np.arange(0, self.num_th, (self.num_th / self.th_max) * 45),
+                                          np.arange(self.th_min, self.th_max, 45))
+        self.__fig_corr_point__.tight_layout()
+        self.__ax_corr_point__.set_xlim(0, self.num_th / 2)
+        if y_lim:
+            self.__ax_corr_point__.set_ylim(y_lim[0], y_lim[1])
+
     # angular correlation of each q-shell with all other q-shells
     #
     def angular_intershell_correlation(self, polar, polar2=None, real_only=True):

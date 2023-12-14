@@ -23,32 +23,38 @@ def main():
     # Initialise the generators of the positions and angles for the particles
     positions = generate_positions((x_spacing, y_spacing), (x_max, y_max), allowed_displacement)
 
-    # Create the space for the particles
-    real_space = RealSpace((x_max, y_max))
-
     # Generate the particles
     particles = [CalamiticParticle(position, particle_width, particle_length, unit_vector, vector_stddev)
                  for position in positions]
     # Check unit vector matches expected value
     particles_unit_vector = np.mean([particle.angle for particle in particles])
-    # print(f"Collective unit vector: {particles_unit_vector:0.2f}")
+    print(f"Collective unit vector: {particles_unit_vector:0.2f}")
 
-    # Place particles in real space
+    # Create the space for the particles and place them in real space
+    real_space = RealSpace((x_max, y_max))
     real_space.add(particles)
 
     # Generate diffraction patterns in 2D and 1D of real space
     diffraction_pattern_of_real_space = DiffractionPattern(real_space, wavelength, pixel_size, dx, npt)
-    pplot = PolarPlot_AngularCorrelation(diffraction_pattern_of_real_space,
-                                         300, 720, subtract_mean=True)
-    corr = pplot.angular_correlation()
+    # diffraction_pattern_of_real_space.create_1d_diffraction()
+
+    # Perform correlation from the diffraction pattern
+    polar_plot = PolarPlot_AngularCorrelation(diffraction_pattern_of_real_space,
+                                              300, 720, subtract_mean=True)
 
     # Plot all figures showing, real space, diffraction in 2D and 1D, and the correlation
     # real_space_title = f'Liquid Crystal Phase of Calamitic Liquid crystals, with unit vector {unit_vector}$^\circ$'
     # real_space.plot(real_space_title)
-    # diffraction_pattern_title = f'2D Diffraction pattern of Liquid Crystal Phase of Calamitic Particles'
-    # diffraction_pattern_of_real_space.plot_2d(diffraction_pattern_title, clim=1e8)
-    # diff_1D_title = f'1D Diffraction pattern of Liquid Crystal Phase of Calamitic Particles'
-    # diffraction_pattern_of_real_space.plot_1d(diff_1D_title)
+    diffraction_pattern_title = f'2D Diffraction pattern of Liquid Crystal Phase of Calamitic Particles'
+    diffraction_pattern_of_real_space.plot_2d(diffraction_pattern_title, clim=1e8)
+    diff_1D_title = f'1D Diffraction pattern of Liquid Crystal Phase of Calamitic Particles'
+    diffraction_pattern_of_real_space.plot_1d(diff_1D_title)
+
+    polar_plot.plot(clim=1e4)
+    polar_plot.angular_correlation()
+    polar_plot.plot_angular_correlation(clim=1e10)
+    polar_plot.plot_angular_correlation_point(50, y_lim=(-3e11, 5e11))
+
 
     # Save 1D diffraction pattern as a numpy file
     # filename = f'calamitic_p{particle_length}x{particle_width}_uv{unit_vector}'

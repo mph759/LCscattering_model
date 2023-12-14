@@ -12,11 +12,15 @@ import matplotlib.pyplot as plt
 
 class RealSpace:
     def __init__(self, grid):
-        self.grid = grid
-        print(f"Generating real space array with dimensions {self.grid}")
-        self.img = Image.new('L', self.grid, 0)
+        self._grid = grid
+        print(f"Generating real space array with dimensions {self._grid}")
+        self.img = Image.new('L', self._grid, 0)
         self.__set_array__()
         self.__fig__ = self.__ax__ = None
+
+    @property
+    def grid(self):
+        return self._grid
 
     @timer
     def add(self, particle_list):
@@ -33,7 +37,7 @@ class RealSpace:
     def __set_array__(self):
         self.array = np.asarray(self.img)
 
-    def plot(self, title):
+    def plot(self, title=None):
         """
         Plot the 2D real space image
         :param title: Title text for figure
@@ -44,7 +48,8 @@ class RealSpace:
         self.__fig__, self.__ax__ = plt.subplots()
         self.__ax__.imshow(self.array)
         self.__ax__.invert_yaxis()
-        self.__ax__.set_title(title)
+        if title is not None:
+            self.__ax__.set_title(title)
         self.__ax__.set_xlabel('X')
         self.__ax__.set_ylabel('Y')
         self.__fig__.tight_layout()

@@ -39,6 +39,10 @@ class DiffractionPattern:
         self.__fig_2d__ = None
         self.__ax_2d__ = None
 
+    @property
+    def npt(self):
+        return self._npt
+
     def create_2d_diffraction(self):
         """
         Simulating the 2D diffraction from the given real space object
@@ -79,6 +83,7 @@ class DiffractionPattern:
         # Plot the diffraction image
         self.__fig_2d__, self.__ax_2d__ = plt.subplots()
         plot = self.__ax_2d__.imshow(self.pattern_2d ** 2)
+        self.__ax_2d__.invert_yaxis()
         self.__ax_2d__.set_title(title)
         self.__fig_2d__.colorbar(plot)
         self.__fig_2d__.tight_layout()
@@ -111,7 +116,7 @@ class DiffractionPattern:
                     centerY=image_center[1],
                     pixelX=self._pixel_size, pixelY=self._pixel_size)
         ai.wavelength = self.wavelength
-        integrated_profile = ai.integrate1d(data=frame, npt=self._npt, unit=unit)
+        integrated_profile = ai.integrate1d(data=frame, npt=self.npt, unit=unit)
         return np.transpose(np.array(integrated_profile))
 
     @timer
@@ -126,10 +131,10 @@ class DiffractionPattern:
         diffraction_plot = self.frm_integration(diffraction_image_cone, unit="q_nm^-1")
 
         non_zero = diffraction_plot[:, 1] != 0  # Removes data points at = 0 due to the cone restriction
-        diffraction_plot_filtered = diffraction_plot[non_zero]
+        self._pattern_1d = diffraction_plot[non_zero]
         print("1D diffraction image complete")
-        return diffraction_plot_filtered
 
+    @property
     def pattern_1d(self):
         return self._pattern_1d
 
@@ -139,14 +144,17 @@ class DiffractionPattern:
         :param title: Title text for the plotting
         :return:
         """
+        if self.pattern_1d is None:
+            self.create_1d_diffraction()
         # Plot 1D integration
         print("Plotting 1D diffraction figure...")
         self.__fig_1d__, self.__ax_1d__ = plt.subplots()
-        self.__ax_1d__.plot(self._pattern_1d[int(self._npt // 20):, 0], self._pattern_1d[int(self._npt // 20):, 1])
+        self.__ax_1d__.plot(self.pattern_1d[int(self.npt // 20):, 0], self.pattern_1d[int(self.npt // 20):, 1])
         self.__ax_1d__.set_title(title)
         self.__ax_1d__.set_xlabel('q / nm$^{-1}$')
         self.__ax_1d__.set_ylabel('Arbitrary Intensity')
         self.__fig_1d__.tight_layout()
+
 
     def save_1d(self, file_name, file_type=None, **kwargs):
         """
@@ -155,7 +163,7 @@ class DiffractionPattern:
         :param file_type: Type of file you want to save (e.g. npy or jpg). Default npy file
         :return:
         """
-        file_name = save(self.__fig_1d__, self._pattern_1d, file_name, file_type, **kwargs)
+        file_name = save(self.__fig_1d__, self.pattern_1d, file_name, file_type, **kwargs)
         print(f'Saved 1D diffraction pattern as {file_name}')
 
 
