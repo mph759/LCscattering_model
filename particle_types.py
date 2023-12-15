@@ -98,7 +98,7 @@ class CalamiticParticle(PointParticle):
         Calculate the coordinates of the end of the particle, given its length and angle
         :return: The end coordinates of the particle
         """
-        x2, y2 = pythagorean_sides(self.length, self.width, self.angle)
+        x2, y2 = pythagorean_sides(self.length, 0, self.angle)
         self._end_position = (int(x2) + self.x1, int(y2) + self.y1)
 
     def create(self, draw_object):

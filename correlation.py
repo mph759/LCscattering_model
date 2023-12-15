@@ -3,6 +3,7 @@ Author: Andrew Martin, Edited by Michael Hassett
 Created: 2023-12-11, copied from pypadf/fxstools/correlationTools.py
 """
 from matplotlib import pyplot as plt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 from diffraction import DiffractionPattern
 import numpy as np
 import scipy.ndimage as sdn
@@ -131,13 +132,19 @@ class PolarAngularCorrelation:
             self._ax_polar.set_ylabel('r')
         self._ax_polar.set_xticks(np.arange(0, self.num_th, (self.num_th / self.th_max) * 45),
                                   np.arange(self.th_min, self.th_max, 45))
-        self._ax_polar.set_yticks(np.arange(0, self.num_r, 100),
-                                  np.arange(self.r_min, self.r_max, 100))
         if title is not None:
             self._ax_polar.set_title(title)
         else:
             self._ax_polar.set_title('Polar Plot')
         self._fig_polar.tight_layout()
+        divider = make_axes_locatable(self._ax_polar)
+
+        # creating new axes on the right side of current axes(ax).
+        # The width of cax will be 5% of ax and the padding between cax and ax will be fixed at 0.05 inch.
+        colorbar_axes = divider.append_axes("right",
+                                            size="10%",
+                                            pad=0.1)
+        self._fig_polar.colorbar(plot, cax=colorbar_axes)
         if clim is not None:
             plot.set_clim(0, clim)
 
@@ -216,6 +223,7 @@ class PolarAngularCorrelation:
         return self.ang_corr
 
     def plot_angular_correlation(self, title=None, clim=None):
+        print(f'Plotting full angular correlation...')
         self.__fig_corr__, self.__ax_corr__ = plt.subplots()
         plot = self.__ax_corr__.imshow(np.real(self.ang_corr))
         self.__ax_corr__.invert_yaxis()
@@ -230,7 +238,16 @@ class PolarAngularCorrelation:
             self.__ax_corr__.set_ylabel('r')
         self.__ax_corr__.set_xticks(np.arange(0, self.num_th, (self.num_th / self.th_max) * 45),
                                     np.arange(self.th_min, self.th_max, 45))
+
         self.__fig_corr__.tight_layout()
+        divider = make_axes_locatable(self.__ax_corr__)
+
+        # creating new axes on the right side of current axes(ax).
+        # The width of cax will be 5% of ax and the padding between cax and ax will be fixed at 0.05 inch.
+        colorbar_axes = divider.append_axes("right",
+                                            size="10%",
+                                            pad=0.1)
+        self.__fig_corr__.colorbar(plot, cax=colorbar_axes)
         if clim:
             plot.set_clim(0, clim)
 
@@ -247,6 +264,18 @@ class PolarAngularCorrelation:
     def plot_angular_correlation_point(self, point: float, title=None, y_lim=None, *,
                                        save_fig: bool = False, save_name: str = None,
                                        save_type: str = 'jpeg', **kwargs):
+        """
+        Plot the angular correlation at a point
+        :param point: r (or q) that you wish to plot
+        :param title: title for the plot
+        :param y_lim: top limit of the y axis
+        :param save_fig: Whether to save the figure (default: False)
+        :param save_name: File name to save under
+        :param save_type: File type to save as (e.g. png or jpg). Default jpeg file
+        :param kwargs: Any keyword arguments to pass to matplotlib.pyplot.savefig
+        :return:
+        """
+        print(f'Plotting angular correlation at {point}...')
         self.__fig_corr_point__, self.__ax_corr_point__ = plt.subplots()
         self.__ax_corr_point__.plot(np.real(self.ang_corr[point, :]))
         if title is not None:

@@ -13,7 +13,7 @@ from utils import generate_positions, init_spacing, log_params
 from particle_types import CalamiticParticle
 
 
-def main():
+def main(output_directory):
     """
     Main function. Should not have to modify this
     """
@@ -43,8 +43,8 @@ def main():
                                          300, 720, subtract_mean=True)
 
     # Plot all figures showing, real space, diffraction in 2D and 1D, and the correlation
-    # real_space_title = f'Liquid Crystal Phase of Calamitic Liquid crystals, with unit vector {unit_vector}$^\circ$'
-    # real_space.plot(real_space_title)
+    real_space_title = f'Liquid Crystal Phase of Calamitic Liquid crystals, with unit vector {unit_vector}$^\circ$'
+    real_space.plot(real_space_title)
     diffraction_pattern_title = f'2D Diffraction pattern of Liquid Crystal Phase of Calamitic Particles'
     diffraction_pattern_of_real_space.plot_2d(diffraction_pattern_title, clim=1e8)
     diff_1D_title = f'1D Diffraction pattern of Liquid Crystal Phase of Calamitic Particles'
@@ -61,30 +61,38 @@ def main():
     real_space_params[1].update(spatial)
     params = (particle_params, real_space_params,
               diffraction_pattern_of_real_space.params, polar_plot.params)
-    log_params(params, output_dir)
+    log_params(params, output_directory)
 
-    # Save 1D diffraction pattern as a numpy file
-    diffraction_pattern_of_real_space.save_1d(f'{output_dir}\\diffraction_pattern_1d', file_type='jpeg')
-    diffraction_pattern_of_real_space.save_2d(f'{output_dir}\\diffraction_pattern_2d', file_type='jpeg')
-    polar_plot.save(f'{output_dir}\\polar_plot', file_type='jpeg')
-    polar_plot.save_angular_correlation(f'{output_dir}\\angular_corr', file_type='jpeg')
+    # Save figures as images
+    real_space.save(f'{output_directory}\\2D_model', file_type='jpeg', dpi=2000, bbox_inches='tight')
+    diffraction_pattern_of_real_space.save_1d(f'{output_directory}\\diffraction_pattern_1d', file_type='jpeg',
+                                              dpi=300, bbox_inches='tight')
+    diffraction_pattern_of_real_space.save_2d(f'{output_directory}\\diffraction_pattern_2d', file_type='jpeg',
+                                              dpi=300, bbox_inches='tight')
+    polar_plot.save(f'{output_directory}\\polar_plot', file_type='jpeg', dpi=300, bbox_inches='tight')
+    polar_plot.save_angular_correlation(f'{output_directory}\\angular_corr', file_type='jpeg',
+                                        dpi=300, bbox_inches='tight')
     radial_lines = [50]
     for line in radial_lines:
-        polar_plot.plot_angular_correlation_point(line, title=f'Angular line plot at {line}', y_lim=(-2e11, 2e11),
-                                                  save=True, save_name=f'{output_dir}\\angular_line_{line}',
-                                                  save_type='jpeg')
+        polar_plot.plot_angular_correlation_point(line,
+                                                  title=f'Angular line plot at {line}, with unit vector {unit_vector}',
+                                                  y_lim=(-2e11, 2e11), save_fig=True,
+                                                  save_name=f'{output_directory}\\angular_line_{line}',
+                                                  save_type='jpeg', dpi=300, bbox_inches='tight')
 
     plt.close('all')
+    # plt.show()
 
 if __name__ == "__main__":
     # Initialise real space parameters
     x_max = y_max = int(1e4)
 
     # Initialise particle parameters
-    particle_width = 2
-    particle_length = 15
+    particle_width = 2  # in pixels
+    particle_length = 15  # in pixels
     # Note: The unit vector is not the exact angle all the particles will have, but the mean of all the angles
-    unit_vector = 70  # Unit vector of the particles, starting point up
+    unit_vector_init = 45
+    unit_vector_fin = 90  # Unit vector of the particles, starting point up
     vector_stddev = 5  # Standard Deviation of the angle, used to generate angles for individual particles
 
     # Initialise how the particles sit in real space
@@ -100,8 +108,10 @@ if __name__ == "__main__":
     plt.rcParams['figure.figsize'] = [10, 10]
     plt.rcParams['mathtext.default'] = 'regular'
     
-    # now = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
-    # output_dir = f'LCscattering-{now}'
-    output_dir = f'output\\LCscattering-{unit_vector}'
-    
-    main()
+    now = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
+    output_dir_root = f'output\\LCscattering-{now}'
+
+    for unit_vector in range(unit_vector_init, unit_vector_fin+vector_stddev, vector_stddev):
+        output_dir = f'{output_dir_root}\\unit_vector_{int(unit_vector)}'
+        main(output_dir)
+        print()
