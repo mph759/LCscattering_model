@@ -4,6 +4,7 @@ Project: Generating 2D scattering pattern for modelled liquid crystals
 Authored by Michael Hassett from 2023-11-23
 """
 import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 import numpy as np
 from utils import timer, save
 from pyFAI.azimuthalIntegrator import AzimuthalIntegrator
@@ -43,9 +44,9 @@ class DiffractionPattern:
     def params(self):
         return ("Diffraction",
                 {'wavelength': self.wavelength,
-                'detector_dist': self.detector_dist,
-                'pixel_size': self.pixel_size,
-                'dx': self._dx,
+                 'detector_dist': self.detector_dist,
+                 'pixel_size': self.pixel_size,
+                 'dx': self._dx,
                  'npt': self.npt})
 
     @property
@@ -94,8 +95,18 @@ class DiffractionPattern:
         plot = self.__ax_2d__.imshow(self.pattern_2d ** 2)
         self.__ax_2d__.invert_yaxis()
         self.__ax_2d__.set_title(title)
-        self.__fig_2d__.colorbar(plot)
+
+        self.__ax_2d__.set_xticks([])
+        self.__ax_2d__.set_yticks([])
         self.__fig_2d__.tight_layout()
+        divider = make_axes_locatable(self.__ax_2d__)
+
+        # creating new axes on the right side of current axes(ax).
+        # The width of cax will be 5% of ax and the padding between cax and ax will be fixed at 0.05 inch.
+        colorbar_axes = divider.append_axes("right",
+                                            size="10%",
+                                            pad=0.1)
+        self.__fig_2d__.colorbar(plot, cax=colorbar_axes)
         if clim:
             plot.set_clim(0, clim)
 

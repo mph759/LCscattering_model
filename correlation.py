@@ -3,6 +3,7 @@ Author: Andrew Martin, Edited by Michael Hassett
 Created: 2023-12-11, copied from pypadf/fxstools/correlationTools.py
 """
 from matplotlib import pyplot as plt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 from diffraction import DiffractionPattern
 import numpy as np
 import scipy.ndimage as sdn
@@ -138,6 +139,14 @@ class PolarAngularCorrelation:
         else:
             self._ax_polar.set_title('Polar Plot')
         self._fig_polar.tight_layout()
+        divider = make_axes_locatable(self._ax_polar)
+
+        # creating new axes on the right side of current axes(ax).
+        # The width of cax will be 5% of ax and the padding between cax and ax will be fixed at 0.05 inch.
+        colorbar_axes = divider.append_axes("right",
+                                            size="10%",
+                                            pad=0.1)
+        self._fig_polar.colorbar(plot, cax=colorbar_axes)
         if clim is not None:
             plot.set_clim(0, clim)
 
@@ -230,7 +239,16 @@ class PolarAngularCorrelation:
             self.__ax_corr__.set_ylabel('r')
         self.__ax_corr__.set_xticks(np.arange(0, self.num_th, (self.num_th / self.th_max) * 45),
                                     np.arange(self.th_min, self.th_max, 45))
+
         self.__fig_corr__.tight_layout()
+        divider = make_axes_locatable(self.__ax_corr__)
+
+        # creating new axes on the right side of current axes(ax).
+        # The width of cax will be 5% of ax and the padding between cax and ax will be fixed at 0.05 inch.
+        colorbar_axes = divider.append_axes("right",
+                                            size="10%",
+                                            pad=0.1)
+        self.__fig_corr__.colorbar(plot, cax=colorbar_axes)
         if clim:
             plot.set_clim(0, clim)
 

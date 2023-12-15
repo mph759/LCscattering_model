@@ -69,10 +69,11 @@ def init_spacing(particle_length, particle_width, unit_vector, padding_spacing):
     x_spacing, y_spacing = (spacing + padding
                             for spacing, padding
                             in zip(pythagorean_sides(particle_length, particle_width, unit_vector), padding_spacing))
-    print(f'x spacing: {x_spacing}, y spacing: {y_spacing}')
 
     # Allow for particles to move slightly in x and y, depending on the spacing
-    displacement = tuple([np.floor(spacing / 2) for spacing in padding_spacing])
+    displacement = tuple([np.ceil(spacing / 2) for spacing in padding_spacing])
+    print(f'x spacing: {x_spacing}, y spacing: {y_spacing}')
+    print(f'displacement: {displacement}')
     return x_spacing, y_spacing, displacement
 
 
@@ -100,11 +101,11 @@ def timer(func):
 
 # Logging
 def log_params(params, output_dir='LCscattering_model'):
-    Path(f'output/{output_dir}').mkdir(parents=True, exist_ok=True)
-    if not Path(f'output/{output_dir}/params.log').exists():
-        with open(f'output/{output_dir}/params.log', 'x'):
+    Path(f'{output_dir}').mkdir(parents=True, exist_ok=True)
+    if not Path(f'{output_dir}/params.log').exists():
+        with open(f'{output_dir}/params.log', 'x'):
             pass
-    with open(f'output/{output_dir}/params.log', 'a') as file:
+    with open(f'{output_dir}/params.log', 'a') as file:
         for arg in params:
             file.write(f'#{arg[0]}\n')
             for param, val in arg[1].items():
