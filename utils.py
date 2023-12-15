@@ -4,7 +4,6 @@ Project: Generating 2D scattering pattern for modelled liquid crystals
 Authored by Michael Hassett from 2023-11-23
 """
 import time
-import logging
 from pathlib import Path
 import inspect
 from functools import wraps
@@ -100,22 +99,17 @@ def timer(func):
 
 
 # Logging
-def init_logger(file_name='LCscattering_model'):
-    Path(f'logs').mkdir(parents=True, exist_ok=True)
-    file_name = Path(f'{file_name}-{time.strftime("%Y%m%d-%H")}.log')
-    logging.basicConfig(filename=file_name)
-
-
-'''
-def log(func):
-    """
-    Logging decorator
-    :param func: Function to be logged
-    :return:
-    """
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-'''
+def log_params(params, output_dir='LCscattering_model'):
+    Path(f'output/{output_dir}').mkdir(parents=True, exist_ok=True)
+    if not Path(f'output/{output_dir}/params.log').exists():
+        with open(f'output/{output_dir}/params.log', 'x'):
+            pass
+    with open(f'output/{output_dir}/params.log', 'a') as file:
+        for arg in params:
+            file.write(f'#{arg[0]}\n')
+            for param, val in arg[1].items():
+                file.write(f'{param.strip("_")}: {val}\n')
+            file.write('\n')
 
 
 # File handling
@@ -164,10 +158,10 @@ def save(fig, array, file_name, file_type=None, **kwargs):
             file_type = "npy"
     file_name = fix_file_ext(file_name, file_type)
     if file_type == "npy":
-        np.save(file_name, array)
+        np.save(Path(file_name), array)
     else:
         try:
-            fig.savefig(file_name, format=file_type, **kwargs)
+            fig.savefig(Path(file_name), format=file_type, **kwargs)
         except ValueError:
             raise ValueError(f"Format \'{file_type}\' is not supported (supported formats: npy, eps, jpeg, jpg, pdf, "
                              f"pgf, png, ps, raw, rgba, svg, svgz, tif, tiff, webp)")

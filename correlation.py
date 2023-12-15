@@ -6,10 +6,10 @@ from matplotlib import pyplot as plt
 from diffraction import DiffractionPattern
 import numpy as np
 import scipy.ndimage as sdn
-from utils import timer
+from utils import timer, save
 
 
-class PolarPlot_AngularCorrelation:
+class PolarAngularCorrelation:
     """Contains useful methods for calculating angular correlations
     """
 
@@ -86,6 +86,17 @@ class PolarPlot_AngularCorrelation:
             self._polar_plot = np.real(self._polar_plot)
 
     @property
+    def params(self):
+        return ('Polar Angular Correlation',
+                {'num_r': self.num_r,
+                 'num_th': self.num_th,
+                 'r_min': self.r_min,
+                 'r_max': self.r_max,
+                 'th_min': self.th_min,
+                 'th_max': self.th_max,
+                 'q_instead': self.q_instead})
+
+    @property
     def data_2d(self):
         return self._data_2d
 
@@ -124,9 +135,21 @@ class PolarPlot_AngularCorrelation:
                                   np.arange(self.r_min, self.r_max, 100))
         if title is not None:
             self._ax_polar.set_title(title)
+        else:
+            self._ax_polar.set_title('Polar Plot')
         self._fig_polar.tight_layout()
         if clim is not None:
             plot.set_clim(0, clim)
+
+    def save(self, file_name, file_type=None, **kwargs):
+        """
+        Save the polar plot as a numpy file or image file
+        :param file_name: Output file name
+        :param file_type: Type of file you want to save (e.g. npy or jpg). Default npy file
+        :return:
+        """
+        file_name = save(self._fig_polar, self._polar_plot, file_name, file_type, **kwargs)
+        print(f'Saved polar plot as {file_name}')
 
     def q_bins(self, nq):
         """
@@ -198,6 +221,8 @@ class PolarPlot_AngularCorrelation:
         self.__ax_corr__.invert_yaxis()
         if title is not None:
             self.__ax_corr__.set_title(title)
+        else:
+            self.__ax_corr__.set_title('Angular Correlation')
         self.__ax_corr__.set_xlabel('$\Theta$ / $^\circ$')
         if self.q_instead:
             self.__ax_corr__.set_ylabel('q')
@@ -205,13 +230,23 @@ class PolarPlot_AngularCorrelation:
             self.__ax_corr__.set_ylabel('r')
         self.__ax_corr__.set_xticks(np.arange(0, self.num_th, (self.num_th / self.th_max) * 45),
                                     np.arange(self.th_min, self.th_max, 45))
-        self.__ax_corr__.set_yticks(np.arange(0, self.num_r, 100),
-                                    np.arange(self.r_min, self.r_max, 100))
         self.__fig_corr__.tight_layout()
         if clim:
             plot.set_clim(0, clim)
 
-    def plot_angular_correlation_point(self, point: float, title=None, y_lim=None):
+    def save_angular_correlation(self, file_name, file_type='jpeg', **kwargs):
+        """
+        Save the angular correlation as a numpy file or image file
+        :param file_name: Output file name
+        :param file_type: Type of file you want to save (e.g. npy or jpg). Default npy file
+        :return:
+        """
+        file_name = save(self.__fig_corr__, self.ang_corr, file_name, file_type, **kwargs)
+        print(f'Saved angular correlation as {file_name}')
+
+    def plot_angular_correlation_point(self, point: float, title=None, y_lim=None, *,
+                                       save_fig: bool = False, save_name: str = None,
+                                       save_type: str = 'jpeg', **kwargs):
         self.__fig_corr_point__, self.__ax_corr_point__ = plt.subplots()
         self.__ax_corr_point__.plot(np.real(self.ang_corr[point, :]))
         if title is not None:
@@ -224,6 +259,18 @@ class PolarPlot_AngularCorrelation:
         self.__ax_corr_point__.set_xlim(0, self.num_th / 2)
         if y_lim:
             self.__ax_corr_point__.set_ylim(y_lim[0], y_lim[1])
+        if save_fig:
+            self.save_angular_correlation_point(save_name, save_type, **kwargs)
+
+    def save_angular_correlation_point(self, file_name, file_type=None, **kwargs):
+        """
+        Save the angular correlation as a numpy file or image file
+        :param file_name: Output file name
+        :param file_type: Type of file you want to save (e.g. npy or jpg). Default npy file
+        :return:
+        """
+        file_name = save(self.__fig_corr_point__, self.ang_corr, file_name, file_type, **kwargs)
+        print(f'Saved angular correlation as {file_name}')
 
     # angular correlation of each q-shell with all other q-shells
     #

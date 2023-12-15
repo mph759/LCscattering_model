@@ -27,6 +27,10 @@ class PointParticle:
     def y(self):
         return self.position[1]
 
+    @property
+    def params(self):
+        return ('Point Particle', {})
+
     def create(self, draw_object):
         """
         Draw the particle onto real space
@@ -82,6 +86,12 @@ class CalamiticParticle(PointParticle):
     @property
     def y2(self):
         return self._end_position[1]
+
+    @property
+    def params(self):
+        return ('Calamitic Particle',
+                {'width': self.width,
+                 'length': self.length})
 
     def _get_end_points(self):
         """

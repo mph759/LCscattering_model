@@ -40,6 +40,15 @@ class DiffractionPattern:
         self.__ax_2d__ = None
 
     @property
+    def params(self):
+        return ("Diffraction",
+                {'wavelength': self.wavelength,
+                'detector_dist': self.detector_dist,
+                'pixel_size': self.pixel_size,
+                'dx': self._dx,
+                 'npt': self.npt})
+
+    @property
     def npt(self):
         return self._npt
 
@@ -154,7 +163,6 @@ class DiffractionPattern:
         self.__ax_1d__.set_xlabel('q / nm$^{-1}$')
         self.__ax_1d__.set_ylabel('Arbitrary Intensity')
         self.__fig_1d__.tight_layout()
-
 
     def save_1d(self, file_name, file_type=None, **kwargs):
         """
