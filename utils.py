@@ -4,6 +4,7 @@ Project: Generating 2D scattering pattern for modelled liquid crystals
 Authored by Michael Hassett from 2023-11-23
 """
 import time
+import matplotlib.pyplot as plt
 from pathlib import Path
 import inspect
 from functools import wraps
@@ -166,4 +167,5 @@ def save(fig, array, file_name, file_type=None, **kwargs):
         except ValueError:
             raise ValueError(f"Format \'{file_type}\' is not supported (supported formats: npy, eps, jpeg, jpg, pdf, "
                              f"pgf, png, ps, raw, rgba, svg, svgz, tif, tiff, webp)")
+    plt.close(fig)
     return file_name
