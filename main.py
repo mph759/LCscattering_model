@@ -39,7 +39,7 @@ def main():
 
     # Initialise beam and detector parameters
     wavelength = 0.67018e-10  # metres
-    pixel_size = 75e-6  # metres
+    pixel_size = 75e-6  # metres per pixel
     npt = 2000  # No. of points for the radial integration
     dx = 5e-9  # metres
 
@@ -84,7 +84,8 @@ def run(unit_vector, *, output_dir_root, particle_length, particle_width, paddin
                  for position in positions]
     # Check unit vector matches expected value
     particles_unit_vector = np.mean([particle.angle for particle in particles])
-    print(f"Collective unit vector: {particles_unit_vector:0.2f}")
+    particles_stddev = np.std([particle.angle for particle in particles])
+    print(f"Collective unit vector: {particles_unit_vector:0.2f}, with a standard deviation of {particles_stddev:0.2f}")
 
     # Create the space for the particles and place them in real space
     real_space = RealSpace((x_max, y_max))
@@ -98,16 +99,19 @@ def run(unit_vector, *, output_dir_root, particle_length, particle_width, paddin
                                          300, 720, subtract_mean=True)
 
     # Plot all figures showing, real space, diffraction in 2D and 1D, and the correlation
-    real_space_title = f'Liquid Crystal Phase of Calamitic Liquid crystals, with unit vector {unit_vector}$^\circ$'
+    # real_space_title = f'Liquid Crystal Phase of Calamitic Liquid crystals, with unit vector {unit_vector}$^\circ$'
+    real_space_title = None
     real_space.plot(real_space_title)
     real_space.save(f'{output_directory}\\2D_model', file_type='jpeg', dpi=2000, bbox_inches='tight')
 
-    diffraction_pattern_title = f'2D Diffraction pattern of Liquid Crystal Phase of Calamitic Particles'
+    # diffraction_pattern_title = f'2D Diffraction pattern of Liquid Crystal Phase of Calamitic Particles'
+    diffraction_pattern_title = None
     diffraction_pattern_of_real_space.plot_2d(diffraction_pattern_title, clim=1e8)
     diffraction_pattern_of_real_space.save_2d(f'{output_directory}\\diffraction_pattern_2d', file_type='jpeg',
                                               dpi=300, bbox_inches='tight')
 
-    diff_1D_title = f'1D Diffraction pattern of Liquid Crystal Phase of Calamitic Particles'
+    # diff_1D_title = f'1D Diffraction pattern of Liquid Crystal Phase of Calamitic Particles'
+    diff_1D_title = None
     diffraction_pattern_of_real_space.plot_1d(diff_1D_title)
     diffraction_pattern_of_real_space.save_1d(f'{output_directory}\\diffraction_pattern_1d', file_type='jpeg',
                                               dpi=300, bbox_inches='tight')
@@ -122,8 +126,8 @@ def run(unit_vector, *, output_dir_root, particle_length, particle_width, paddin
 
     # Log parameters
     particle_params = particles[0].params
-    particle_params[1].update({'unit_vector': unit_vector,
-                               'real_unit_vector': particles_unit_vector,
+    particle_params[1].update({'unit_vector': unit_vector, 'unit_vector_stddev': vector_stddev,
+                               'real_unit_vector': particles_unit_vector, 'real_unit_vector_stddev': particles_stddev,
                                'no. particles': len(particles)})
     real_space_params = real_space.params
     real_space_params[1].update(spatial)
@@ -134,14 +138,13 @@ def run(unit_vector, *, output_dir_root, particle_length, particle_width, paddin
     radial_lines = [50]
     for line in radial_lines:
         polar_plot.plot_angular_correlation_point(line,
-                                                  title=f'Angular line plot at {line}, with unit vector {unit_vector}',
+                                                  title=None, #f'Angular line plot at {line}, with unit vector {unit_vector}',
                                                   y_lim=(-2e11, 2e11), save_fig=True,
                                                   save_name=f'{output_directory}\\angular_line_{line}',
                                                   save_type='jpeg', dpi=300, bbox_inches='tight')
 
     # plt.show()
     plt.close('all')
-
 
 
 if __name__ == "__main__":

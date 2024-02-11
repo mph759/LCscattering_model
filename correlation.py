@@ -134,8 +134,6 @@ class PolarAngularCorrelation:
                                   np.arange(self.th_min, self.th_max, 45))
         if title is not None:
             self._ax_polar.set_title(title)
-        else:
-            self._ax_polar.set_title('Polar Plot')
         self._fig_polar.tight_layout()
         divider = make_axes_locatable(self._ax_polar)
 
@@ -229,8 +227,6 @@ class PolarAngularCorrelation:
         self.__ax_corr__.invert_yaxis()
         if title is not None:
             self.__ax_corr__.set_title(title)
-        else:
-            self.__ax_corr__.set_title('Angular Correlation')
         self.__ax_corr__.set_xlabel('$\Theta$ / $^\circ$')
         if self.q_instead:
             self.__ax_corr__.set_ylabel('q')

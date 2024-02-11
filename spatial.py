@@ -58,9 +58,9 @@ class RealSpace:
         self.__ax__.set_xlabel('X')
         self.__ax__.set_ylabel('Y')
         self.__fig__.tight_layout()
-        axins = self.__ax__.inset_axes([0.8, 0.8, 0.2, 0.2])
+        axins = self.__ax__.inset_axes([0.6, 0.6, 0.4, 0.4])
         axins.imshow(self.array)
-        x_c, y_c = self.grid[0] * (3 / 4), self.grid[1] * (3 / 4)
+        x_c, y_c = self.grid[0] * 0.5, self.grid[1] * 0.5
         ins_size = inset_size
         x1, x2 = x_c - ins_size / 2, x_c + ins_size / 2
         y1, y2 = y_c - ins_size / 2, y_c + ins_size / 2

@@ -5,6 +5,8 @@ Authored by Michael Hassett from 2023-11-23
 """
 import time
 import matplotlib.pyplot as plt
+import os
+from stat import S_IREAD
 from pathlib import Path
 import inspect
 from functools import wraps
@@ -112,6 +114,7 @@ def log_params(params, output_dir='LCscattering_model'):
             for param, val in arg[1].items():
                 file.write(f'{param.strip("_")}: {val}\n')
             file.write('\n')
+    os.chmod(f'{output_dir}/params.log', S_IREAD)
 
 
 # File handling
