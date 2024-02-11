@@ -42,11 +42,11 @@ class RealSpace:
     def __set_array__(self):
         self.array = np.asarray(self.img)
 
-    def plot(self, title=None):
+    def plot(self, title=None, inset_size: int = 100):
         """
         Plot the 2D real space image
         :param title: Title text for figure
-        :param show: Boolean for whether to show the plot immediately. Default False
+        :param inset_size: Size of the inset zoomed square in pixels. Default 100
         :return:
         """
         print("Plotting real space figure...")
@@ -58,6 +58,17 @@ class RealSpace:
         self.__ax__.set_xlabel('X')
         self.__ax__.set_ylabel('Y')
         self.__fig__.tight_layout()
+        axins = self.__ax__.inset_axes([0.8, 0.8, 0.2, 0.2])
+        axins.imshow(self.array)
+        x_c, y_c = self.grid[0] * (3 / 4), self.grid[1] * (3 / 4)
+        ins_size = inset_size
+        x1, x2 = x_c - ins_size / 2, x_c + ins_size / 2
+        y1, y2 = y_c - ins_size / 2, y_c + ins_size / 2
+        axins.set_xlim(x1, x2)
+        axins.set_ylim(y1, y2)
+        axins.set_xticks([])
+        axins.set_yticks([])
+        self.__ax__.indicate_inset_zoom(axins)
 
     def save(self, file_name, file_type=None, **kwargs):
         """
