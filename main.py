@@ -7,10 +7,10 @@ import time
 
 import matplotlib.pyplot as plt
 import numpy as np
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from correlation import PolarAngularCorrelation
-from diffraction import DiffractionPattern
+from diffraction import Diffraction2D, Diffraction1D
 from spatial import RealSpace
 from utils import generate_positions, init_spacing, log_params
 from particle_types import CalamiticParticle
@@ -24,7 +24,7 @@ def main():
     Main function. Should not have to modify this
     """
     # Initialise real space parameters
-    x_max = y_max = int(2**13)
+    x_max = y_max = int(2 ** 13)
 
     # Initialise particle parameters
     particle_width = 2  # in pixels
@@ -50,21 +50,21 @@ def main():
     now = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
     output_dir_root = f'output\\LCscattering-{now}'
 
-
     unit_vector = range(unit_vector_init, unit_vector_fin + vector_stddev, vector_stddev)
     run_partial = partial(run, output_dir_root=output_dir_root, particle_length=particle_length,
                           particle_width=particle_width, padding_spacing=padding_spacing, x_max=x_max, y_max=y_max,
                           vector_stddev=vector_stddev, wavelength=wavelength, pixel_size=pixel_size, dx=dx, npt=npt)
 
     start = time.perf_counter()
-    with Pool(processes=2) as pool:
+    with Pool(processes=1) as pool:
         results = pool.imap(run_partial, unit_vector)
 
         for i, _ in enumerate(results):
-            print(f'{unit_vector[i]} Done\n')
+            print(f'Unit vector {unit_vector[i]} is done!\n')
 
     end = time.perf_counter()
-    print(f'Total time: {end - start}\n')
+    run_time = timedelta(seconds=(end - start))
+    print(f'Total run time: {run_time}\n')
 
 
 def run(unit_vector, *, output_dir_root, particle_length, particle_width, padding_spacing, x_max, y_max, vector_stddev,
@@ -76,23 +76,33 @@ def run(unit_vector, *, output_dir_root, particle_length, particle_width, paddin
                                                               unit_vector, padding_spacing)
     x_spacing = padding_spacing[0] + particle_width
     spatial = {'x_spacing': x_spacing, 'y_spacing': y_spacing, 'allowed_random_displacement': allowed_displacement}
-    # Initialise the generators of the positions and angles for the particles
-    positions = generate_positions((x_spacing, y_spacing), (x_max, y_max), allowed_displacement)
 
-    # Generate the particles
-    particles = [CalamiticParticle(position, particle_width, particle_length, unit_vector, vector_stddev)
-                 for position in positions]
-    # Check unit vector matches expected value
-    particles_unit_vector = np.mean([particle.angle for particle in particles])
-    particles_stddev = np.std([particle.angle for particle in particles])
-    print(f"Collective unit vector: {particles_unit_vector:0.2f}, with a standard deviation of {particles_stddev:0.2f}")
+    diffraction_pattern_of_real_space = None
+    num_iter = 20
+    for i in range(num_iter):
+        # Initialise the generators of the positions and angles for the particles
+        positions = generate_positions((x_spacing, y_spacing), (x_max, y_max), allowed_displacement)
+        # Generate the particles
+        particles = [CalamiticParticle(position, particle_width, particle_length, unit_vector, vector_stddev)
+                     for position in positions]
+        # Check unit vector matches expected value
+        particles_unit_vector = np.mean([particle.angle for particle in particles])
+        particles_stddev = np.std([particle.angle for particle in particles])
+        print(
+            f"Collective unit vector: {particles_unit_vector:0.2f}, with a standard deviation of {particles_stddev:0.2f}")
 
-    # Create the space for the particles and place them in real space
-    real_space = RealSpace((x_max, y_max))
-    real_space.add(particles)
+        # Create the space for the particles and place them in real space
+        real_space = RealSpace((x_max, y_max))
+        real_space.add(particles)
 
-    # Generate diffraction patterns in 2D and 1D of real space
-    diffraction_pattern_of_real_space = DiffractionPattern(real_space, wavelength, pixel_size, dx, npt)
+        # Generate diffraction patterns in 2D of real space
+        if diffraction_pattern_of_real_space:
+            # Add diffraction to the existing diffraction
+            diffraction_pattern_of_real_space += Diffraction2D(real_space, wavelength, pixel_size, dx, npt)
+        else:
+            diffraction_pattern_of_real_space = Diffraction2D(real_space, wavelength, pixel_size, dx, npt)
+    # Divide the diffraction pattern by the number of iterations to create an average
+    diffraction_pattern_of_real_space = diffraction_pattern_of_real_space / num_iter
 
     # Perform correlation from the diffraction pattern
     polar_plot = PolarAngularCorrelation(diffraction_pattern_of_real_space,
@@ -102,19 +112,21 @@ def run(unit_vector, *, output_dir_root, particle_length, particle_width, paddin
     # real_space_title = f'Liquid Crystal Phase of Calamitic Liquid crystals, with unit vector {unit_vector}$^\circ$'
     real_space_title = None
     real_space.plot(real_space_title)
-    real_space.save(f'{output_directory}\\2D_model', file_type='jpeg', dpi=2000, bbox_inches='tight')
+    real_space.save(f'{output_directory}\\2D_model_example', file_type='jpeg', dpi=2000, bbox_inches='tight')
 
     # diffraction_pattern_title = f'2D Diffraction pattern of Liquid Crystal Phase of Calamitic Particles'
     diffraction_pattern_title = None
-    diffraction_pattern_of_real_space.plot_2d(diffraction_pattern_title, clim=1e8)
-    diffraction_pattern_of_real_space.save_2d(f'{output_directory}\\diffraction_pattern_2d', file_type='jpeg',
-                                              dpi=300, bbox_inches='tight')
+    diffraction_pattern_of_real_space.plot(diffraction_pattern_title, clim=1e8)
+    diffraction_pattern_of_real_space.save(f'{output_directory}\\diffraction_pattern_2d', file_type='jpeg',
+                                           dpi=300, bbox_inches='tight')
 
+    # Create and plot 1D diffraction pattern of list of 2D diffraction patterns
+    diffraction_pattern_1d = Diffraction1D(diffraction_pattern_of_real_space)
     # diff_1D_title = f'1D Diffraction pattern of Liquid Crystal Phase of Calamitic Particles'
     diff_1D_title = None
-    diffraction_pattern_of_real_space.plot_1d(diff_1D_title)
-    diffraction_pattern_of_real_space.save_1d(f'{output_directory}\\diffraction_pattern_1d', file_type='jpeg',
-                                              dpi=300, bbox_inches='tight')
+    diffraction_pattern_1d.plot(diff_1D_title)
+    diffraction_pattern_1d.save(f'{output_directory}\\diffraction_pattern_1d', file_type='jpeg',
+                                dpi=300, bbox_inches='tight')
 
     polar_plot.plot(clim=1e4)
     polar_plot.angular_correlation()
@@ -138,7 +150,8 @@ def run(unit_vector, *, output_dir_root, particle_length, particle_width, paddin
     radial_lines = [50]
     for line in radial_lines:
         polar_plot.plot_angular_correlation_point(line,
-                                                  title=None, #f'Angular line plot at {line}, with unit vector {unit_vector}',
+                                                  title=None,
+                                                  # f'Angular line plot at {line}, with unit vector {unit_vector}',
                                                   y_lim=(-2e11, 2e11), save_fig=True,
                                                   save_name=f'{output_directory}\\angular_line_{line}',
                                                   save_type='jpeg', dpi=300, bbox_inches='tight')

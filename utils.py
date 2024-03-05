@@ -88,7 +88,6 @@ def timer(func):
     :param func: Function to be timed
     :return:
     """
-
     @wraps(func)
     def wrapper(*args, **kwargs):
         t_start = time.perf_counter()
@@ -98,7 +97,6 @@ def timer(func):
         func_description = inspect.getdoc(func).split('\n')[0]
         print(f'{func_description} took {t_total:0.4f}s')
         return result
-
     return wrapper
 
 

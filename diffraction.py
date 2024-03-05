@@ -11,7 +11,7 @@ from pyFAI.azimuthalIntegrator import AzimuthalIntegrator
 from spatial import RealSpace
 
 
-class DiffractionPattern:
+class Diffraction2D:
     @timer
     def __init__(self, space_object: RealSpace, wavelength: float, pixel_size: float, dx: float, npt: int = 2250):
         """
@@ -31,12 +31,9 @@ class DiffractionPattern:
         self._npt = npt
         self._num_pixels = self.space.grid[0]
         # self.detector_dist = self.pixel_size * self.space.grid[0] / self.wavelength
-        self._detector_dist = ((self._num_pixels * self.pixel_size) /
-                               (2 * np.tan(2 * np.arcsin(self.wavelength / (4 * self._dx)))))
-        self._pattern_1d = None
+        self._detector_dist = ((self.num_pixels * self.pixel_size) /
+                               (2 * np.tan(2 * np.arcsin(self.wavelength / (4 * self.dx)))))
         # Initialise plotting objects
-        self.__fig_1d__ = None
-        self.__ax_1d__ = None
         self.__fig_2d__ = None
         self.__ax_2d__ = None
 
@@ -45,13 +42,51 @@ class DiffractionPattern:
         return ("Diffraction",
                 {'wavelength': self.wavelength,
                  'detector_dist': self.detector_dist,
+                 'num_pixels': self.num_pixels,
                  'pixel_size': self.pixel_size,
-                 'dx': self._dx,
+                 'dx': self.dx,
                  'npt': self.npt})
 
     @property
     def npt(self):
         return self._npt
+
+    @property
+    def pattern_2d(self):
+        return self._pattern_2d
+
+    @property
+    def num_pixels(self):
+        return self._num_pixels
+
+    @property
+    def dx(self):
+        return self._dx
+    
+    @property
+    def pixel_size(self):
+        return self._pixel_size
+
+    @property
+    def detector_dist(self):
+        return self._detector_dist
+
+    def __add__(self, other):
+        if isinstance(other, Diffraction2D)
+            if self.params == other.params:
+                self._pattern_2d += other.pattern_2d
+                return self
+            else:
+                raise ValueError(f"{self} and {other} do not share the same parameters")
+        else:
+            return TypeError(f'unsupported operand type(s) for +: \'{type(self)}\' and \'{type(other)}\'')
+
+    def __truediv__(self, other):
+        if isinstance(other, int):
+            self._pattern_2d = np.divide(self.pattern_2d, other)
+            return self
+        else:
+            return TypeError(f'unsupported operand type(s) for +: \'{type(self)}\' and \'{type(other)}\'')
 
     def create_2d_diffraction(self):
         """
@@ -70,19 +105,7 @@ class DiffractionPattern:
         print("2D diffraction image complete")
         return diffraction_image
 
-    @property
-    def pattern_2d(self):
-        return self._pattern_2d
-
-    @property
-    def pixel_size(self):
-        return self._pixel_size
-
-    @property
-    def detector_dist(self):
-        return self._detector_dist
-
-    def plot_2d(self, title, clim: float = None):
+    def plot(self, title, clim: float = None):
         """
         Plot the 2D Diffraction image
         :param title: String to be placed as a title on the figure
@@ -110,7 +133,7 @@ class DiffractionPattern:
         if clim:
             plot.set_clim(0, clim)
 
-    def save_2d(self, file_name, file_type=None, **kwargs):
+    def save(self, file_name, file_type=None, **kwargs):
         """
         Save the 1D diffraction pattern as a numpy file
         :param file_name: Output file name
@@ -119,6 +142,54 @@ class DiffractionPattern:
         """
         file_name = save(self.__fig_2d__, self.pattern_2d, file_name, file_type, **kwargs)
         print(f'Saved 2D diffraction pattern as {file_name}')
+
+
+class Diffraction1D:
+    def __init__(self, diffraction_2d):
+        self.pattern_2d = diffraction_2d.pattern_2d
+        self.space = diffraction_2d.space
+        self.wavelength = diffraction_2d.wavelength
+        self._pixel_size = diffraction_2d.pixel_size
+        self._dx = diffraction_2d.dx
+        self._npt = diffraction_2d.npt
+        self._num_pixels = diffraction_2d.num_pixels
+        # self.detector_dist = self.pixel_size * self.space.grid[0] / self.wavelength
+        self._detector_dist = ((self._num_pixels * self.pixel_size) /
+                               (2 * np.tan(2 * np.arcsin(self.wavelength / (4 * self.dx)))))
+        self._pattern_1d = None
+        self.create_1d_diffraction()
+        # Initialise plotting objects
+        self.__fig_1d__ = None
+        self.__ax_1d__ = None
+
+    @property
+    def params(self):
+        return ("Diffraction",
+                {'wavelength': self.wavelength,
+                 'detector_dist': self.detector_dist,
+                 'pixel_size': self.pixel_size,
+                 'dx': self.dx,
+                 'npt': self.npt})
+
+    @property
+    def npt(self):
+        return self._npt
+
+    @property
+    def pattern_1d(self):
+        return self._pattern_1d
+
+    @property
+    def pixel_size(self):
+        return self._pixel_size
+
+    @property
+    def dx(self):
+        return self._dx
+
+    @property
+    def detector_dist(self):
+        return self._detector_dist
 
     def frm_integration(self, frame, unit="q_nm^-1"):
         """
@@ -140,25 +211,21 @@ class DiffractionPattern:
         return np.transpose(np.array(integrated_profile))
 
     @timer
-    def create_1d_diffraction(self):
+    def create_1d_diffraction(self) -> None:
         """
         Generating the 1D diffraction from the 2D diffraction image through radial integration
         :return:
         """
         print("Generating 1D diffraction image...")
         radius = self.space.grid[0] // 2
-        diffraction_image_cone = circular_mask(self.space.grid, radius) * self.pattern_2d
+        diffraction_image_cone = self.circular_mask(self.space.grid, radius) * self.pattern_2d
         diffraction_plot = self.frm_integration(diffraction_image_cone, unit="q_nm^-1")
 
         non_zero = diffraction_plot[:, 1] != 0  # Removes data points at = 0 due to the cone restriction
         self._pattern_1d = diffraction_plot[non_zero]
         print("1D diffraction image complete")
 
-    @property
-    def pattern_1d(self):
-        return self._pattern_1d
-
-    def plot_1d(self, title: str):
+    def plot(self, title: str) -> None:
         """
         Plot a 1D diffraction pattern
         :param title: Title text for the plotting
@@ -175,7 +242,7 @@ class DiffractionPattern:
         self.__ax_1d__.set_ylabel('Arbitrary Intensity')
         self.__fig_1d__.tight_layout()
 
-    def save_1d(self, file_name, file_type=None, **kwargs):
+    def save(self, file_name, file_type=None, **kwargs) -> None:
         """
         Save the 1D diffraction pattern as a numpy file
         :param file_name: Output file name
@@ -185,21 +252,21 @@ class DiffractionPattern:
         file_name = save(self.__fig_1d__, self.pattern_1d, file_name, file_type, **kwargs)
         print(f'Saved 1D diffraction pattern as {file_name}')
 
-
-def circular_mask(grid, mask_radius, show: bool = False):
-    """
-    Create a circular mask over an image
-    :param grid: x and y grid size which the mask will fit over
-    :param mask_radius: Radius that the mask should sit on
-    :param show: Boolean for whether to show the plot immediately. Default False
-    :return:
-    """
-    kernel = np.zeros(grid)
-    filter_y, filter_x = np.ogrid[-mask_radius:mask_radius, -mask_radius:mask_radius]
-    mask = filter_x ** 2 + filter_y ** 2 <= mask_radius ** 2
-    kernel[mask] = 1
-    if show:
-        fig, ax = plt.subplots()
-        ax.imshow(kernel)
-        fig.plot(block=False)
-    return kernel
+    @staticmethod
+    def circular_mask(grid, mask_radius, show: bool = False):
+        """
+        Create a circular mask over an image
+        :param grid: x and y grid size which the mask will fit over
+        :param mask_radius: Radius that the mask should sit on
+        :param show: Boolean for whether to show the plot immediately. Default False
+        :return:
+        """
+        kernel = np.zeros(grid)
+        filter_y, filter_x = np.ogrid[-mask_radius:mask_radius, -mask_radius:mask_radius]
+        mask = filter_x ** 2 + filter_y ** 2 <= mask_radius ** 2
+        kernel[mask] = 1
+        if show:
+            fig, ax = plt.subplots()
+            ax.imshow(kernel)
+            fig.plot(block=False)
+        return kernel

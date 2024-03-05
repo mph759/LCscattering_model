@@ -4,7 +4,7 @@ Created: 2023-12-11, copied from pypadf/fxstools/correlationTools.py
 """
 from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-from diffraction import DiffractionPattern
+from diffraction import Diffraction2D
 import numpy as np
 import scipy.ndimage as sdn
 from utils import timer, save
@@ -15,7 +15,7 @@ class PolarAngularCorrelation:
     """
 
     @timer
-    def __init__(self, diffraction_object: DiffractionPattern, num_r, num_th, r_min=0, r_max=None, th_min=0, th_max=360,
+    def __init__(self, diffraction_object: Diffraction2D, num_r, num_th, r_min=0, r_max=None, th_min=0, th_max=360,
                  *,
                  q_instead: bool = False, subtract_mean: bool = False, real_only: bool = False):
         """Converting a 2D diffraction image into an r v. theta plot
