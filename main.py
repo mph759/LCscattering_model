@@ -130,6 +130,7 @@ def run(unit_vector, *, output_dir_root, particle_length, particle_width, paddin
     diffraction_pattern_1d.save(f'{output_directory}\\diffraction_pattern_1d', file_type='jpeg',
                                 dpi=300, bbox_inches='tight')
     peak_locs = peak_predict(diffraction_pattern_1d, (x_max, y_max), (x_spacing, y_spacing))
+    #TODO: Determine proper d_spacing values
     spatial = {'x_spacing': x_spacing, 'y_spacing': y_spacing,
                'allowed_random_displacement': allowed_displacement, 'peak_locs': peak_locs}
 

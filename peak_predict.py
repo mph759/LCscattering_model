@@ -1,18 +1,18 @@
-'''
+"""
 Peak predict in an FFT from real space parameters
 Project: Generating 2D scattering pattern for modelled liquid crystals
 Authored by Michael Hassett from 2024-03-10
-'''
+"""
 
 import numpy as np
 from diffraction import Diffraction1D
 
 
 def peak_predict(diffraction: Diffraction1D, num_pixels: tuple[int], d_spacings: tuple[float]):
-    '''
+    """
     Predict the peak postion (q) from real space parameters
     :return: peak_locs: peak positions in q
-    '''
+    """
     peak_locs = []
     peak_locs_theor = sorted(np.round(np.divide(num_pixels, d_spacings)))
     for peak in peak_locs_theor:
