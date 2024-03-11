@@ -4,16 +4,19 @@ Project: Generating 2D scattering pattern for modelled liquid crystals
 Authored by Michael Hassett from 2023-11-23
 """
 import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 import numpy as np
-from utils import timer, save
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 from pyFAI.azimuthalIntegrator import AzimuthalIntegrator
+from scipy.ndimage import rotate
+
 from spatial import RealSpace
+from utils import timer, save
 
 
 class Diffraction2D:
     @timer
-    def __init__(self, space_object: RealSpace, wavelength: float, pixel_size: float, dx: float, npt: int = 2250):
+    def __init__(self, space_object: RealSpace, wavelength: float, pixel_size: float, dx: float, npt: int = 2250,
+                 rotation = None):
         """
         Generating 2D diffraction patterns on a real space object
         :param space_object: RealSpace object with particles to be diffracted
@@ -21,6 +24,7 @@ class Diffraction2D:
         :param pixel_size: Size of the pixels on the simulated detector
         :param npt: Number of points in radial dimension for radial integration
         :param dx: Ratio of real length in metres to  number of pixels
+        :param rotation_range: Rotation of the diffraction pattern
         """
 
         self.space = space_object
@@ -33,6 +37,8 @@ class Diffraction2D:
         # self.detector_dist = self.pixel_size * self.space.grid[0] / self.wavelength
         self._detector_dist = ((self.num_pixels * self.pixel_size) /
                                (2 * np.tan(2 * np.arcsin(self.wavelength / (4 * self.dx)))))
+        if rotation != None:
+            self.rotate_image(rotation)
         # Initialise plotting objects
         self.__fig_2d__ = None
         self.__ax_2d__ = None
@@ -62,7 +68,7 @@ class Diffraction2D:
     @property
     def dx(self):
         return self._dx
-    
+
     @property
     def pixel_size(self):
         return self._pixel_size
@@ -72,7 +78,7 @@ class Diffraction2D:
         return self._detector_dist
 
     def __add__(self, other):
-        if isinstance(other, Diffraction2D)
+        if isinstance(other, Diffraction2D):
             if self.params == other.params:
                 self._pattern_2d += other.pattern_2d
                 return self
@@ -104,6 +110,9 @@ class Diffraction2D:
         diffraction_image[self.space.grid[1] // 2][self.space.grid[0] // 2] = 0
         print("2D diffraction image complete")
         return diffraction_image
+
+    def rotate_image(self, rotation):
+        self._pattern_2d = rotate(self._pattern_2d, angle=rotation, reshape=False)
 
     def plot(self, title, clim: float = None):
         """
@@ -191,6 +200,23 @@ class Diffraction1D:
     def detector_dist(self):
         return self._detector_dist
 
+    def __add__(self, other):
+        if isinstance(other, Diffraction1D):
+            if self.params == other.params:
+                self._pattern_1d += other.pattern_1d
+                return self
+            else:
+                raise ValueError(f"{self} and {other} do not share the same parameters")
+        else:
+            return TypeError(f'unsupported operand type(s) for +: \'{type(self)}\' and \'{type(other)}\'')
+
+    def __truediv__(self, other):
+        if isinstance(other, int):
+            self._pattern_2d = np.divide(self.pattern_1d, other)
+            return self
+        else:
+            return TypeError(f'unsupported operand type(s) for +: \'{type(self)}\' and \'{type(other)}\'')
+
     def frm_integration(self, frame, unit="q_nm^-1"):
         """
         Perform azimuthal integration of frame array
@@ -202,10 +228,10 @@ class Diffraction1D:
 
         image_center = [dimension / 2 for dimension in self.space.grid]
         ai = AzimuthalIntegrator()
-        ai.setFit2D(directDist=self._detector_dist / 1000,
+        ai.setFit2D(directDist=self.detector_dist / 1000,
                     centerX=image_center[0],
                     centerY=image_center[1],
-                    pixelX=self._pixel_size, pixelY=self._pixel_size)
+                    pixelX=self.pixel_size, pixelY=self.pixel_size)
         ai.wavelength = self.wavelength
         integrated_profile = ai.integrate1d(data=frame, npt=self.npt, unit=unit)
         return np.transpose(np.array(integrated_profile))

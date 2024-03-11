@@ -3,20 +3,21 @@ Utilities and other functions
 Project: Generating 2D scattering pattern for modelled liquid crystals
 Authored by Michael Hassett from 2023-11-23
 """
-import time
-import matplotlib.pyplot as plt
-import os
-from stat import S_IREAD
-from pathlib import Path
 import inspect
+import os
+import time
 from functools import wraps
+from pathlib import Path
+from stat import S_IREAD
+
+import matplotlib.pyplot as plt
 import numpy as np
 
 
 # Specific functions
 def generate_positions(space, maximum, change):
     """
-    Generate a position inside cartesian coordinates, given a rough lattice with random spacial oscillations
+    Generate a position inside cartesian coordinates, given a rough lattice with random spatial oscillations
     :param space: Spacing in x and y-dimensions between positions
     :param maximum: Maximum values in x and y-dimensions
     :param change: Tuple of allowed deviation from initial lattice spacing
@@ -88,6 +89,7 @@ def timer(func):
     :param func: Function to be timed
     :return:
     """
+
     @wraps(func)
     def wrapper(*args, **kwargs):
         t_start = time.perf_counter()
@@ -97,6 +99,7 @@ def timer(func):
         func_description = inspect.getdoc(func).split('\n')[0]
         print(f'{func_description} took {t_total:0.4f}s')
         return result
+
     return wrapper
 
 

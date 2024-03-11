@@ -3,11 +3,12 @@ Generating a 2D real space array image to impose particles on, and functions ass
 Project: Generating 2D scattering pattern for modelled liquid crystals
 Authored by Michael Hassett from 2023-11-23
 """
-from utils import timer, save
+import matplotlib.pyplot as plt
+import numpy as np
 from PIL import Image
 from PIL import ImageDraw
-import numpy as np
-import matplotlib.pyplot as plt
+
+from utils import timer, save
 
 
 class RealSpace:

@@ -9,14 +9,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 from datetime import datetime, timedelta
 from pathlib import Path
+from multiprocessing import Pool
+from functools import partial
+
 from correlation import PolarAngularCorrelation
 from diffraction import Diffraction2D, Diffraction1D
+from peak_predict import peak_predict
 from spatial import RealSpace
 from utils import generate_positions, init_spacing, log_params
 from particle_types import CalamiticParticle
-
-from multiprocessing import Pool
-from functools import partial
 
 
 def main():
@@ -31,7 +32,7 @@ def main():
     particle_length = 15  # in pixels
     # Note: The unit vector is not the exact angle all the particles will have, but the mean of all the angles
     unit_vector_init = 45
-    unit_vector_fin = 90  # Unit vector of the particles, starting point up
+    unit_vector_fin = 45  # Unit vector of the particles, starting point up
     vector_stddev = 5  # Standard Deviation of the angle, used to generate angles for individual particles
 
     # Initialise how the particles sit in real space
@@ -48,7 +49,7 @@ def main():
     plt.rcParams['mathtext.default'] = 'regular'
 
     now = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
-    output_dir_root = f'output\\LCscattering-{now}'
+    output_dir_root = f'output\\test-LCscattering-{now}'
 
     unit_vector = range(unit_vector_init, unit_vector_fin + vector_stddev, vector_stddev)
     run_partial = partial(run, output_dir_root=output_dir_root, particle_length=particle_length,
@@ -75,10 +76,9 @@ def run(unit_vector, *, output_dir_root, particle_length, particle_width, paddin
     x_spacing, y_spacing, allowed_displacement = init_spacing(particle_length, particle_width,
                                                               unit_vector, padding_spacing)
     x_spacing = padding_spacing[0] + particle_width
-    spatial = {'x_spacing': x_spacing, 'y_spacing': y_spacing, 'allowed_random_displacement': allowed_displacement}
 
     diffraction_pattern_of_real_space = None
-    num_iter = 20
+    num_iter = 1
     for i in range(num_iter):
         # Initialise the generators of the positions and angles for the particles
         positions = generate_positions((x_spacing, y_spacing), (x_max, y_max), allowed_displacement)
@@ -98,11 +98,13 @@ def run(unit_vector, *, output_dir_root, particle_length, particle_width, paddin
         # Generate diffraction patterns in 2D of real space
         if diffraction_pattern_of_real_space:
             # Add diffraction to the existing diffraction
-            diffraction_pattern_of_real_space += Diffraction2D(real_space, wavelength, pixel_size, dx, npt)
+            diffraction_pattern_of_real_space += Diffraction2D(real_space, wavelength, pixel_size, dx, npt,
+                                                               rotation=np.random.normal(0, 5))
         else:
             diffraction_pattern_of_real_space = Diffraction2D(real_space, wavelength, pixel_size, dx, npt)
     # Divide the diffraction pattern by the number of iterations to create an average
     diffraction_pattern_of_real_space = diffraction_pattern_of_real_space / num_iter
+    print(f"Completed making {num_iter} diffraction patterns with unit vector {unit_vector}")
 
     # Perform correlation from the diffraction pattern
     polar_plot = PolarAngularCorrelation(diffraction_pattern_of_real_space,
@@ -127,6 +129,9 @@ def run(unit_vector, *, output_dir_root, particle_length, particle_width, paddin
     diffraction_pattern_1d.plot(diff_1D_title)
     diffraction_pattern_1d.save(f'{output_directory}\\diffraction_pattern_1d', file_type='jpeg',
                                 dpi=300, bbox_inches='tight')
+    peak_locs = peak_predict(diffraction_pattern_1d, (x_max, y_max), (x_spacing, y_spacing))
+    spatial = {'x_spacing': x_spacing, 'y_spacing': y_spacing,
+               'allowed_random_displacement': allowed_displacement, 'peak_locs': peak_locs}
 
     polar_plot.plot(clim=1e4)
     polar_plot.angular_correlation()
@@ -147,13 +152,13 @@ def run(unit_vector, *, output_dir_root, particle_length, particle_width, paddin
               diffraction_pattern_of_real_space.params, polar_plot.params)
     log_params(params, output_directory)
 
-    radial_lines = [50]
-    for line in radial_lines:
-        polar_plot.plot_angular_correlation_point(line,
+    for i, q in peak_locs:
+        print(i, q)
+        polar_plot.plot_angular_correlation_point(i,
                                                   title=None,
-                                                  # f'Angular line plot at {line}, with unit vector {unit_vector}',
+                                                  # f'Angular line plot at {q}, with unit vector {unit_vector}',
                                                   y_lim=(-2e11, 2e11), save_fig=True,
-                                                  save_name=f'{output_directory}\\angular_line_{line}',
+                                                  save_name=f'{output_directory}\\angular_line_{i}',
                                                   save_type='jpeg', dpi=300, bbox_inches='tight')
 
     # plt.show()

@@ -4,6 +4,7 @@ Project: Generating 2D scattering pattern for modelled liquid crystals
 Authored by Michael Hassett from 2023-11-23
 """
 import numpy as np
+
 from utils import pythagorean_sides
 
 

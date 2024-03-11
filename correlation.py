@@ -1,12 +1,14 @@
 """
-Author: Andrew Martin, Edited by Michael Hassett
+Correlation analysis of a (simulated) 2D diffraction pattern
+Author: Michael Hassett (Original code by Andrew Martin)
 Created: 2023-12-11, copied from pypadf/fxstools/correlationTools.py
 """
-from matplotlib import pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-from diffraction import Diffraction2D
 import numpy as np
 import scipy.ndimage as sdn
+from matplotlib import pyplot as plt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+from diffraction import Diffraction2D
 from utils import timer, save
 
 
