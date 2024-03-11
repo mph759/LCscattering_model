@@ -251,6 +251,23 @@ class Diffraction1D:
         self._pattern_1d = diffraction_plot[non_zero]
         print("1D diffraction image complete")
 
+    def __add__(self, other):
+        if isinstance(other, Diffraction2D):
+            if self.params == other.params:
+                self._pattern_1d += other.pattern_1d
+                return self
+            else:
+                raise ValueError(f"{self} and {other} do not share the same parameters")
+        else:
+            return TypeError(f'unsupported operand type(s) for +: \'{type(self)}\' and \'{type(other)}\'')
+
+    def __truediv__(self, other):
+        if isinstance(other, int):
+            self._pattern_1d = np.divide(self.pattern_1d, other)
+            return self
+        else:
+            return TypeError(f'unsupported operand type(s) for +: \'{type(self)}\' and \'{type(other)}\'')
+
     def plot(self, title: str) -> None:
         """
         Plot a 1D diffraction pattern
