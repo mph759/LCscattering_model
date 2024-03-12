@@ -107,15 +107,17 @@ def timer(func):
 def log_params(params, output_dir='LCscattering_model'):
     Path(f'{output_dir}').mkdir(parents=True, exist_ok=True)
     if not Path(f'{output_dir}/params.log').exists():
-        with open(f'{output_dir}/params.log', 'x'):
+        with open(Path(f'{output_dir}/params.log'), 'x'):
             pass
-    with open(f'{output_dir}/params.log', 'a') as file:
-        for arg in params:
-            file.write(f'#{arg[0]}\n')
-            for param, val in arg[1].items():
-                file.write(f'{param.strip("_")}: {val}\n')
-            file.write('\n')
-    os.chmod(f'{output_dir}/params.log', S_IREAD)
+    with open(Path(f'{output_dir}/params.log'), 'a') as file:
+        file.write(f'#{params[0]}\n')
+        for param, val in params[1].items():
+            file.write(f'{param.strip("_")}: {val}\n')
+        file.write('\n')
+
+
+def lock_log(file_path):
+    os.chmod(Path(f'{file_path}/params.log'), S_IREAD)
 
 
 # File handling

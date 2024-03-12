@@ -5,24 +5,23 @@ Authored by Michael Hassett from 2024-03-10
 """
 
 import numpy as np
-from diffraction import Diffraction1D
+from diffraction import Diffraction2D
 
 
-def peak_predict(diffraction: Diffraction1D, num_pixels: tuple[int], d_spacings: tuple[float]):
+def peak_predict(diffraction: Diffraction2D, num_pixels: tuple[int], d_spacings: tuple[float]):
     """
     Predict the peak postion (q) from real space parameters
     :return: peak_locs: peak positions in q
     """
     peak_locs = []
     peak_locs_theor = sorted(np.round(np.divide(num_pixels, d_spacings)))
+    diffraction_pattern_half = diffraction.pattern_2d[num_pixels[0] // 2:, num_pixels[0] // 2]
     for peak in peak_locs_theor:
-        print(f"peak: {peak}")
-        #TODO: Convert to using Diffraction2D pattern
-        masked_pixels = np.ma.masked_outside(diffraction.pattern_1d[:, 1],
-                                             diffraction.pattern_1d[int(peak - 2), 1],
-                                             diffraction.pattern_1d[int(peak + 2), 1])
+        print(f"predicted peak: {int(peak)}")
+        masked_pixels = np.ma.masked_outside(diffraction_pattern_half,
+                                             diffraction_pattern_half[int(peak - 2)],
+                                             diffraction_pattern_half[int(peak + 2)])
         peak_index = np.argmax(masked_pixels)
-        peak_locs.append((peak_index, diffraction.pattern_1d[peak_index, 0]))
         print(f"peak index: {peak_index}")
-        print(f"peak val: {diffraction.pattern_1d[peak_index, 0]}")
+        peak_locs.append(peak_index)
     return peak_locs

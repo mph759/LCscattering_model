@@ -136,6 +136,7 @@ class PolarAngularCorrelation:
                                   np.arange(self.th_min, self.th_max, 45))
         if title is not None:
             self._ax_polar.set_title(title)
+        self._ax_polar.set_aspect(0.5625)
         self._fig_polar.tight_layout()
         divider = make_axes_locatable(self._ax_polar)
 
@@ -236,6 +237,7 @@ class PolarAngularCorrelation:
             self.__ax_corr__.set_ylabel('r')
         self.__ax_corr__.set_xticks(np.arange(0, self.num_th, (self.num_th / self.th_max) * 45),
                                     np.arange(self.th_min, self.th_max, 45))
+        self.__ax_corr__.set_aspect(0.5625)
 
         self.__fig_corr__.tight_layout()
         divider = make_axes_locatable(self.__ax_corr__)
