@@ -1,5 +1,5 @@
 '''
-Peak predict in an FFT from real space parameters
+Peak prediction from a discrete fourier transform with real space parameters
 Project: Generating 2D scattering pattern for modelled liquid crystals
 Authored by Michael Hassett from 2024-03-10
 '''
@@ -17,6 +17,7 @@ def peak_predict(diffraction: Diffraction1D, num_pixels: tuple[int], d_spacings:
     peak_locs_theor = sorted(np.round(np.divide(num_pixels, d_spacings)))
     for peak in peak_locs_theor:
         print(f"peak: {peak}")
+        #TODO: Convert to using Diffraction2D pattern
         masked_pixels = np.ma.masked_outside(diffraction.pattern_1d[:, 1],
                                              diffraction.pattern_1d[int(peak - 2), 1],
                                              diffraction.pattern_1d[int(peak + 2), 1])

@@ -108,7 +108,7 @@ def run(unit_vector, *, output_dir_root, particle_length, particle_width, paddin
 
     # Perform correlation from the diffraction pattern
     polar_plot = PolarAngularCorrelation(diffraction_pattern_of_real_space,
-                                         300, 720, subtract_mean=True)
+                                         num_r=int(2 ** 10), num_th=720, subtract_mean=True)
 
     # Plot all figures showing, real space, diffraction in 2D and 1D, and the correlation
     # real_space_title = f'Liquid Crystal Phase of Calamitic Liquid crystals, with unit vector {unit_vector}$^\circ$'
