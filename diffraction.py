@@ -16,15 +16,15 @@ from utils import timer, save
 class Diffraction2D:
     @timer
     def __init__(self, space_object: RealSpace, wavelength: float, pixel_size: float, dx: float, npt: int = 2250,
-                 rotation = None):
+                 rotation: float = None):
         """
         Generating 2D diffraction patterns on a real space object
         :param space_object: RealSpace object with particles to be diffracted
         :param wavelength: Wavelength of the beam
         :param pixel_size: Size of the pixels on the simulated detector
         :param npt: Number of points in radial dimension for radial integration
-        :param dx: Ratio of real length in metres to  number of pixels
-        :param rotation_range: Rotation of the diffraction pattern
+        :param dx: Ratio of real length in metres to number of pixels
+        :param rotation: Rotation of the diffraction pattern in degrees
         """
 
         self.space = space_object
@@ -37,7 +37,7 @@ class Diffraction2D:
         # self.detector_dist = self.pixel_size * self.space.grid[0] / self.wavelength
         self._detector_dist = ((self.num_pixels * self.pixel_size) /
                                (2 * np.tan(2 * np.arcsin(self.wavelength / (4 * self.dx)))))
-        if rotation != None:
+        if rotation is not None:
             self.rotate_image(rotation)
         # Initialise plotting objects
         self.__fig_2d__ = None
