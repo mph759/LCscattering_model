@@ -15,13 +15,26 @@ def peak_predict(diffraction: Diffraction2D, num_pixels: tuple[int], d_spacings:
     """
     peak_locs = []
     peak_locs_theor = sorted(np.round(np.divide(num_pixels, d_spacings)))
-    diffraction_pattern_half = diffraction.pattern_2d[num_pixels[0] // 2:, num_pixels[0] // 2]
+    centre = num_pixels[0]//2
+    for peak in peak_locs_theor:
+        for new_peak in range(int(peak), centre, int(peak)):
+            if new_peak > centre or new_peak in peak_locs_theor:
+                continue
+            else:
+                peak_locs_theor.append(new_peak)
+
+    diffraction_pattern_half = diffraction.pattern_2d[centre:, centre]
+
     for i, peak in enumerate(peak_locs_theor):
-        print(f"predicted peak: {int(peak)}")
+        min_value = int(peak - 2)
+        while min_value < 0:
+            min_value += 1
+        max_value = int(peak + 2)
+        while max_value >= centre:
+            max_value -= 1
         masked_pixels = np.ma.masked_outside(diffraction_pattern_half,
-                                             diffraction_pattern_half[int(peak - 2)],
-                                             diffraction_pattern_half[int(peak + 2)])
+                                             diffraction_pattern_half[min_value],
+                                             diffraction_pattern_half[max_value])
         peak_index = np.argmax(masked_pixels)
-        print(f"peak index: {peak_index}")
         peak_locs.append(peak_index)
     return peak_locs

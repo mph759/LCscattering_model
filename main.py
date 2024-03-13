@@ -32,7 +32,7 @@ def main():
     particle_length = 15  # in pixels
     # Note: The unit vector is not the exact angle all the particles will have, but the mean of all the angles
     unit_vector_init = 45
-    unit_vector_fin = 45  # Unit vector of the particles, starting point up
+    unit_vector_fin = 90  # Unit vector of the particles, starting point up
     vector_stddev = 5  # Standard Deviation of the angle, used to generate angles for individual particles
 
     # Initialise how the particles sit in real space
@@ -150,7 +150,8 @@ def run(unit_vector, *, output_dir_root, particle_length, particle_width, paddin
 
     # Perform correlation from the diffraction pattern
     polar_plot = PolarAngularCorrelation(diffraction_pattern_of_real_space,
-                                         num_r=int(2 ** 12), num_th=720, subtract_mean=True)
+                                         num_r=diffraction_pattern_of_real_space.num_pixels/2,
+                                         num_th=720, subtract_mean=True)
 
     polar_plot.plot(clim=1e4)
     polar_plot.angular_correlation()
