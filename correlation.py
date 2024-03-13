@@ -125,7 +125,7 @@ class PolarAngularCorrelation:
 
     def plot(self, title=None, clim=None):
         self._fig_polar, self._ax_polar = plt.subplots()
-        plot = self._ax_polar.imshow(self._polar_plot)
+        plot = self._ax_polar.imshow(self._polar_plot, aspect='auto')
         self._ax_polar.invert_yaxis()
         self._ax_polar.set_xlabel('$\Theta$ / $^\circ$')
         if self.q_instead:
@@ -136,7 +136,7 @@ class PolarAngularCorrelation:
                                   np.arange(self.th_min, self.th_max, 45))
         if title is not None:
             self._ax_polar.set_title(title)
-        self._ax_polar.set_aspect(0.5625)
+        # self._ax_polar.set_aspect(0.5625)
         self._fig_polar.tight_layout()
         divider = make_axes_locatable(self._ax_polar)
 
@@ -226,7 +226,7 @@ class PolarAngularCorrelation:
     def plot_angular_correlation(self, title=None, clim=None):
         print(f'Plotting full angular correlation...')
         self.__fig_corr__, self.__ax_corr__ = plt.subplots()
-        plot = self.__ax_corr__.imshow(np.real(self.ang_corr))
+        plot = self.__ax_corr__.imshow(np.real(self.ang_corr), aspect='auto')
         self.__ax_corr__.invert_yaxis()
         if title is not None:
             self.__ax_corr__.set_title(title)
@@ -237,7 +237,7 @@ class PolarAngularCorrelation:
             self.__ax_corr__.set_ylabel('r')
         self.__ax_corr__.set_xticks(np.arange(0, self.num_th, (self.num_th / self.th_max) * 45),
                                     np.arange(self.th_min, self.th_max, 45))
-        self.__ax_corr__.set_aspect(0.5625)
+        # self.__ax_corr__.set_aspect(0.5625)
 
         self.__fig_corr__.tight_layout()
         divider = make_axes_locatable(self.__ax_corr__)

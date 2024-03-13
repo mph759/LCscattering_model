@@ -16,7 +16,7 @@ def peak_predict(diffraction: Diffraction2D, num_pixels: tuple[int], d_spacings:
     peak_locs = []
     peak_locs_theor = sorted(np.round(np.divide(num_pixels, d_spacings)))
     diffraction_pattern_half = diffraction.pattern_2d[num_pixels[0] // 2:, num_pixels[0] // 2]
-    for peak in peak_locs_theor:
+    for i, peak in enumerate(peak_locs_theor):
         print(f"predicted peak: {int(peak)}")
         masked_pixels = np.ma.masked_outside(diffraction_pattern_half,
                                              diffraction_pattern_half[int(peak - 2)],

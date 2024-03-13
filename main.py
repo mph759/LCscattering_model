@@ -126,12 +126,9 @@ def run(unit_vector, *, output_dir_root, particle_length, particle_width, paddin
 
     # diffraction_pattern_title = f'2D Diffraction pattern of Liquid Crystal Phase of Calamitic Particles'
     diffraction_pattern_title = None
-    diffraction_pattern_of_real_space.plot(diffraction_pattern_title, clim=1e8)
     peak_locs = peak_predict(diffraction_pattern_of_real_space, (x_max, y_max), (x_spacing, y_spacing))
-    for peak in peak_locs:
-        diffraction_pattern_of_real_space.__ax_2d__.scatter(x=diffraction_pattern_of_real_space.num_pixels // 2,
-                                                            y=diffraction_pattern_of_real_space.num_pixels // 2 + peak,
-                                                            color='r', marker='x', s=25, alpha=0.5)
+    diffraction_pattern_of_real_space.plot(diffraction_pattern_title, clim=1e8, peaks=peak_locs)
+
 
     diffraction_pattern_of_real_space.save(f'{output_directory}\\diffraction_pattern_2d', file_type='jpeg',
                                            dpi=300, bbox_inches='tight')
@@ -153,7 +150,7 @@ def run(unit_vector, *, output_dir_root, particle_length, particle_width, paddin
 
     # Perform correlation from the diffraction pattern
     polar_plot = PolarAngularCorrelation(diffraction_pattern_of_real_space,
-                                         num_r=int(2 ** 13), num_th=720, subtract_mean=True)
+                                         num_r=int(2 ** 12), num_th=720, subtract_mean=True)
 
     polar_plot.plot(clim=1e4)
     polar_plot.angular_correlation()

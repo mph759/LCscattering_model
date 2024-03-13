@@ -114,11 +114,12 @@ class Diffraction2D:
     def rotate_image(self, rotation):
         self._pattern_2d = rotate(self._pattern_2d, angle=rotation, reshape=False)
 
-    def plot(self, title, clim: float = None):
+    def plot(self, title, clim: float = None, peaks: list[int] = None):
         """
         Plot the 2D Diffraction image
         :param title: String to be placed as a title on the figure
         :param clim: Colour bar limit
+        :param peaks: List of peaks to plot as rings on the diffraction pattern
         :return:
         """
         print("Plotting 2D diffraction figure...")
@@ -127,6 +128,11 @@ class Diffraction2D:
         plot = self.__ax_2d__.imshow(self.pattern_2d ** 2)
         self.__ax_2d__.invert_yaxis()
         self.__ax_2d__.set_title(title)
+
+        if peaks is not None:
+            for peak in peaks:
+                ring = plt.Circle((self.num_pixels // 2, self.num_pixels // 2), peak, color='r', fill=False, alpha=0.25)
+                self.__ax_2d__.add_patch(ring)
 
         self.__ax_2d__.set_xticks([])
         self.__ax_2d__.set_yticks([])
