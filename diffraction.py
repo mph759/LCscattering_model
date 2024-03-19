@@ -10,7 +10,7 @@ from pyFAI.azimuthalIntegrator import AzimuthalIntegrator
 from scipy.ndimage import rotate
 
 from spatial import RealSpace
-from utils import timer, save
+from utils import timer, save, gaussian_convolve
 
 
 class Diffraction2D:
@@ -113,6 +113,11 @@ class Diffraction2D:
 
     def rotate_image(self, rotation):
         self._pattern_2d = rotate(self._pattern_2d, angle=rotation, reshape=False)
+
+    def gaussian_convolve(self, stddev: int = None):
+        if stddev is None:
+            stddev = self.num_pixels*8
+        self._pattern_2d = gaussian_convolve(self.pattern_2d, stddev)
 
     def plot(self, title, clim: float = None, peaks: list[int] = None):
         """
@@ -223,7 +228,7 @@ class Diffraction1D:
         else:
             return TypeError(f'unsupported operand type(s) for +: \'{type(self)}\' and \'{type(other)}\'')
 
-    def frm_integration(self, frame, unit="q_nm^-1"):
+    def radial_integration(self, frame, unit="q_nm^-1"):
         """
         Perform azimuthal integration of frame array
         :param frame: numpy array containing 2D intensity
@@ -251,7 +256,7 @@ class Diffraction1D:
         print("Generating 1D diffraction image...")
         radius = self.space.grid[0] // 2
         diffraction_image_cone = self.circular_mask(self.space.grid, radius) * self.pattern_2d
-        diffraction_plot = self.frm_integration(diffraction_image_cone, unit="q_nm^-1")
+        diffraction_plot = self.radial_integration(diffraction_image_cone, unit="q_nm^-1")
 
         non_zero = diffraction_plot[:, 1] != 0  # Removes data points at = 0 due to the cone restriction
         self._pattern_1d = diffraction_plot[non_zero]

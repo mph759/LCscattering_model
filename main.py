@@ -32,7 +32,7 @@ def main():
     particle_length = 15  # in pixels
     # Note: The unit vector is not the exact angle all the particles will have, but the mean of all the angles
     unit_vector_init = 45
-    unit_vector_fin = 90  # Unit vector of the particles, starting point up
+    unit_vector_fin = 45  # Unit vector of the particles, starting point up
     vector_stddev = 5  # Standard Deviation of the angle, used to generate angles for individual particles
 
     # Initialise how the particles sit in real space
@@ -79,6 +79,7 @@ def run(unit_vector, *, output_dir_root, particle_length, particle_width, paddin
         x_spacing = padding_spacing[0] + particle_width
     
         diffraction_of_real_space = None
+        '''
         num_iter = 1
         for i in range(num_iter):
             # Initialise the generators of the positions and angles for the particles
@@ -106,7 +107,26 @@ def run(unit_vector, *, output_dir_root, particle_length, particle_width, paddin
         # Divide the diffraction pattern by the number of iterations to create an average
         diffraction_of_real_space = diffraction_of_real_space / num_iter
         print(f"Completed making {num_iter} diffraction patterns with unit vector {unit_vector}")
-    
+        '''
+        # Initialise the generators of the positions and angles for the particles
+        positions = generate_positions((x_spacing, y_spacing), (x_max, y_max), allowed_displacement)
+        # Generate the particles
+        particles = [CalamiticParticle(position, particle_width, particle_length, unit_vector, vector_stddev)
+                     for position in positions]
+        # Check unit vector matches expected value
+        particles_unit_vector = np.mean([particle.angle for particle in particles])
+        particles_stddev = np.std([particle.angle for particle in particles])
+        print(
+            f"Collective unit vector: {particles_unit_vector:0.2f}, with a standard deviation of {particles_stddev:0.2f}")
+
+        # Create the space for the particles and place them in real space
+        real_space = RealSpace((x_max, y_max))
+        real_space.add(particles)
+
+        # Generate diffraction patterns in 2D of real space
+        diffraction_of_real_space = Diffraction2D(real_space, wavelength, pixel_size, dx, npt)
+        diffraction_of_real_space.gaussian_convolve()
+
         # Log particle information
         particle_params = particles[0].params
         particle_params[1].update({'unit_vector': unit_vector, 'unit_vector_stddev': vector_stddev,
@@ -129,7 +149,7 @@ def run(unit_vector, *, output_dir_root, particle_length, particle_width, paddin
         diffraction_pattern_title = None
         # Determine the location of peaks
         peak_locs = peak_predict(diffraction_of_real_space, (x_max, y_max), (x_spacing, y_spacing))
-        diffraction_of_real_space.plot(diffraction_pattern_title, clim=1e8, peaks=peak_locs)
+        diffraction_of_real_space.plot(diffraction_pattern_title, clim=None, peaks=peak_locs)
     
         diffraction_of_real_space.save(f'{output_directory}\\diffraction_pattern_2d', file_type='png',
                                                dpi=300, bbox_inches='tight')
@@ -155,7 +175,8 @@ def run(unit_vector, *, output_dir_root, particle_length, particle_width, paddin
         polar_plot.save(f'{output_directory}\\polar_plot', file_type='png', dpi=300, bbox_inches='tight')
     
         polar_plot.plot_angular_correlation(clim=1e10)
-        polar_plot.save_angular_correlation(f'{output_directory}\\angular_corr', file_type='npy', close_fig=False)
+        polar_plot.save_angular_correlation(f'{output_directory}\\angular_corr', file_type='npy',
+                                            close_fig=False)
         polar_plot.save_angular_correlation(f'{output_directory}\\angular_corr', file_type='png',
                                             dpi=300, bbox_inches='tight')
         log.params(polar_plot.params)
