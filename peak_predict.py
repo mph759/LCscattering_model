@@ -15,7 +15,7 @@ def peak_predict(diffraction: Diffraction2D, num_pixels: tuple[int], d_spacings:
     """
     peak_locs = []
     peak_locs_theor = sorted(np.round(np.divide(num_pixels, d_spacings)))
-    centre = num_pixels[0]//2
+    centre = num_pixels[0] // 2
     for peak in peak_locs_theor:
         for new_peak in range(int(peak), centre, int(peak)):
             if new_peak > centre or new_peak in peak_locs_theor:

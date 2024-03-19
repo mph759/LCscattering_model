@@ -9,13 +9,17 @@ import time
 from functools import wraps
 from pathlib import Path
 from stat import S_IREAD
+from typing import Any, TypeAlias
 
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy import signal
+
+Coordinates: TypeAlias = tuple[int, int]
 
 
 # Specific functions
-def generate_positions(space, maximum, change):
+def generate_positions(space, maximum, change) -> Coordinates:
     """
     Generate a position inside cartesian coordinates, given a rough lattice with random spatial oscillations
     :param space: Spacing in x and y-dimensions between positions
@@ -47,7 +51,7 @@ def generate_positions(space, maximum, change):
             x = x_space
 
 
-def pythagorean_sides(a, b, theta):
+def pythagorean_sides(a: float, b: float, theta: float) -> tuple[float, float]:
     """
     Calculates the side lengths of a right angle triangle using the Pythagorean formulae
     :param a: Length of triangle (a)
@@ -61,7 +65,8 @@ def pythagorean_sides(a, b, theta):
     return x, y
 
 
-def init_spacing(particle_length, particle_width, unit_vector, padding_spacing):
+def init_spacing(particle_length: int, particle_width: int,
+                 unit_vector: int, padding_spacing: int) -> tuple[Coordinates, Coordinates]:
     """
     Initializes the spacing of the particles based on the particle length and particle width
     :param particle_length:
@@ -78,11 +83,30 @@ def init_spacing(particle_length, particle_width, unit_vector, padding_spacing):
     displacement = tuple([np.ceil(spacing / 2) for spacing in padding_spacing])
     print(f'x spacing: {x_spacing}, y spacing: {y_spacing}')
     print(f'displacement: {displacement}')
-    return x_spacing, y_spacing, displacement
+    spacing = (x_spacing, y_spacing)
+    return spacing, displacement
+
+
+def gaussian_convolve(array: np.ndarray, stddev: int = 15) -> np.ndarray:
+    """
+    Utilise fftconvolve to convolve the array with a Gaussian kernel
+    :param array: Array to be "blurred". Can be either 1D or 2D array
+    :param stddev: Standard deviation of Gaussian kernel used to convolve the array
+    :return: blurred array
+    """
+    length = array.shape[0]
+    dim = len(np.shape(array))
+    if dim == 2:
+        kernel = np.outer(signal.windows.gaussian(length, stddev), signal.windows.gaussian(length, stddev))
+    elif dim == 1:
+        kernel = signal.windows.gaussian(length, stddev)
+    else:
+        raise ValueError('The array must be 1D or 2D.')
+    blurred = signal.fftconvolve(array, kernel, mode='same')
+    return blurred
 
 
 # General functions
-
 def timer(func):
     """
     Function timer
@@ -103,25 +127,33 @@ def timer(func):
     return wrapper
 
 
-# Logging
-def log_params(params, output_dir='LCscattering_model'):
-    Path(f'{output_dir}').mkdir(parents=True, exist_ok=True)
-    if not Path(f'{output_dir}/params.log').exists():
-        with open(Path(f'{output_dir}/params.log'), 'x'):
-            pass
-    with open(Path(f'{output_dir}/params.log'), 'a') as file:
-        file.write(f'#{params[0]}\n')
-        for param, val in params[1].items():
-            file.write(f'{param.strip("_")}: {val}\n')
-        file.write('\n')
+# Logging parameters
+class ParameterLogger:
+    def __init__(self, output_dir: str):
+        self.output_dir = Path(output_dir)
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.dir = self.output_dir / 'params.log'
+        if not self.dir.exists():
+            with open(self.dir, 'x'):
+                pass
 
+    def __enter__(self):
+        self.file = open(self.dir, 'a')
+        return self
 
-def lock_log(file_path):
-    os.chmod(Path(f'{file_path}/params.log'), S_IREAD)
+    def params(self, parameters: tuple[Any]) -> None:
+        self.file.write(f'#{parameters[0]}\n')
+        for param, val in parameters[1].items():
+            self.file.write(f'{param.strip("_")}: {val}\n')
+        self.file.write('\n')
 
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.file:
+            self.file.close()
+        os.chmod(self.dir, S_IREAD)
 
 # File handling
-def fix_file_ext(file_name, file_type):
+def fix_file_ext(file_name: str, file_type: str) -> str:
     """
     Fixes file extension if there is one on the file name which does not match the extension provided
     :param file_name: Potential file name
@@ -133,7 +165,7 @@ def fix_file_ext(file_name, file_type):
         return f'{file_name}.{file_type}'
 
 
-def check_existing_ext(file_name):
+def check_existing_ext(file_name: str) -> tuple[str, str]:
     """
     Checks for an existing file extension on a file name
     :param file_name:
@@ -150,13 +182,15 @@ def check_existing_ext(file_name):
     return file_name, file_ext
 
 
-def save(fig, array, file_name, file_type=None, **kwargs):
+def save(fig: plt.figure, array: np.ndarray, file_name: str, file_type: str = None, close_fig: bool = True,
+         **kwargs) -> str:
     """
     Save the figure as a numpy file or as an image
     :param fig: Figure object to be saved
     :param array: numpy array to be saved
     :param file_name: Output file name
     :param file_type: Type of file you want to save (e.g. npy or jpg).
+    :param close_fig: Boolean for whether to close the figure after saving.
     If not given, file name is checked for existing extension. Otherwise, default npy file
     :return:
     """
@@ -173,5 +207,6 @@ def save(fig, array, file_name, file_type=None, **kwargs):
         except ValueError:
             raise ValueError(f"Format \'{file_type}\' is not supported (supported formats: npy, eps, jpeg, jpg, pdf, "
                              f"pgf, png, ps, raw, rgba, svg, svgz, tif, tiff, webp)")
-    plt.close(fig)
+    if close_fig:
+        plt.close(fig)
     return file_name

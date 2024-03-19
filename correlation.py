@@ -249,7 +249,7 @@ class PolarAngularCorrelation:
         if clim:
             plot.set_clim(0, clim)
 
-    def save_angular_correlation(self, file_name, file_type='jpeg', **kwargs):
+    def save_angular_correlation(self, file_name, file_type='png', **kwargs):
         """
         Save the angular correlation as a numpy file or image file
         :param file_name: Output file name
@@ -259,23 +259,24 @@ class PolarAngularCorrelation:
         file_name = save(self.__fig_corr__, self.ang_corr, file_name, file_type, **kwargs)
         print(f'Saved angular correlation as {file_name}')
 
-    def plot_angular_correlation_point(self, point: float, title=None, y_lim=None, *,
+    def plot_angular_correlation_point(self, point: float, title=None, y_lim: tuple[float, float] = None, *,
                                        save_fig: bool = False, save_name: str = None,
-                                       save_type: str = 'jpeg', **kwargs):
+                                       save_type: str = 'png', **kwargs):
         """
         Plot the angular correlation at a point
         :param point: r (or q) that you wish to plot
         :param title: title for the plot
-        :param y_lim: top limit of the y axis
+        :param y_lim: max and minimum limit of the y-axis (as a tuple). If None (default) will auto-scale
         :param save_fig: Whether to save the figure (default: False)
         :param save_name: File name to save under
-        :param save_type: File type to save as (e.g. png or jpg). Default jpeg file
+        :param save_type: File type to save as (e.g. png or jpg). Default png file
         :param kwargs: Any keyword arguments to pass to matplotlib.pyplot.savefig
         :return:
         """
         print(f'Plotting angular correlation at {point}...')
+        array = np.real(self.ang_corr[point, :])
         self.__fig_corr_point__, self.__ax_corr_point__ = plt.subplots()
-        self.__ax_corr_point__.plot(np.real(self.ang_corr[point, :]))
+        self.__ax_corr_point__.plot(array)
         if title is not None:
             self.__ax_corr_point__.set_title(title)
         self.__ax_corr_point__.set_xlabel('$\Theta$ / $^\circ$')
@@ -284,8 +285,14 @@ class PolarAngularCorrelation:
                                           np.arange(self.th_min, self.th_max, 45))
         self.__fig_corr_point__.tight_layout()
         self.__ax_corr_point__.set_xlim(0, self.num_th / 2)
-        if y_lim:
+        if y_lim is not None:
             self.__ax_corr_point__.set_ylim(y_lim[0], y_lim[1])
+        else:
+            edge_mask = 2
+            scale = 1.5
+            array_cut = array[edge_mask:(self.num_th // 2) - edge_mask]
+            y_min, y_max = scale * np.min(array_cut), scale * np.max(array_cut)
+            self.__ax_corr_point__.set_ylim(y_min, y_max)
         if save_fig:
             self.save_angular_correlation_point(save_name, save_type, **kwargs)
 
