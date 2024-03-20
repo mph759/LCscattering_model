@@ -294,16 +294,16 @@ class PolarAngularCorrelation:
             y_min, y_max = scale * np.min(array_cut), scale * np.max(array_cut)
             self.__ax_corr_point__.set_ylim(y_min, y_max)
         if save_fig:
-            self.save_angular_correlation_point(save_name, save_type, **kwargs)
+            self.save_angular_correlation_point(array, save_name, save_type, **kwargs)
 
-    def save_angular_correlation_point(self, file_name, file_type=None, **kwargs):
+    def save_angular_correlation_point(self, array, file_name, file_type=None, **kwargs):
         """
         Save the angular correlation as a numpy file or image file
         :param file_name: Output file name
         :param file_type: Type of file you want to save (e.g. npy or jpg). Default npy file
         :return:
         """
-        file_name = save(self.__fig_corr_point__, self.ang_corr, file_name, file_type, **kwargs)
+        file_name = save(self.__fig_corr_point__, array, file_name, file_type, **kwargs)
         print(f'Saved angular correlation as {file_name}')
 
     # angular correlation of each q-shell with all other q-shells
