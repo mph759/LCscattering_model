@@ -87,14 +87,18 @@ def init_spacing(particle_length: int, particle_width: int,
     return spacing, displacement
 
 
-def gaussian_convolve(array: np.ndarray, stddev: int = 15) -> np.ndarray:
+def gaussian_convolve(array: np.ndarray, length: int = 3, stddev: int = 1) -> np.ndarray:
     """
     Utilise fftconvolve to convolve the array with a Gaussian kernel
     :param array: Array to be "blurred". Can be either 1D or 2D array
+    :param length: Side length of the Gaussian kernel
     :param stddev: Standard deviation of Gaussian kernel used to convolve the array
     :return: blurred array
     """
-    length = array.shape[0]
+    if length is None:
+        length = 3
+    if stddev is None:
+        stddev = 1
     dim = len(np.shape(array))
     if dim == 2:
         kernel = np.outer(signal.windows.gaussian(length, stddev), signal.windows.gaussian(length, stddev))

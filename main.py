@@ -149,8 +149,8 @@ def run(unit_vector, *, output_dir_root, particle_length, particle_width, paddin
         diffraction_pattern_title = None
         # Determine the location of peaks
         peak_locs = peak_predict(diffraction_of_real_space, (x_max, y_max), (x_spacing, y_spacing))
-        diffraction_of_real_space.plot(diffraction_pattern_title, clim=None, peaks=peak_locs)
-    
+        diffraction_of_real_space.plot(diffraction_pattern_title, clim=1e12, peaks=peak_locs)
+        # plt.show()
         diffraction_of_real_space.save(f'{output_directory}\\diffraction_pattern_2d', file_type='png',
                                                dpi=300, bbox_inches='tight')
         log.params(diffraction_of_real_space.params)
@@ -170,11 +170,12 @@ def run(unit_vector, *, output_dir_root, particle_length, particle_width, paddin
                                              num_r=diffraction_of_real_space.num_pixels // 2,
                                              num_th=720, subtract_mean=True)
     
-        polar_plot.plot(clim=1e4)
-        polar_plot.angular_correlation()
+        polar_plot.plot(clim=5e4)
+        plt.show()
         polar_plot.save(f'{output_directory}\\polar_plot', file_type='png', dpi=300, bbox_inches='tight')
-    
-        polar_plot.plot_angular_correlation(clim=1e10)
+        polar_plot.angular_correlation()
+        polar_plot.plot_angular_correlation(clim=5e11)
+        plt.show()
         polar_plot.save_angular_correlation(f'{output_directory}\\angular_corr', file_type='npy',
                                             close_fig=False)
         polar_plot.save_angular_correlation(f'{output_directory}\\angular_corr', file_type='png',
