@@ -125,7 +125,6 @@ def run(unit_vector, *, output_dir_root, particle_length, particle_width, paddin
 
         # Generate diffraction patterns in 2D of real space
         diffraction_of_real_space = Diffraction2D(real_space, wavelength, pixel_size, dx, npt)
-        diffraction_of_real_space.gaussian_convolve()
 
         # Log particle information
         particle_params = particles[0].params
@@ -149,8 +148,8 @@ def run(unit_vector, *, output_dir_root, particle_length, particle_width, paddin
         diffraction_pattern_title = None
         # Determine the location of peaks
         peak_locs = peak_predict(diffraction_of_real_space, (x_max, y_max), (x_spacing, y_spacing))
-        diffraction_of_real_space.plot(diffraction_pattern_title, clim=1e12, peaks=peak_locs)
-        # plt.show()
+        diffraction_of_real_space.plot(diffraction_pattern_title, clim=1e8, peaks=peak_locs)
+        plt.show()
         diffraction_of_real_space.save(f'{output_directory}\\diffraction_pattern_2d', file_type='png',
                                                dpi=300, bbox_inches='tight')
         log.params(diffraction_of_real_space.params)
@@ -167,8 +166,8 @@ def run(unit_vector, *, output_dir_root, particle_length, particle_width, paddin
     
         # Perform correlation from the diffraction pattern
         polar_plot = PolarAngularCorrelation(diffraction_of_real_space,
-                                             num_r=diffraction_of_real_space.num_pixels // 2,
-                                             num_th=720, subtract_mean=True)
+                                             num_r=diffraction_of_real_space.num_pixels // 2, num_th=720,
+                                             subtract_mean=True, gaussian_convolve=True)
     
         polar_plot.plot(clim=5e4)
         plt.show()

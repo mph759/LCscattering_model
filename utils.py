@@ -13,7 +13,7 @@ from typing import Any, TypeAlias
 
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy import signal
+
 
 Coordinates: TypeAlias = tuple[int, int]
 

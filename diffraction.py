@@ -114,9 +114,6 @@ class Diffraction2D:
     def rotate_image(self, rotation):
         self._pattern_2d = rotate(self._pattern_2d, angle=rotation, reshape=False)
 
-    def gaussian_convolve(self, length: int = None, stddev: int = None):
-        self._pattern_2d = gaussian_convolve(self.pattern_2d, length, stddev)
-
     def plot(self, title, clim: float = None, peaks: list[int] = None):
         """
         Plot the 2D Diffraction image
