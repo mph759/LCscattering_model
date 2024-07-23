@@ -15,7 +15,12 @@ from utils import timer, save, gaussian_convolve
 
 class Diffraction2D:
     @timer
-    def __init__(self, space_object: RealSpace, wavelength: float, pixel_size: float, dx: float, npt: int = 2250,
+    def __init__(self,
+                 space_object: RealSpace,
+                 wavelength: float,
+                 pixel_size: float,
+                 dx: float,
+                 npt: int = 2250,
                  rotation: float = None):
         """
         Generating 2D diffraction patterns on a real space object
@@ -237,7 +242,7 @@ class Diffraction1D:
         ai.setFit2D(directDist=self.detector_dist / 1000,
                     centerX=image_center[0],
                     centerY=image_center[1],
-                    pixelX=self.pixel_size, pixelY=self.pixel_size)
+                    pixelX=self.dx, pixelY=self.dx)
         ai.wavelength = self.wavelength
         integrated_profile = ai.integrate1d(data=frame, npt=self.npt, unit=unit)
         return np.transpose(np.array(integrated_profile))

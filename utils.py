@@ -9,11 +9,14 @@ import time
 from functools import wraps
 from pathlib import Path
 from stat import S_IREAD
-from typing import Any, TypeAlias
+from typing import Any, TypeAlias, Tuple
+import logging
+import sys
 
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mtick
 import numpy as np
-
+from scipy import signal
 
 Coordinates: TypeAlias = tuple[int, int]
 
@@ -65,8 +68,28 @@ def pythagorean_sides(a: float, b: float, theta: float) -> tuple[float, float]:
     return x, y
 
 
+def plot_angle_bins(samples, mean, stddev, min_x=0, max_x=180):
+    sample_mean = np.mean(samples)
+    sample_stddev = np.std(samples)
+    sample_size = len(samples)
+    bins = range(0, 180, 1)
+    fig, ax = plt.subplots()
+    count, bins, ignored = ax.hist(samples, bins=bins, density=True)
+    y = 1 / (stddev * np.sqrt(2 * np.pi)) * np.exp(- (bins - mean) ** 2 / (2 * stddev ** 2))
+    ax.plot(bins, y, 'r')
+    ax.set_xlim(min_x, max_x)
+    ax.set_ylim(0, 0.09)
+    ax.text(0.8, 0.85, f'Sample size: {sample_size}\nMean: {mean:.2f}\nStandard dev.={stddev:.2f}', transform=plt.gca().transAxes)
+    #ax.set_yticks([])
+    ax.yaxis.set_major_formatter(mtick.PercentFormatter(1))
+    ax.set_ylabel('Probability')
+    ax.set_xlabel('Value')
+    fig.tight_layout()
+    return fig
+
+
 def init_spacing(particle_length: int, particle_width: int,
-                 unit_vector: int, padding_spacing: int) -> tuple[Coordinates, Coordinates]:
+                 unit_vector: int, padding_spacing: int):
     """
     Initializes the spacing of the particles based on the particle length and particle width
     :param particle_length:
@@ -155,6 +178,27 @@ class ParameterLogger:
         if self.file:
             self.file.close()
         os.chmod(self.dir, S_IREAD)
+
+
+def logger_setup(name, path: str | Path, stream: bool = False, level=logging.INFO):
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.DEBUG)
+    formatter = logging.Formatter(fmt='%(asctime)s - %(levelname)s - %(message)s - (Line: %(lineno)d [%(filename)s])',
+                                  datefmt='%Y/%m/%d %I:%M:%S %p')
+
+    file_path = Path(f'{path}/{name}.log')
+    handler = logging.FileHandler(filename=file_path, encoding='utf-8', mode='w')
+    handler.setFormatter(formatter)
+    handler.setLevel(level)
+    logger.addHandler(handler)
+
+    if stream:
+        stream_handler = logging.StreamHandler(sys.stdout)
+        stream_handler.setFormatter(formatter)
+        stream_handler.setLevel(logging.DEBUG)
+        logger.addHandler(stream_handler)
+
+    return logger
 
 
 # File handling

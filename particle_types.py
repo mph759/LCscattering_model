@@ -53,7 +53,7 @@ class CalamiticParticle(PointParticle):
         super().__init__(init_position)
         self._width = width
         self._length = length
-        self._angle = np.random.normal(mean_angle, angle_stddev) % 360
+        self._set_angle(mean_angle, angle_stddev)
         self._get_end_points()
 
     @property
@@ -102,6 +102,13 @@ class CalamiticParticle(PointParticle):
         x2, y2 = pythagorean_sides(self.length, 0, self.angle)
         self._end_position = (int(x2) + self.x1, int(y2) + self.y1)
 
+    def _set_angle(self, mean_angle: float, angle_stddev: float):
+        angle = np.random.normal(mean_angle, angle_stddev)
+        if angle < 0:
+            angle += 360
+        angle %= 360
+        self._angle = angle
+
     def create(self, draw_object):
         """
         Draw the particle onto real space
@@ -109,3 +116,4 @@ class CalamiticParticle(PointParticle):
         :return: The line to be drawn on the real space object
         """
         return draw_object.line([self.position, self.end_position], fill=1, width=self.width)
+

@@ -19,9 +19,7 @@ class PolarAngularCorrelation:
 
     @timer
     def __init__(self, diffraction_object: Diffraction2D, num_r, num_th, r_min=0, r_max=None, th_min=0, th_max=360,
-                 *,
-                 q_instead: bool = False, subtract_mean: bool = False,
-                 real_only: bool = False, gaussian_convolve: bool = False, gaussian_params: dict = None):
+                 *, q_instead: bool = False, real_only: bool = False):
         """Converting a 2D diffraction image into an r v. theta plot
         :param num_r: number of radial bins
         :type num_r: int
@@ -85,15 +83,8 @@ class PolarAngularCorrelation:
 
         data = sdn.map_coordinates(self.data_2d, [new_x.flatten(), new_y.flatten()], order=3)
         self._polar_plot = data.reshape(num_r, num_th)
-        if subtract_mean:
-            self.subtract_mean_r()
         if real_only:
             self._polar_plot = np.real(self._polar_plot)
-        if gaussian_convolve:
-            if gaussian_params:
-                self.gaussian_convolve(*gaussian_params)
-            else:
-                self.gaussian_convolve()
 
     @property
     def params(self):
@@ -132,9 +123,8 @@ class PolarAngularCorrelation:
 
     def gaussian_convolve(self, side_length: int = 3, stddev: int = 1):
         kernel = [signal.windows.gaussian(side_length, stddev) for _ in range(side_length)]
-        plt.imshow(kernel)
-        plt.show()
         self._polar_plot = signal.fftconvolve(self._polar_plot, kernel, mode='same')
+        return kernel
 
     def plot(self, title=None, clim=None):
         self._fig_polar, self._ax_polar = plt.subplots()
