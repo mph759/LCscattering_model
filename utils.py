@@ -32,7 +32,7 @@ def generate_positions(space, maximum, change) -> Coordinates:
     """
     # Initial positions, just inside the box
     x_space, y_space = space
-    x_change, y_change = change
+    x_change, y_change = np.abs(change)
     x_max, y_max = maximum
     x = int(x_space / 2)
     y = int(y_space / 2)
