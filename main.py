@@ -12,9 +12,10 @@ from pathlib import Path
 from multiprocessing import Pool
 from functools import partial
 import logging
+import json
 from itertools import repeat
 
-from correlation import PolarAngularCorrelation
+from correlation import PolarDiffraction2D, AngularCorrelation
 from diffraction import Diffraction2D, Diffraction1D
 from peak_predict import peak_predict
 from spatial import RealSpace
@@ -52,18 +53,21 @@ def main():
     now = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
     output_dir_root = f'output\\LCscattering-trial_{now}'
     Path(output_dir_root).mkdir(parents=True, exist_ok=True)
-    main_logger = logger_setup('main', Path(output_dir_root), stream=True)
-    base_run_partial = partial(run, output_dir_root=output_dir_root, grid_max=x_max, padding_spacing=padding_spacing,
-                               wavelength=wavelength, pixel_size=pixel_size, dx=dx, npt=npt)
+    main_logger = logger_setup('main', output_dir_root, stream=True)
+    base_run_partial = partial(run, output_dir_root=output_dir_root, grid_max=x_max, particle_width=2,
+                               padding_spacing=padding_spacing, wavelength=wavelength, pixel_size=pixel_size,
+                               dx=dx, npt=npt)
 
     # Run over many variables
     variables = {
-        "unit_vector": range(unit_vector, 90 + vector_stddev, vector_stddev),
-        "vector_stddev": range(vector_stddev, 20, vector_stddev),
-        "particle_width": range(particle_width, np.floor_divide(particle_length, particle_width) + 1, 1),
-        "particle_length": range(particle_length, 2 * particle_length + 1, 1),
-        "padding_spacing": [(5, x) for x in range(-5, 10 + 1, 1)]
+        "unit_vector": list(range(unit_vector, 90 + vector_stddev, vector_stddev)),
+        "vector_stddev": list(range(vector_stddev, 20, vector_stddev)),
+        # "particle_width": list(range(particle_width, np.floor_divide(particle_length, particle_width) + 1, 1)),
+        "particle_length": list(range(particle_length, 2 * particle_length + 1, 1)),
+        "padding_spacing": [(5, x) for x in range(-5, 10 + 1, 1)],
     }
+    with open(f'{output_dir_root}/variables.json', 'w') as f:
+        json.dump(variables, f)
 
     start = time.perf_counter()
     kwargs = {}
@@ -163,30 +167,32 @@ def run(unit_vector, vector_stddev, particle_width, particle_length, *, padding_
         log.params(("Peak Locations", {"peaks": peak_locs}))
 
         # Perform correlation from the diffraction pattern
-        polar_plot = PolarAngularCorrelation(diffraction_of_real_space,
-                                             num_r=diffraction_of_real_space.num_pixels // 2, num_th=720)
+        polar_plot = PolarDiffraction2D(diffraction_of_real_space,
+                                        num_r=diffraction_of_real_space.num_pixels // 2, num_th=720)
         polar_plot.subtract_mean_r()
         polar_plot.gaussian_convolve()
 
         polar_plot.plot(clim=5e4)
         # plt.show()
         polar_plot.save(f'{output_directory}\\polar_plot', file_type='png', dpi=300, bbox_inches='tight')
-        polar_plot.angular_correlation()
-        polar_plot.plot_angular_correlation(clim=5e11)
-        # plt.show()
-        polar_plot.save_angular_correlation(f'{output_directory}\\angular_corr', file_type='npy',
-                                            close_fig=False)
-        polar_plot.save_angular_correlation(f'{output_directory}\\angular_corr', file_type='png',
-                                            dpi=300, bbox_inches='tight')
         log.params(polar_plot.params)
 
+        angular_corr = AngularCorrelation(polar_plot)
+        angular_corr.plot(clim=5e11)
+        # plt.show()
+        angular_corr.save(f'{output_directory}\\angular_corr', file_type='npy',
+                                close_fig=False)
+        angular_corr.save(f'{output_directory}\\angular_corr', file_type='png',
+                                dpi=300, bbox_inches='tight')
+
+
         for peak in peak_locs:
-            polar_plot.plot_angular_correlation_point(peak,
-                                                      title=None,
-                                                      # f'Angular line plot at {q}, with unit vector {unit_vector}',
-                                                      save_fig=True,
-                                                      save_name=f'{output_directory}\\angular_line_{peak}',
-                                                      save_type='png', dpi=300, bbox_inches='tight')
+            angular_corr.plot_line(peak,
+                                         title=None,
+                                         # f'Angular line plot at {q}, with unit vector {unit_vector}',
+                                         save_fig=True,
+                                         save_name=f'{output_directory}\\angular_line_{peak}',
+                                         save_type='png', dpi=300, bbox_inches='tight')
 
         # plt.show()
         plt.close('all')

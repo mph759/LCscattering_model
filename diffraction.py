@@ -8,9 +8,11 @@ import numpy as np
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from pyFAI.azimuthalIntegrator import AzimuthalIntegrator
 from scipy.ndimage import rotate
+import scipy.ndimage as sdn
+from scipy import signal
 
 from spatial import RealSpace
-from utils import timer, save, gaussian_convolve
+from utils import timer, save
 
 
 class Diffraction2D:
@@ -162,6 +164,182 @@ class Diffraction2D:
         """
         file_name = save(self.__fig_2d__, self.pattern_2d, file_name, file_type, **kwargs)
         print(f'Saved 2D diffraction pattern as {file_name}')
+
+
+class PolarDiffraction2D:
+    @timer
+    def __init__(self, diffraction_object: Diffraction2D, num_r, num_th, r_min=0, r_max=None, th_min=0, th_max=360,
+                 *, q_instead: bool = False, real_only: bool = False):
+        """Converting a 2D diffraction image into an r v. theta plot
+        :param num_r: number of radial bins
+        :type num_r: int
+        :param num_th: number of angular bins
+        :type num_th: int
+        :param r_min: value of smallest radial bin. (arbitrary units)
+        :type r_min: float
+        :param r_max: value of largest radial bin
+        :type r_max: float
+        :param th_min: value of smallest angular bin (radians)
+        :type th_min: float
+        :param th_max: value of largest angular bin (radians
+        :type th_max: float
+        :param q_instead: Whether to use q bins instead of r (default: False)
+        :param subtract_mean: Whether to subtract mean from the radial ring (default: False)
+        :type subtract_mean: bool
+        :param real_only: Whether to return only the real component of the array (default: False)
+        :type real_only: bool
+        :return Data interpolated onto an r vs theta grid
+        :rtype numpy array (float)
+        """
+        self._data_2d = diffraction_object.pattern_2d
+        self._centre = tuple([dimension / 2 for dimension in diffraction_object.space.grid])
+        self._pixel_size = diffraction_object.pixel_size
+        self._wavelength = diffraction_object.wavelength
+        self._detector_dist = diffraction_object.detector_dist
+
+        self._fig_polar = None
+        self._ax_polar = None
+        self.num_r = num_r
+        self.num_th = num_th
+        self.r_min = r_min
+        if r_max is None:
+            self.r_max = num_r
+        else:
+            self.r_max = r_max
+        self.th_min = th_min
+        self.th_max = th_max
+        self.th_min_rad, self.th_max_rad = map(np.deg2rad, (th_min, th_max))
+        self.q_instead = q_instead
+
+        if q_instead is not None:
+            self.q_bins = self.q_bins(self.num_r)
+            num_r = self.q_bins.size
+            r_array = np.outer(self.q_bins, np.ones(num_th))
+        else:
+            r_array = np.outer(np.arange(num_r) * (r_max - r_min) / float(num_r) + r_min, np.ones(num_th))
+        th_array = np.outer(np.ones(num_r),
+                            np.arange(num_th) * (self.th_max_rad - self.th_min_rad) /
+                            float(num_th) + self.th_min_rad)
+
+        new_x = r_array * np.cos(th_array) + self.centre_x
+        new_y = r_array * np.sin(th_array) + self.centre_y
+
+        data = sdn.map_coordinates(self.data_2d, [new_x.flatten(), new_y.flatten()], order=3)
+        self._polar_plot = data.reshape(num_r, num_th)
+        if real_only:
+            self._polar_plot = np.real(self._polar_plot)
+
+    @property
+    def params(self):
+        return ('Polar Angular Correlation',
+                {'num_r': self.num_r,
+                 'num_th': self.num_th,
+                 'r_min': self.r_min,
+                 'r_max': self.r_max,
+                 'th_min': self.th_min,
+                 'th_max': self.th_max,
+                 'q_instead': self.q_instead})
+
+    @property
+    def data_2d(self):
+        return self._data_2d
+
+    @property
+    def polar_plot(self):
+        return self._polar_plot
+
+    @property
+    def centre_x(self):
+        return self._centre[0]
+
+    @property
+    def centre_y(self):
+        return self._centre[1]
+
+    @property
+    def pixel_size(self):
+        return self._pixel_size
+
+    @property
+    def wavelength(self):
+        return self._wavelength
+
+    @property
+    def detector_dist(self):
+        return self._detector_dist
+
+    def gaussian_convolve(self, side_length: int = 3, stddev: int = 1):
+        kernel = [signal.windows.gaussian(side_length, stddev) for _ in range(side_length)]
+        self._polar_plot = signal.fftconvolve(self._polar_plot, kernel, mode='same')
+        return kernel
+
+    def plot(self, title=None, clim=None):
+        self._fig_polar, self._ax_polar = plt.subplots()
+        plot = self._ax_polar.imshow(self._polar_plot, aspect='auto')
+        self._ax_polar.invert_yaxis()
+        self._ax_polar.set_xlabel('$\Theta$ / $^\circ$')
+        if self.q_instead:
+            self._ax_polar.set_ylabel('q')
+        else:
+            self._ax_polar.set_ylabel('r')
+        self._ax_polar.set_xticks(np.arange(0, self.num_th, (self.num_th / self.th_max) * 45),
+                                  np.arange(self.th_min, self.th_max, 45))
+        if title is not None:
+            self._ax_polar.set_title(title)
+        self._fig_polar.tight_layout()
+        divider = make_axes_locatable(self._ax_polar)
+
+        # creating new axes on the right side of current axes(ax).
+        # The width of cax will be 5% of ax and the padding between cax and ax will be fixed at 0.05 inch.
+        colorbar_axes = divider.append_axes("right",
+                                            size="10%",
+                                            pad=0.1)
+        self._fig_polar.colorbar(plot, cax=colorbar_axes)
+        if clim is not None:
+            plot.set_clim(0, clim)
+
+    def save(self, file_name, file_type=None, **kwargs):
+        """
+        Save the polar plot as a numpy file or image file
+        :param file_name: Output file name
+        :param file_type: Type of file you want to save (e.g. npy or jpg). Default npy file
+        :return:
+        """
+        file_name = save(self._fig_polar, self._polar_plot, file_name, file_type, **kwargs)
+        print(f'Saved polar plot as {file_name}')
+
+    def q_bins(self, nq):
+        """
+        Generates a list of q bins based on Ewald sphere curvature
+        :param nq: number of q bins
+        :type nq: int
+        :return: list of q values of each radial (q) bin
+        :rtype: numpy array (float)
+        """
+        pixel_max = self.centre_x
+        q_max = (2 / self.wavelength) * np.sin(
+            np.arctan(pixel_max * self.pixel_size / self.detector_dist) / 2.0)
+        q_ind = np.arange(nq) * q_max / float(nq)
+        q_pixels = (self.detector_dist / self.pixel_size) * np.tan(
+            2.0 * np.arcsin(q_ind * (self.wavelength / 2.0)))
+        return np.floor(q_pixels)
+
+    def subtract_mean_r(self):
+        """
+        Subtract the mean value in each q-ring from a polar plot
+
+        Parameters
+        ----------
+        pplot : numpy array (float)
+            input polar plot
+
+        Returns
+        -------
+        out : numpy array (float)
+            polar plot with q-ring mean value subtracted
+        """
+        av = np.average(self._polar_plot, 1)
+        self._polar_plot -= np.outer(av, np.ones(self._polar_plot.shape[1]))
 
 
 class Diffraction1D:
