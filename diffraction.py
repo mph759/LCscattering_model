@@ -143,17 +143,15 @@ class Diffraction2D:
 
         self.__ax_2d__.set_xticks([])
         self.__ax_2d__.set_yticks([])
-        self.__fig_2d__.tight_layout()
-        divider = make_axes_locatable(self.__ax_2d__)
 
         # creating new axes on the right side of current axes(ax).
         # The width of cax will be 5% of ax and the padding between cax and ax will be fixed at 0.05 inch.
-        colorbar_axes = divider.append_axes("right",
-                                            size="10%",
-                                            pad=0.1)
+        colorbar_axes = make_axes_locatable(self.__ax_2d__).append_axes("right", size="5%", pad=0.1)
         self.__fig_2d__.colorbar(plot, cax=colorbar_axes)
         if clim:
             plot.set_clim(0, clim)
+
+        self.__fig_2d__.tight_layout()
 
     def save(self, file_name, file_type=None, **kwargs):
         """
@@ -170,7 +168,7 @@ class PolarDiffraction2D:
     @timer
     def __init__(self, diffraction_object: Diffraction2D, num_r, num_th, r_min=0, r_max=None, th_min=0, th_max=360,
                  *, q_instead: bool = False, real_only: bool = False):
-        """Converting a 2D diffraction image into an r v. theta plot
+        """Converting a 2D diffraction image into a polar (r v. theta) plot
         :param num_r: number of radial bins
         :type num_r: int
         :param num_th: number of angular bins
@@ -292,7 +290,7 @@ class PolarDiffraction2D:
         # creating new axes on the right side of current axes(ax).
         # The width of cax will be 5% of ax and the padding between cax and ax will be fixed at 0.05 inch.
         colorbar_axes = divider.append_axes("right",
-                                            size="10%",
+                                            size="5%",
                                             pad=0.1)
         self._fig_polar.colorbar(plot, cax=colorbar_axes)
         if clim is not None:

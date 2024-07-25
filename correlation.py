@@ -12,7 +12,12 @@ from utils import timer, save
 
 
 class AngularCorrelation:
-    def __init__(self, diffraction_2d_polar: PolarDiffraction2D):
+    @timer
+    def __init__(self, diffraction_2d_polar: PolarDiffraction2D) -> None:
+        """
+        Performing angular correlation analysis on polar diffraction pattern
+        :param diffraction_2d_polar: PolarDiffraction2D object
+        """
         self._polar_plot = diffraction_2d_polar.polar_plot
         self.angular_correlation()
         self.__fig_corr__ = None
@@ -21,10 +26,10 @@ class AngularCorrelation:
         self.__ax_corr_point__ = None
 
     @property
-    def polar(self):
+    def polar(self) -> np.ndarray:
         return self._polar_plot
 
-    def angular_correlation(self, polar2=None):
+    def angular_correlation(self, polar2=None) -> np.ndarray:
         """
         Calculate the 2D angular correlation of a polar plot
         or cross-correlation of two polar plots
@@ -70,13 +75,10 @@ class AngularCorrelation:
                                     np.arange(self.th_min, self.th_max, 45))
 
         self.__fig_corr__.tight_layout()
-        divider = make_axes_locatable(self.__ax_corr__)
 
         # creating new axes on the right side of current axes(ax).
         # The width of cax will be 5% of ax and the padding between cax and ax will be fixed at 0.05 inch.
-        colorbar_axes = divider.append_axes("right",
-                                            size="10%",
-                                            pad=0.1)
+        colorbar_axes = make_axes_locatable(self.__ax_corr__).append_axes("right", size="5%", pad=0.1)
         self.__fig_corr__.colorbar(plot, cax=colorbar_axes)
         if clim:
             plot.set_clim(0, clim)
