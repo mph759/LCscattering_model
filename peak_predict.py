@@ -69,7 +69,7 @@ class MillerIndex_2D:
             raise TypeError(f"{other} is not an appropriate Miller Index (2D)")
 
 
-def peak_predict(diffraction: Diffraction2D, d_spacings: tuple[float]):
+def peak_predict(diffraction: Diffraction2D, d_spacings: tuple[float, float]) -> object:
     """
     Predict the peak postion (q) from real space parameters
     :return: peak_locs: peak positions in q
@@ -78,7 +78,7 @@ def peak_predict(diffraction: Diffraction2D, d_spacings: tuple[float]):
     num_pixels = diffraction.num_pixels
     peak_locs_theor = sorted(np.round(np.divide(num_pixels, d_spacings)))
 
-    centre = num_pixels[0] // 2
+    centre = num_pixels // 2
     for peak in peak_locs_theor:
         for new_peak in range(int(peak), centre, int(peak)):
             if new_peak > centre or new_peak in peak_locs_theor:
