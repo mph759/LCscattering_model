@@ -18,7 +18,7 @@ class AngularCorrelation:
         Performing angular correlation analysis on polar diffraction pattern
         :param diffraction_2d_polar: PolarDiffraction2D object
         """
-        self._polar_plot = diffraction_2d_polar.polar_plot
+        self._polar_plot = diffraction_2d_polar.data
         self.angular_correlation()
         self.__fig_corr__ = None
         self.__ax_corr__ = None

@@ -195,8 +195,8 @@ class PolarDiffraction2D:
         self._wavelength = diffraction_object.wavelength
         self._detector_dist = diffraction_object.detector_dist
 
-        self._fig_polar = None
-        self._ax_polar = None
+        self._fig = None
+        self._ax = None
         self.num_r = num_r
         self.num_th = num_th
         self.r_min = r_min
@@ -223,9 +223,9 @@ class PolarDiffraction2D:
         new_y = r_array * np.sin(th_array) + self.centre_y
 
         data = sdn.map_coordinates(self.data_2d, [new_x.flatten(), new_y.flatten()], order=3)
-        self._polar_plot = data.reshape(num_r, num_th)
+        self._data = data.reshape(num_r, num_th)
         if real_only:
-            self._polar_plot = np.real(self._polar_plot)
+            self._data = np.real(self._data)
 
     @property
     def params(self):
@@ -243,8 +243,8 @@ class PolarDiffraction2D:
         return self._data_2d
 
     @property
-    def polar_plot(self):
-        return self._polar_plot
+    def data(self):
+        return self._data
 
     @property
     def centre_x(self):
@@ -268,31 +268,31 @@ class PolarDiffraction2D:
 
     def gaussian_convolve(self, side_length: int = 3, stddev: int = 1):
         kernel = [signal.windows.gaussian(side_length, stddev) for _ in range(side_length)]
-        self._polar_plot = signal.fftconvolve(self._polar_plot, kernel, mode='same')
+        self._data = signal.fftconvolve(self.data, kernel, mode='same')
         return kernel
 
     def plot(self, title=None, clim=None):
-        self._fig_polar, self._ax_polar = plt.subplots()
-        plot = self._ax_polar.imshow(self._polar_plot, aspect='auto')
-        self._ax_polar.invert_yaxis()
-        self._ax_polar.set_xlabel('$\Theta$ / $^\circ$')
+        self._fig, self._ax = plt.subplots()
+        plot = self._ax.imshow(self.data, aspect='auto')
+        self._ax.invert_yaxis()
+        self._ax.set_xlabel('$\Theta$ / $^\circ$')
         if self.q_instead:
-            self._ax_polar.set_ylabel('q')
+            self._ax.set_ylabel('q')
         else:
-            self._ax_polar.set_ylabel('r')
-        self._ax_polar.set_xticks(np.arange(0, self.num_th, (self.num_th / self.th_max) * 45),
-                                  np.arange(self.th_min, self.th_max, 45))
+            self._ax.set_ylabel('r')
+        self._ax.set_xticks(np.arange(0, self.num_th, (self.num_th / self.th_max) * 45),
+                            np.arange(self.th_min, self.th_max, 45))
         if title is not None:
-            self._ax_polar.set_title(title)
-        self._fig_polar.tight_layout()
-        divider = make_axes_locatable(self._ax_polar)
+            self._ax.set_title(title)
+        self._fig.tight_layout()
+        divider = make_axes_locatable(self._ax)
 
         # creating new axes on the right side of current axes(ax).
         # The width of cax will be 5% of ax and the padding between cax and ax will be fixed at 0.05 inch.
         colorbar_axes = divider.append_axes("right",
                                             size="5%",
                                             pad=0.1)
-        self._fig_polar.colorbar(plot, cax=colorbar_axes)
+        self._fig.colorbar(plot, cax=colorbar_axes)
         if clim is not None:
             plot.set_clim(0, clim)
 
@@ -303,7 +303,7 @@ class PolarDiffraction2D:
         :param file_type: Type of file you want to save (e.g. npy or jpg). Default npy file
         :return:
         """
-        file_name = save(self._fig_polar, self._polar_plot, file_name, file_type, **kwargs)
+        file_name = save(self._fig, self._data, file_name, file_type, **kwargs)
         print(f'Saved polar plot as {file_name}')
 
     def q_bins(self, nq):
@@ -336,8 +336,8 @@ class PolarDiffraction2D:
         out : numpy array (float)
             polar plot with q-ring mean value subtracted
         """
-        av = np.average(self._polar_plot, 1)
-        self._polar_plot -= np.outer(av, np.ones(self._polar_plot.shape[1]))
+        av = np.average(self._data, 1)
+        self._data -= np.outer(av, np.ones(self._data.shape[1]))
 
 
 class Diffraction1D:
