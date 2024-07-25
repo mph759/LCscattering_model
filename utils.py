@@ -80,7 +80,6 @@ def plot_angle_bins(samples, mean, stddev, min_x=0, max_x=180):
     ax.set_xlim(min_x, max_x)
     ax.set_ylim(0, 0.09)
     ax.text(0.8, 0.85, f'Sample size: {sample_size}\nMean: {mean:.2f}\nStandard dev.={stddev:.2f}', transform=plt.gca().transAxes)
-    #ax.set_yticks([])
     ax.yaxis.set_major_formatter(mtick.PercentFormatter(1))
     ax.set_ylabel('Probability')
     ax.set_xlabel('Value')
@@ -89,7 +88,7 @@ def plot_angle_bins(samples, mean, stddev, min_x=0, max_x=180):
 
 
 def init_spacing(particle_length: int, particle_width: int,
-                 unit_vector: int, padding_spacing: int):
+                 unit_vector: int, padding_spacing: int) -> tuple[tuple[int, int], tuple[float, float]]:
     """
     Initializes the spacing of the particles based on the particle length and particle width
     :param particle_length:
@@ -134,7 +133,7 @@ def gaussian_convolve(array: np.ndarray, length: int = 3, stddev: int = 1) -> np
 
 
 # General functions
-def timer(func):
+def timer(func) -> object:
     """
     Function timer
     :param func: Function to be timed
@@ -142,7 +141,7 @@ def timer(func):
     """
 
     @wraps(func)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args, **kwargs) -> Any:
         t_start = time.perf_counter()
         result = func(*args, **kwargs)
         t_end = time.perf_counter()
@@ -156,7 +155,7 @@ def timer(func):
 
 # Logging parameters
 class ParameterLogger:
-    def __init__(self, output_dir: str):
+    def __init__(self, output_dir: str) -> None:
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.dir = self.output_dir / 'params.log'
@@ -164,7 +163,7 @@ class ParameterLogger:
             with open(self.dir, 'x'):
                 pass
 
-    def __enter__(self):
+    def __enter__(self) -> 'ParameterLogger':
         self.file = open(self.dir, 'a')
         return self
 
@@ -174,13 +173,13 @@ class ParameterLogger:
             self.file.write(f'{param.strip("_")}: {val}\n')
         self.file.write('\n')
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         if self.file:
             self.file.close()
         os.chmod(self.dir, S_IREAD)
 
 
-def logger_setup(name, path: str | Path, stream: bool = False, level=logging.INFO):
+def logger_setup(name, path: str | Path, stream: bool = False, level=logging.INFO) -> logging.Logger:
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)
     formatter = logging.Formatter(fmt='%(asctime)s - %(levelname)s - %(message)s - (Line: %(lineno)d [%(filename)s])',

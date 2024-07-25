@@ -9,58 +9,62 @@ from diffraction import Diffraction2D
 
 
 class MillerIndex_3D:
-    def __init__(self, x, y, z):
+    def __init__(self, x, y, z) -> None:
         self._h = x
         self._k = y
         self._l = z
 
     @property
-    def h(self):
+    def h(self) -> int:
         return self._h
 
     @property
-    def k(self):
+    def k(self) -> int:
         return self._k
 
     @property
-    def l(self):
+    def l(self) -> int:
         return self._l
 
-    def __len__(self):
+    def __len__(self) -> float:
         return np.sqrt(self.h ** 2 + self.k ** 2 + self.l ** 2)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"[{self.h}{self.k}{self.l}]"
 
-    def __add__(self, other):
+    def __add__(self, other) -> 'MillerIndex_3D':
         if isinstance(other, MillerIndex_3D):
-            return MillerIndex_3D(self.h + other.h, self.k + other.k, self.l)
+            return MillerIndex_3D(self.h + other.h, self.k + other.k, self.l + other.l)
+        elif isinstance(other, tuple) and len(other) == 3:
+            return MillerIndex_3D(self.h + other[0], self.k + other[1], self.l + other[2])
         else:
             raise TypeError(f"{other} is not an appropriate Miller Index (3D)")
 
 
 class MillerIndex_2D:
-    def __init__(self, x, y):
+    def __init__(self, x, y) -> None:
         self._h = x
         self._k = y
 
     @property
-    def h(self):
+    def h(self) -> int:
         return self._h
 
     @property
-    def k(self):
+    def k(self) -> int:
         return self._k
 
-    def __len__(self):
+    def __len__(self) -> float:
         return np.sqrt(self.h ** 2 + self.k ** 2)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"[{self.h}{self.k}]"
 
-    def __add__(self, other):
+    def __add__(self, other) -> 'MillerIndex_2D':
         if isinstance(other, MillerIndex_2D):
             return MillerIndex_2D(self.h + other.h, self.k + other.k)
+        elif isinstance(other, tuple) and len(other) == 2:
+            return MillerIndex_2D(self.h + other[0], self.k + other[1])
         else:
             raise TypeError(f"{other} is not an appropriate Miller Index (2D)")
 

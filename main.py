@@ -58,13 +58,12 @@ def main():
 
     # Run over many variables
     variables = {
-                "unit_vector": range(unit_vector, 90 + vector_stddev, vector_stddev),
-                "vector_stddev": range(vector_stddev, 20, vector_stddev),
-                "particle_width": range(particle_width, np.floor_divide(particle_length, particle_width) + 1, 1),
-                "particle_length": range(particle_length, 2 * particle_length + 1, 1),
-                "padding_spacing": [(5, x) for x in range(-5, 10+1, 1)]
-                }
-
+        "unit_vector": range(unit_vector, 90 + vector_stddev, vector_stddev),
+        "vector_stddev": range(vector_stddev, 20, vector_stddev),
+        "particle_width": range(particle_width, np.floor_divide(particle_length, particle_width) + 1, 1),
+        "particle_length": range(particle_length, 2 * particle_length + 1, 1),
+        "padding_spacing": [(5, x) for x in range(-5, 10 + 1, 1)]
+    }
 
     start = time.perf_counter()
     kwargs = {}
@@ -87,7 +86,7 @@ def main():
     main_logger.info(f'Total run time: {run_time}\n')
 
 
-def run(unit_vector, vector_stddev, particle_width, particle_length, *, padding_spacing,  output_dir_root, tag, grid_max,
+def run(unit_vector, vector_stddev, particle_width, particle_length, *, padding_spacing, output_dir_root, tag, grid_max,
         wavelength, pixel_size, dx, npt):
     output_directory = f'{output_dir_root}\\{tag}'
     with ParameterLogger(output_directory) as log:
