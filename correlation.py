@@ -18,8 +18,8 @@ class AngularCorrelation:
         Performing angular correlation analysis on polar diffraction pattern
         :param diffraction_2d_polar: PolarDiffraction2D object
         """
-        self._polar_plot = diffraction_2d_polar.data
-        self.angular_correlation()
+        self._diffraction_2d_polar = diffraction_2d_polar
+        self.ang_corr = self.angular_correlation()
         self.__fig_corr__ = None
         self.__ax_corr__ = None
         self.__fig_corr_point__ = None
@@ -27,7 +27,7 @@ class AngularCorrelation:
 
     @property
     def polar(self) -> np.ndarray:
-        return self._polar_plot
+        return self._diffraction_2d_polar.data
 
     def angular_correlation(self, polar2=None) -> np.ndarray:
         """
@@ -49,15 +49,14 @@ class AngularCorrelation:
             angular correlation function
         """
 
-        fpolar = np.fft.fft(self._polar_plot, axis=1)
+        fpolar = np.fft.fft(self._diffraction_2d_polar.data, axis=1)
 
         if polar2 is not None:
             fpolar2 = np.fft.fft(polar2, axis=1)
             corr = np.fft.ifft(fpolar2.conjugate() * fpolar, axis=1)
         else:
             corr = np.fft.ifft(fpolar.conjugate() * fpolar, axis=1)
-        self.ang_corr = corr
-        return self.ang_corr
+        return corr
 
     def plot(self, title=None, clim=None):
         print(f'Plotting full angular correlation...')
@@ -67,12 +66,13 @@ class AngularCorrelation:
         if title is not None:
             self.__ax_corr__.set_title(title)
         self.__ax_corr__.set_xlabel('$\Theta$ / $^\circ$')
-        if self.q_instead:
+        if self._diffraction_2d_polar.q_instead:
             self.__ax_corr__.set_ylabel('q')
         else:
             self.__ax_corr__.set_ylabel('r')
-        self.__ax_corr__.set_xticks(np.arange(0, self.num_th, (self.num_th / self.th_max) * 45),
-                                    np.arange(self.th_min, self.th_max, 45))
+        self.__ax_corr__.set_xticks(np.arange(0, self._diffraction_2d_polar.num_th, (
+                    self._diffraction_2d_polar.num_th / self._diffraction_2d_polar.th_max) * 45),
+                                    np.arange(self._diffraction_2d_polar.th_min, self._diffraction_2d_polar.th_max, 45))
 
         self.__fig_corr__.tight_layout()
 
@@ -115,16 +115,18 @@ class AngularCorrelation:
             self.__ax_corr_point__.set_title(title)
         self.__ax_corr_point__.set_xlabel('$\Theta$ / $^\circ$')
         self.__ax_corr_point__.set_ylabel('Intensity (arb. units)')
-        self.__ax_corr_point__.set_xticks(np.arange(0, self.num_th, (self.num_th / self.th_max) * 45),
-                                          np.arange(self.th_min, self.th_max, 45))
+        self.__ax_corr_point__.set_xticks(
+            np.arange(0, self._diffraction_2d_polar.num_th,
+                      (self._diffraction_2d_polar.num_th / self._diffraction_2d_polar.th_max) * 45),
+            np.arange(self._diffraction_2d_polar.th_min, self._diffraction_2d_polar.th_max, 45))
         self.__fig_corr_point__.tight_layout()
-        self.__ax_corr_point__.set_xlim(0, self.num_th / 2)
+        self.__ax_corr_point__.set_xlim(0, self._diffraction_2d_polar.num_th / 2)
         if y_lim is not None:
             self.__ax_corr_point__.set_ylim(y_lim[0], y_lim[1])
         else:
             edge_mask = 2
             scale = 1.5
-            array_cut = array[edge_mask:(self.num_th // 2) - edge_mask]
+            array_cut = array[edge_mask:(self._diffraction_2d_polar.num_th // 2) - edge_mask]
             y_min, y_max = scale * np.min(array_cut), scale * np.max(array_cut)
             self.__ax_corr_point__.set_ylim(y_min, y_max)
         if save_fig:
@@ -170,7 +172,7 @@ class AngularCorrelation:
         """
         fpolar = np.fft.fft(self.polar, axis=1)
 
-        if np.any(polar2) != None:
+        if np.any(polar2):
             fpolar2 = np.fft.fft(polar2, axis=1)
         else:
             fpolar2 = fpolar
@@ -184,6 +186,7 @@ class AngularCorrelation:
         if real_only:
             out = np.real(out)
         return out
+
 
 def apply_mask(func, mask):
     """
@@ -202,6 +205,7 @@ def apply_mask(func, mask):
     func*mask : numpy array
     """
     return func * mask
+
 
 def mask_correction(corr, maskcorr):
     """
@@ -225,6 +229,7 @@ def mask_correction(corr, maskcorr):
     corr[imask] *= 1.0 / maskcorr[imask]
     return corr
 
+
 #
 # pairwise correlation of (flattened) arrays
 #
@@ -237,6 +242,7 @@ def allpixel_correlation(arr1, arr2):
     """
     out = np.outer(arr1.flatten(), arr2.flatten())
     return out
+
 
 def pearsonCorrelation_2D(arr1, arr2, *, lim=None, angular: bool = False):
     """

@@ -5,11 +5,11 @@ Authored by Michael Hassett from 2023-11-23
 """
 import matplotlib.pyplot as plt
 import numpy as np
+import scipy.ndimage as sdn
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from pyFAI.azimuthalIntegrator import AzimuthalIntegrator
-from scipy.ndimage import rotate
-import scipy.ndimage as sdn
 from scipy import signal
+from scipy.ndimage import rotate
 
 from spatial import RealSpace
 from utils import timer, save

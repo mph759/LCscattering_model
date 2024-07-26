@@ -5,6 +5,7 @@ Authored by Michael Hassett from 2024-03-10
 """
 
 import numpy as np
+
 from diffraction import Diffraction2D
 
 

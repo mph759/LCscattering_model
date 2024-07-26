@@ -116,4 +116,3 @@ class CalamiticParticle(PointParticle):
         :return: The line to be drawn on the real space object
         """
         return draw_object.line([self.position, self.end_position], fill=1, width=self.width)
-
