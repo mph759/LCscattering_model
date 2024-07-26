@@ -3,24 +3,22 @@ Generating modelled liquid crystals in 2D
 Project: Generating 2D scattering pattern for modelled liquid crystals
 Authored by Michael Hassett from 2023-11-23
 """
+import json
+import logging
 import time
+from datetime import datetime, timedelta
+from functools import partial
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
-from datetime import datetime, timedelta
-from pathlib import Path
-from multiprocessing import Pool
-from functools import partial
-import logging
-import json
-from itertools import repeat
 
 from correlation import PolarDiffraction2D, AngularCorrelation
 from diffraction import Diffraction2D, Diffraction1D
+from particle_types import CalamiticParticle
 from peak_predict import peak_predict
 from spatial import RealSpace
 from utils import logger_setup, generate_positions, init_spacing, plot_angle_bins, ParameterLogger
-from particle_types import CalamiticParticle
 
 
 def main():
@@ -136,10 +134,8 @@ def run(unit_vector, vector_stddev, particle_width, particle_length, *, padding_
         # real_space_title = f'Liquid Crystal Phase of Calamitic Liquid crystals, with unit vector {unit_vector}$^\circ$'
         real_space_title = None
         real_space.plot(real_space_title)
-        real_space.save(f'{output_directory}\\2D_model_example_hires', close_fig=False,
-                        file_type='png', dpi=2000, bbox_inches='tight')
-        real_space.save(f'{output_directory}\\2D_model_example',
-                        file_type='png', dpi=300, bbox_inches='tight')
+        real_space.plot_zoom(real_space_title)
+        real_space.save(f'{output_directory}\\2D_model_example', file_type='png', dpi=300, bbox_inches='tight')
         real_space_params = real_space.params
         spatial = {'x_spacing': x_spacing, 'y_spacing': y_spacing,
                    'allowed_random_displacement': allowed_displacement}
@@ -181,18 +177,17 @@ def run(unit_vector, vector_stddev, particle_width, particle_length, *, padding_
         angular_corr.plot(clim=5e11)
         # plt.show()
         angular_corr.save(f'{output_directory}\\angular_corr', file_type='npy',
-                                close_fig=False)
+                          close_fig=False)
         angular_corr.save(f'{output_directory}\\angular_corr', file_type='png',
-                                dpi=300, bbox_inches='tight')
-
+                          dpi=300, bbox_inches='tight')
 
         for peak in peak_locs:
             angular_corr.plot_line(peak,
-                                         title=None,
-                                         # f'Angular line plot at {q}, with unit vector {unit_vector}',
-                                         save_fig=True,
-                                         save_name=f'{output_directory}\\angular_line_{peak}',
-                                         save_type='png', dpi=300, bbox_inches='tight')
+                                   title=None,
+                                   # f'Angular line plot at {q}, with unit vector {unit_vector}',
+                                   save_fig=True,
+                                   save_name=f'{output_directory}\\angular_line_{peak}',
+                                   save_type='png', dpi=300, bbox_inches='tight')
 
         # plt.show()
         plt.close('all')
