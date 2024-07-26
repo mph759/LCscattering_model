@@ -86,7 +86,6 @@ class RealSpace:
             self.__ax_zoom__.set_title(title)
         self.__ax_zoom__.set_xlim(x1, x2)
         self.__ax_zoom__.set_ylim(y1, y2)
-        self.__ax_zoom__.invert_yaxis()
         self.__ax_zoom__.set_xticks([])
         self.__ax_zoom__.set_yticks([])
         return self.__ax_zoom__
