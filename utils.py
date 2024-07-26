@@ -4,14 +4,14 @@ Project: Generating 2D scattering pattern for modelled liquid crystals
 Authored by Michael Hassett from 2023-11-23
 """
 import inspect
+import logging
 import os
+import sys
 import time
 from functools import wraps
 from pathlib import Path
 from stat import S_IREAD
-from typing import Any, TypeAlias, Tuple
-import logging
-import sys
+from typing import Any, TypeAlias
 
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
@@ -79,7 +79,15 @@ def plot_angle_bins(samples, mean, stddev, min_x=0, max_x=180):
     ax.plot(bins, y, 'r')
     ax.set_xlim(min_x, max_x)
     ax.set_ylim(0, 0.09)
-    ax.text(0.8, 0.85, f'Sample size: {sample_size}\nMean: {mean:.2f}\nStandard dev.={stddev:.2f}', transform=plt.gca().transAxes)
+    ax.text(0.7, 0.87, f'Sample size: {sample_size}', transform=plt.gca().transAxes)
+
+    means = [f'{sample_mean:0.2f}', f'{mean:0.2f}']
+    stddevs = [f'{sample_stddev:0.2f}', f'{stddev:0.2f}']
+    row_labels = ['Mean', 'Stddev']
+    col_labels = ['Sample Set', 'Model']
+    ax.table(cellText=[means, stddevs], rowLabels=row_labels, colLabels=col_labels,
+             colWidths=[0.1] * 2, bbox=[0.7, 0.75, 0.25, 0.1], transform=plt.gca().transAxes, fontsize=16)
+
     ax.yaxis.set_major_formatter(mtick.PercentFormatter(1))
     ax.set_ylabel('Probability')
     ax.set_xlabel('Value')
