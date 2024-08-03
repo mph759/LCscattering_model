@@ -27,8 +27,8 @@ class RealSpace:
 
     @property
     def params(self):
-        return ("Space",
-                {'grid size': self.grid})
+        return {"Space":
+                {'grid size': self.grid}}
 
     @timer
     def add(self, particle_list):

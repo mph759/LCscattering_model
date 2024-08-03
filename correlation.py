@@ -119,7 +119,7 @@ class AngularCorrelation:
         print(f'Saved angular correlation as {file_name}')
 
     def plot_line(self, point: float, title=None, y_lim: tuple[float, float] = None, *,
-                  fig: plt.Figure | None = None, ax: plt.Axes | None = None,
+                  ax: plt.Axes | None = None,
                   save_fig: bool = False, save_name: str = None,
                   save_type: str = 'png', **kwargs):
         """
@@ -135,7 +135,10 @@ class AngularCorrelation:
         """
         print(f'Plotting angular correlation at {point}...')
         array = np.real(self.ang_corr[point, :])
-        self.__fig_corr_point__, self.__ax_corr_point__ = plt.subplots()
+        if ax is None:
+            self.__fig_corr_point__, self.__ax_corr_point__ = plt.subplots()
+        else:
+            self.__ax_corr_point__ = ax
         self.__ax_corr_point__.plot(array)
         if title is not None:
             self.__ax_corr_point__.set_title(title)
@@ -145,7 +148,6 @@ class AngularCorrelation:
             np.arange(0, self.num_th,
                       (self.num_th / self.th_max) * 45),
             np.arange(self.th_min, self.th_max, 45))
-        self.__fig_corr_point__.tight_layout()
         self.__ax_corr_point__.set_xlim(0, self.num_th / 2)
         if y_lim is not None:
             self.__ax_corr_point__.set_ylim(y_lim[0], y_lim[1])
@@ -155,6 +157,7 @@ class AngularCorrelation:
             array_cut = array[edge_mask:(self.num_th // 2) - edge_mask]
             y_min, y_max = scale * np.min(array_cut), scale * np.max(array_cut)
             self.__ax_corr_point__.set_ylim(y_min, y_max)
+        self.__fig_corr_point__.tight_layout()
         if save_fig:
             self.save_line(array, save_name, save_type, **kwargs)
 

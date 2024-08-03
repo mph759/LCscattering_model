@@ -52,13 +52,13 @@ class Diffraction2D:
 
     @property
     def params(self):
-        return ("Diffraction",
+        return {"Diffraction":
                 {'wavelength': self.wavelength,
                  'detector_dist': self.detector_dist,
                  'num_pixels': self.num_pixels,
                  'pixel_size': self.pixel_size,
                  'dx': self.dx,
-                 'npt': self.npt})
+                 'npt': self.npt}}
 
     @property
     def npt(self):
@@ -229,14 +229,14 @@ class PolarDiffraction2D:
 
     @property
     def params(self):
-        return ('Polar 2D Diffraction',
+        return {'Polar 2D Diffraction':
                 {'num_r': self.num_r,
                  'num_th': self.num_th,
                  'r_min': self.r_min,
                  'r_max': self.r_max,
                  'th_min': self.th_min,
                  'th_max': self.th_max,
-                 'q_instead': self.q_instead})
+                 'q_instead': self.q_instead}}
 
     @property
     def data_2d(self):
@@ -360,12 +360,12 @@ class Diffraction1D:
 
     @property
     def params(self):
-        return ("Diffraction",
+        return {"Diffraction",
                 {'wavelength': self.wavelength,
                  'detector_dist': self.detector_dist,
                  'pixel_size': self.pixel_size,
                  'dx': self.dx,
-                 'npt': self.npt})
+                 'npt': self.npt}}
 
     @property
     def npt(self):

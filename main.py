@@ -161,7 +161,7 @@ def run(unit_vector, vector_stddev, particle_width, particle_length, *, padding_
         diffraction_pattern_1d.save(f'{output_directory}\\diffraction_pattern_1d', file_type='png',
                                     dpi=300, bbox_inches='tight')
 
-        log.params(("Peak Locations", {"peaks": peak_locs}))
+        log.params({"Peak Locations": {"peaks": peak_locs}})
 
         # Perform correlation from the diffraction pattern
         polar_plot = PolarDiffraction2D(diffraction_of_real_space,

@@ -8,6 +8,7 @@ import logging
 import os
 import sys
 import time
+import json
 from functools import wraps
 from pathlib import Path
 from stat import S_IREAD
@@ -166,7 +167,7 @@ class ParameterLogger:
     def __init__(self, output_dir: str) -> None:
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
-        self.dir = self.output_dir / 'params.log'
+        self.dir = self.output_dir / 'params.json'
         if not self.dir.exists():
             with open(self.dir, 'x'):
                 pass
@@ -176,15 +177,28 @@ class ParameterLogger:
         return self
 
     def params(self, parameters: tuple[Any]) -> None:
-        self.file.write(f'#{parameters[0]}\n')
-        for param, val in parameters[1].items():
-            self.file.write(f'{param.strip("_")}: {val}\n')
-        self.file.write('\n')
+        json.dump(parameters, self.file)
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         if self.file:
             self.file.close()
         os.chmod(self.dir, S_IREAD)
+
+
+class ParameterReader:
+    def __init__(self, input_dir: str | Path) -> None:
+        self.input_dir = Path(input_dir) / 'params.json'
+        if not self.input_dir.exists():
+            raise ValueError(f'Input directory {self.input_dir} does not exist')
+
+    def __enter__(self) -> 'ParameterReader':
+        self.file = open(self.input_dir, 'r')
+        self.data = json.load(self.file)
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        if self.file:
+            self.file.close()
 
 
 def logger_setup(name, path: str | Path, stream: bool = False, level=logging.INFO) -> logging.Logger:
