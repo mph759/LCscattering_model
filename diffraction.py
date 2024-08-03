@@ -229,7 +229,7 @@ class PolarDiffraction2D:
 
     @property
     def params(self):
-        return ('Polar Angular Correlation',
+        return ('Polar 2D Diffraction',
                 {'num_r': self.num_r,
                  'num_th': self.num_th,
                  'r_min': self.r_min,

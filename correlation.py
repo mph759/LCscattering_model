@@ -5,9 +5,10 @@ Created: 2023-12-11, copied from pypadf/fxstools/correlationTools.py
 """
 import numpy as np
 from matplotlib import pyplot as plt
+from pathlib import Path
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-from diffraction import PolarDiffraction2D
+from diffraction import PolarDiffraction2D, Diffraction2D
 from utils import timer, save
 
 
@@ -18,16 +19,19 @@ class AngularCorrelation:
         Performing angular correlation analysis on polar diffraction pattern
         :param diffraction_2d_polar: PolarDiffraction2D object
         """
-        self._diffraction_2d_polar = diffraction_2d_polar
+        self.polar_diffraction = diffraction_2d_polar.data
+        self.num_r = diffraction_2d_polar.num_r
+        self.r_min = diffraction_2d_polar.r_min
+        self.r_max = diffraction_2d_polar.r_max
+        self.num_th = diffraction_2d_polar.num_th
+        self.th_min = diffraction_2d_polar.th_min
+        self.th_max = diffraction_2d_polar.th_max
+        self.q_instead = diffraction_2d_polar.q_instead
         self.ang_corr = self.angular_correlation()
         self.__fig_corr__ = None
         self.__ax_corr__ = None
         self.__fig_corr_point__ = None
         self.__ax_corr_point__ = None
-
-    @property
-    def polar(self) -> np.ndarray:
-        return self._diffraction_2d_polar.data
 
     def angular_correlation(self, polar2=None) -> np.ndarray:
         """
@@ -49,7 +53,7 @@ class AngularCorrelation:
             angular correlation function
         """
 
-        fpolar = np.fft.fft(self._diffraction_2d_polar.data, axis=1)
+        fpolar = np.fft.fft(self.polar_diffraction, axis=1)
 
         if polar2 is not None:
             fpolar2 = np.fft.fft(polar2, axis=1)
@@ -58,23 +62,43 @@ class AngularCorrelation:
             corr = np.fft.ifft(fpolar.conjugate() * fpolar, axis=1)
         return corr
 
-    def plot(self, title=None, clim=None):
+    @classmethod
+    def load(cls, numpy_file: Path | str, num_r, num_th, r_min=0, r_max=None, th_min=0, th_max=360,
+             *, q_instead: bool = False):
+        new_correlation = cls.__new__(cls)
+        new_correlation.polar_diffraction = np.empty((num_r, num_th))
+        new_correlation.num_r = num_r
+        new_correlation.r_min = r_min
+        new_correlation.r_max = r_max
+        new_correlation.num_th = num_th
+        new_correlation.th_min = th_min
+        new_correlation.th_max = th_max
+        new_correlation.q_instead = q_instead
+        new_correlation.ang_corr = np.load(numpy_file)
+        new_correlation.__ax_corr__ = None
+        new_correlation.__fig_corr__ = None
+        new_correlation.__ax_corr_point__ = None
+        new_correlation.__fig_corr_point__ = None
+        return new_correlation
+
+    def plot(self, title=None, clim=None, fig: plt.Figure | None = None, ax: plt.Axes | None = None):
         print(f'Plotting full angular correlation...')
-        self.__fig_corr__, self.__ax_corr__ = plt.subplots()
+        if ax is None:
+            self.__fig_corr__, self.__ax_corr__ = plt.subplots()
+        else:
+            self.__fig_corr__, self.__ax_corr__ = fig, ax
         plot = self.__ax_corr__.imshow(np.real(self.ang_corr), aspect='auto')
         self.__ax_corr__.invert_yaxis()
         if title is not None:
             self.__ax_corr__.set_title(title)
         self.__ax_corr__.set_xlabel('$\Theta$ / $^\circ$')
-        if self._diffraction_2d_polar.q_instead:
+        if self.q_instead:
             self.__ax_corr__.set_ylabel('q')
         else:
             self.__ax_corr__.set_ylabel('r')
-        self.__ax_corr__.set_xticks(np.arange(0, self._diffraction_2d_polar.num_th, (
-                    self._diffraction_2d_polar.num_th / self._diffraction_2d_polar.th_max) * 45),
-                                    np.arange(self._diffraction_2d_polar.th_min, self._diffraction_2d_polar.th_max, 45))
-
-        self.__fig_corr__.tight_layout()
+        self.__ax_corr__.set_xticks(np.arange(0, self.num_th, (
+                self.num_th / self.th_max) * 45),
+                                    np.arange(self.th_min, self.th_max, 45))
 
         # creating new axes on the right side of current axes(ax).
         # The width of cax will be 5% of ax and the padding between cax and ax will be fixed at 0.05 inch.
@@ -82,6 +106,7 @@ class AngularCorrelation:
         self.__fig_corr__.colorbar(plot, cax=colorbar_axes)
         if clim:
             plot.set_clim(0, clim)
+        self.__fig_corr__.tight_layout()
 
     def save(self, file_name, file_type='png', **kwargs):
         """
@@ -94,6 +119,7 @@ class AngularCorrelation:
         print(f'Saved angular correlation as {file_name}')
 
     def plot_line(self, point: float, title=None, y_lim: tuple[float, float] = None, *,
+                  fig: plt.Figure | None = None, ax: plt.Axes | None = None,
                   save_fig: bool = False, save_name: str = None,
                   save_type: str = 'png', **kwargs):
         """
@@ -116,17 +142,17 @@ class AngularCorrelation:
         self.__ax_corr_point__.set_xlabel('$\Theta$ / $^\circ$')
         self.__ax_corr_point__.set_ylabel('Intensity (arb. units)')
         self.__ax_corr_point__.set_xticks(
-            np.arange(0, self._diffraction_2d_polar.num_th,
-                      (self._diffraction_2d_polar.num_th / self._diffraction_2d_polar.th_max) * 45),
-            np.arange(self._diffraction_2d_polar.th_min, self._diffraction_2d_polar.th_max, 45))
+            np.arange(0, self.num_th,
+                      (self.num_th / self.th_max) * 45),
+            np.arange(self.th_min, self.th_max, 45))
         self.__fig_corr_point__.tight_layout()
-        self.__ax_corr_point__.set_xlim(0, self._diffraction_2d_polar.num_th / 2)
+        self.__ax_corr_point__.set_xlim(0, self.num_th / 2)
         if y_lim is not None:
             self.__ax_corr_point__.set_ylim(y_lim[0], y_lim[1])
         else:
             edge_mask = 2
             scale = 1.5
-            array_cut = array[edge_mask:(self._diffraction_2d_polar.num_th // 2) - edge_mask]
+            array_cut = array[edge_mask:(self.num_th // 2) - edge_mask]
             y_min, y_max = scale * np.min(array_cut), scale * np.max(array_cut)
             self.__ax_corr_point__.set_ylim(y_min, y_max)
         if save_fig:
@@ -170,16 +196,18 @@ class AngularCorrelation:
         out : numpy array (float)
             angular correlation function
         """
-        fpolar = np.fft.fft(self.polar, axis=1)
+        fpolar = np.fft.fft(self.polar_diffraction, axis=1)
 
         if np.any(polar2):
             fpolar2 = np.fft.fft(polar2, axis=1)
         else:
             fpolar2 = fpolar
 
-        out = np.zeros((self.polar.shape[0], self.polar.shape[0], self.polar.shape[1]), dtype=np.complex128)
-        for i in np.arange(self.polar.shape[0]):
-            for j in np.arange(self.polar.shape[0]):
+        out = np.zeros(
+            (self.polar_diffraction.shape[0], self.polar_diffraction.shape[0], self.polar_diffraction.shape[1]),
+            dtype=np.complex128)
+        for i in np.arange(self.polar_diffraction.shape[0]):
+            for j in np.arange(self.polar_diffraction.shape[0]):
                 out[i, j, :] = fpolar[i, :] * fpolar2[j, :].conjugate()
         out = np.fft.ifft(out, axis=2)
 

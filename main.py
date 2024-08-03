@@ -146,6 +146,7 @@ def run(unit_vector, vector_stddev, particle_width, particle_length, *, padding_
         diffraction_pattern_title = None
         # Determine the location of peaks
         peak_locs = peak_predict(diffraction_of_real_space, (x_spacing, y_spacing))
+        peak_locs = list(set(peak_locs))
         diffraction_of_real_space.plot(diffraction_pattern_title, clim=1e8, peaks=peak_locs)
         # plt.show()
         diffraction_of_real_space.save(f'{output_directory}\\diffraction_pattern_2d', file_type='png',
