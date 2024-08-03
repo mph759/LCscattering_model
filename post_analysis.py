@@ -1,22 +1,28 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import json
 from pathlib import Path
+import re
 
 from correlation import AngularCorrelation
 from utils import ParameterReader
 
 
 if __name__ == '__main__':
-    root_path = Path().cwd() / r'output\LCscattering-trial_2024-07-26 11-38-08'
-    data_folders = ['unit_vector_45', ]
-    file_name = 'angular_corr.npy'
+    root_path = Path().cwd() / r'output\LCscattering-trial_2024-08-03 17-52-54'
+    parameter = 'padding_spacing'
+    convert = lambda text: int(text) if text.isdigit() else text
+    alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', str(key))]
+    data_folders = sorted(root_path.glob(f'{parameter}_*'), key=alphanum_key)
     fig, ax = plt.subplots()
+    step_size = 1e12
 
-    for data_folder in data_folders:
-        data_path = root_path / data_folder / file_name
+    for i, data_folder in enumerate(data_folders):
+        data_path = (root_path / data_folder)
         angular_correlation = AngularCorrelation.load(data_path, num_r=4096, num_th=720)
-        with ParameterReader(data_path) as reader:
-            # reader.data[]
-            angular_correlation.plot_line(1172, ax=ax)
+        with open(data_path / 'params.json') as params:
+            peaks = sorted(json.load(params)['Peak Locations'])
+            angular_correlation.plot_line(peaks[0], fig=fig, ax=ax, step=step_size*i, label=data_folder.name)
+            plt.legend(loc='upper center')
     plt.show()
 

@@ -65,6 +65,7 @@ class AngularCorrelation:
     @classmethod
     def load(cls, numpy_file: Path | str, num_r, num_th, r_min=0, r_max=None, th_min=0, th_max=360,
              *, q_instead: bool = False):
+        numpy_file = Path(numpy_file) / 'angular_corr.npy'
         new_correlation = cls.__new__(cls)
         new_correlation.polar_diffraction = np.empty((num_r, num_th))
         new_correlation.num_r = num_r
@@ -119,7 +120,7 @@ class AngularCorrelation:
         print(f'Saved angular correlation as {file_name}')
 
     def plot_line(self, point: float, title=None, y_lim: tuple[float, float] = None, *,
-                  ax: plt.Axes | None = None,
+                  fig: plt.Figure | None = None, ax: plt.Axes | None = None, step: int = 0, label: str | None = None,
                   save_fig: bool = False, save_name: str = None,
                   save_type: str = 'png', **kwargs):
         """
@@ -134,12 +135,15 @@ class AngularCorrelation:
         :return:
         """
         print(f'Plotting angular correlation at {point}...')
-        array = np.real(self.ang_corr[point, :])
+        array = np.real(self.ang_corr[point, :]) + step
         if ax is None:
             self.__fig_corr_point__, self.__ax_corr_point__ = plt.subplots()
         else:
-            self.__ax_corr_point__ = ax
-        self.__ax_corr_point__.plot(array)
+            self.__fig_corr_point__, self.__ax_corr_point__ = fig, ax
+        if label is None:
+            self.__ax_corr_point__.plot(array)
+        else:
+            self.__ax_corr_point__.plot(array, label=label)
         if title is not None:
             self.__ax_corr_point__.set_title(title)
         self.__ax_corr_point__.set_xlabel('$\Theta$ / $^\circ$')

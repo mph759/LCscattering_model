@@ -30,7 +30,7 @@ class PointParticle:
 
     @property
     def params(self):
-        return ('Point Particle', {})
+        return {'Point Particle', {}}
 
     def create(self, draw_object):
         """
@@ -90,9 +90,9 @@ class CalamiticParticle(PointParticle):
 
     @property
     def params(self):
-        return ('Calamitic Particle',
+        return {'Calamitic Particle':
                 {'width': self.width,
-                 'length': self.length})
+                 'length': self.length}}
 
     def _get_end_points(self):
         """

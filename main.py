@@ -62,7 +62,7 @@ def main():
         "vector_stddev": list(range(vector_stddev, 20, vector_stddev)),
         # "particle_width": list(range(particle_width, np.floor_divide(particle_length, particle_width) + 1, 1)),
         "particle_length": list(range(particle_length, 2 * particle_length + 1, 1)),
-        "padding_spacing": [(5, x) for x in range(-5, 10 + 1, 1)],
+        "padding_spacing": [(5, x) for x in range(-5, 5 + 1, 1)],
     }
     with open(f'{output_dir_root}/variables.json', 'w') as f:
         json.dump(variables, f)
@@ -124,11 +124,11 @@ def run(unit_vector, vector_stddev, particle_width, particle_length, *, padding_
 
         # Log particle information
         particle_params = particles[0].params
-        particle_params[1].update({'unit_vector': unit_vector, 'unit_vector_stddev': vector_stddev,
+        particle_params['Calamitic Particle'].update({'unit_vector': unit_vector, 'unit_vector_stddev': vector_stddev,
                                    'real_unit_vector': particles_unit_vector,
                                    'real_unit_vector_stddev': particles_stddev,
                                    'no. particles': len(particles)})
-        log.params(particle_params)
+        log.params.update(particle_params)
 
         # Plot all figures showing, real space, diffraction in 2D and 1D, and the correlation
         # real_space_title = f'Liquid Crystal Phase of Calamitic Liquid crystals, with unit vector {unit_vector}$^\circ$'
@@ -139,8 +139,8 @@ def run(unit_vector, vector_stddev, particle_width, particle_length, *, padding_
         real_space_params = real_space.params
         spatial = {'x_spacing': x_spacing, 'y_spacing': y_spacing,
                    'allowed_random_displacement': allowed_displacement}
-        real_space_params[1].update(spatial)
-        log.params(real_space_params)
+        real_space_params['Space'].update(spatial)
+        log.params.update(real_space_params)
 
         # diffraction_pattern_title = f'2D Diffraction pattern of Liquid Crystal Phase of Calamitic Particles'
         diffraction_pattern_title = None
@@ -151,7 +151,7 @@ def run(unit_vector, vector_stddev, particle_width, particle_length, *, padding_
         # plt.show()
         diffraction_of_real_space.save(f'{output_directory}\\diffraction_pattern_2d', file_type='png',
                                        dpi=300, bbox_inches='tight')
-        log.params(diffraction_of_real_space.params)
+        log.params.update(diffraction_of_real_space.params)
 
         # Create and plot 1D diffraction pattern of list of 2D diffraction patterns
         diffraction_pattern_1d = Diffraction1D(diffraction_of_real_space)
@@ -161,7 +161,7 @@ def run(unit_vector, vector_stddev, particle_width, particle_length, *, padding_
         diffraction_pattern_1d.save(f'{output_directory}\\diffraction_pattern_1d', file_type='png',
                                     dpi=300, bbox_inches='tight')
 
-        log.params({"Peak Locations": {"peaks": peak_locs}})
+        log.params.update({"Peak Locations": peak_locs})
 
         # Perform correlation from the diffraction pattern
         polar_plot = PolarDiffraction2D(diffraction_of_real_space,
@@ -172,7 +172,7 @@ def run(unit_vector, vector_stddev, particle_width, particle_length, *, padding_
         polar_plot.plot(clim=5e4)
         # plt.show()
         polar_plot.save(f'{output_directory}\\polar_plot', file_type='png', dpi=300, bbox_inches='tight')
-        log.params(polar_plot.params)
+        log.params.update(polar_plot.params)
 
         angular_corr = AngularCorrelation(polar_plot)
         angular_corr.plot(clim=5e11)

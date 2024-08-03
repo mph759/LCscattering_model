@@ -163,6 +163,17 @@ def timer(func) -> object:
 
 
 # Logging parameters
+class NpEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.floating):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super(NpEncoder, self).default(obj)
+
+
 class ParameterLogger:
     def __init__(self, output_dir: str) -> None:
         self.output_dir = Path(output_dir)
@@ -171,15 +182,14 @@ class ParameterLogger:
         if not self.dir.exists():
             with open(self.dir, 'x'):
                 pass
+        self.params = {}
 
     def __enter__(self) -> 'ParameterLogger':
         self.file = open(self.dir, 'a')
         return self
 
-    def params(self, parameters: tuple[Any]) -> None:
-        json.dump(parameters, self.file)
-
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        json.dump(self.params, self.file, cls=NpEncoder, indent=4)
         if self.file:
             self.file.close()
         os.chmod(self.dir, S_IREAD)
@@ -193,8 +203,10 @@ class ParameterReader:
 
     def __enter__(self) -> 'ParameterReader':
         self.file = open(self.input_dir, 'r')
-        self.data = json.load(self.file)
         return self
+
+    def read(self) -> dict:
+        return json.loads(self.file.read())
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         if self.file:
