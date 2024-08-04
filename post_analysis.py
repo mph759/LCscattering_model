@@ -1,11 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
-import re
 
 from correlation import AngularCorrelation
 from utils import ParameterReader, align_ylim, alphanum_key
-
 
 if __name__ == '__main__':
     plt.rcParams['figure.figsize'] = [10, 10]
@@ -22,12 +20,9 @@ if __name__ == '__main__':
         reader = ParameterReader(data_folder)
         angular_correlation = AngularCorrelation.load(data_path)
         peaks = sorted(reader.params['Peak Locations'])
-        angular_correlation.plot_line(peaks[0], fig=fig, ax=ax, step=step_size * i, label=data_folder.name)
-        plt.legend()
+        angular_correlation.plot_line(peaks[0], fig=fig, ax=ax, step=step_size * i, label=data_folder.name.split('_')[-1])
+    ax.legend(ncol=(i // 5) + 1)
     align_ylim(ax, x_range=(0, angular_correlation.num_th // 2), edge_mask=2)
+    plt.title(parameter)
     fig.tight_layout()
     plt.show()
-
-
-
-

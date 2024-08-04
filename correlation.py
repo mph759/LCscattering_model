@@ -138,7 +138,7 @@ class AngularCorrelation:
         print(f'Saved angular correlation as {file_name}')
 
     def plot_line(self, point: float, title=None, y_lim: tuple[float, float] = None, *,
-                  fig: plt.Figure | None = None, ax: plt.Axes | None = None, step: int = 0, label: str | None = None,
+                  fig: plt.Figure | None = None, ax: plt.Axes | None = None, step: float = 0, label: str | None = None,
                   save_fig: bool = False, save_name: str = None, save_type: str = 'png', **kwargs):
         """
         Plot the angular correlation at a point

@@ -302,8 +302,6 @@ def save(fig: plt.figure, array: np.ndarray, file_name: str, file_type: str = No
 def alphanum_key(s):
     text_list = re.split(r'([_(),\s]+)', str(s))
     for i, text in enumerate(text_list):
-        if text.isdigit():
-            text_list[i] = int(text)
-        elif text.lstrip('-').isdigit():
+        if text.isdigit() or text.lstrip('-').isdigit():
             text_list[i] = int(text)
     return text_list
