@@ -9,7 +9,7 @@ from pathlib import Path
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from diffraction import PolarDiffraction2D, Diffraction2D
-from utils import timer, save
+from utils import timer, save, ParameterReader
 
 
 class AngularCorrelation:
@@ -63,9 +63,27 @@ class AngularCorrelation:
         return corr
 
     @classmethod
-    def load(cls, numpy_file: Path | str, num_r, num_th, r_min=0, r_max=None, th_min=0, th_max=360,
-             *, q_instead: bool = False):
-        numpy_file = Path(numpy_file) / 'angular_corr.npy'
+    def load(cls, file_dir: Path | str, num_r=None, num_th=None, r_min=0, r_max=None, th_min=0, th_max=360,
+             *, q_instead: bool = False, reader: ParameterReader | None = None) -> 'AngularCorrelation':
+        if num_r is None and reader is None:
+            try:
+                reader = ParameterReader(file_dir)
+            except FileNotFoundError as e:
+                print(f'Could not find file parameter file automatically at {file_dir}')
+                reader = None
+        if reader is not None:
+            params = reader.params['Polar 2D Diffraction']
+            num_r = params['num_r']
+            r_min = params['r_min']
+            r_max = params['r_max']
+            num_th = params['num_th']
+            th_min = params['th_min']
+            th_max = params['th_max']
+            q_instead = params['q_instead']
+
+        numpy_file = Path(file_dir) / 'angular_corr.npy'
+        if num_r is None or num_th is None:
+            raise AttributeError('num_r and num_th must be provided, or a ParameterReader object must be provided')
         new_correlation = cls.__new__(cls)
         new_correlation.polar_diffraction = np.empty((num_r, num_th))
         new_correlation.num_r = num_r
@@ -121,13 +139,16 @@ class AngularCorrelation:
 
     def plot_line(self, point: float, title=None, y_lim: tuple[float, float] = None, *,
                   fig: plt.Figure | None = None, ax: plt.Axes | None = None, step: int = 0, label: str | None = None,
-                  save_fig: bool = False, save_name: str = None,
-                  save_type: str = 'png', **kwargs):
+                  save_fig: bool = False, save_name: str = None, save_type: str = 'png', **kwargs):
         """
         Plot the angular correlation at a point
         :param point: r (or q) that you wish to plot
         :param title: title for the plot
         :param y_lim: max and minimum limit of the y-axis (as a tuple). If None (default) will auto-scale
+        :param fig: matplotlib Figure
+        :param ax: matplotlib Axes
+        :param step: step size between plots (for plotting multiple lines)
+        :param label: label for the plot (for a legend)
         :param save_fig: Whether to save the figure (default: False)
         :param save_name: File name to save under
         :param save_type: File type to save as (e.g. png or jpg). Default png file

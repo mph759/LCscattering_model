@@ -200,17 +200,12 @@ class ParameterReader:
         self.input_dir = Path(input_dir) / 'params.json'
         if not self.input_dir.exists():
             raise ValueError(f'Input directory {self.input_dir} does not exist')
+        with open(self.input_dir, 'r') as f:
+            self._params = json.load(f)
 
-    def __enter__(self) -> 'ParameterReader':
-        self.file = open(self.input_dir, 'r')
-        return self
-
-    def read(self) -> dict:
-        return json.loads(self.file.read())
-
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
-        if self.file:
-            self.file.close()
+    @property
+    def params(self) -> dict:
+        return self._params
 
 
 def logger_setup(name, path: str | Path, stream: bool = False, level=logging.INFO) -> logging.Logger:
