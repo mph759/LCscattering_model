@@ -9,7 +9,7 @@ from pathlib import Path
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from diffraction import PolarDiffraction2D, Diffraction2D
-from utils import timer, save, ParameterReader
+from utils import timer, save, ParameterReader, align_ylim
 
 
 class AngularCorrelation:
@@ -177,11 +177,7 @@ class AngularCorrelation:
         if y_lim is not None:
             self.__ax_corr_point__.set_ylim(y_lim[0], y_lim[1])
         else:
-            edge_mask = 2
-            scale = 1.5
-            array_cut = array[edge_mask:(self.num_th // 2) - edge_mask]
-            y_min, y_max = scale * np.min(array_cut), scale * np.max(array_cut)
-            self.__ax_corr_point__.set_ylim(y_min, y_max)
+            align_ylim(self.__ax_corr_point__, x_range=(0,self.num_th//2), edge_mask=2, scale=1.5)
         self.__fig_corr_point__.tight_layout()
         if save_fig:
             self.save_line(array, save_name, save_type, **kwargs)

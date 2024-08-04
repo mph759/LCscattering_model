@@ -9,6 +9,7 @@ import os
 import sys
 import time
 import json
+import re
 from functools import wraps
 from pathlib import Path
 from stat import S_IREAD
@@ -94,6 +95,15 @@ def plot_angle_bins(samples, mean, stddev, min_x=0, max_x=180):
     ax.set_xlabel('Value')
     fig.tight_layout()
     return fig, ax
+
+
+def align_ylim(ax: plt.Axes, x_range=(0, 0), scale:float = 1.5, edge_mask:float = 0):
+    lines = ax.get_lines()
+    min_line = lines[0].get_data()[1][x_range[0]+edge_mask:x_range[1] - edge_mask]
+    y_min = scale * np.min(min_line)
+    max_line = lines[-1].get_data()[1][x_range[0]+edge_mask:x_range[1] - edge_mask]
+    y_max = scale * np.max(max_line)
+    ax.set_ylim(y_min, y_max)
 
 
 def init_spacing(particle_length: int, particle_width: int,
@@ -287,3 +297,13 @@ def save(fig: plt.figure, array: np.ndarray, file_name: str, file_type: str = No
     if close_fig:
         plt.close(fig)
     return file_name
+
+
+def alphanum_key(s):
+    text_list = re.split(r'([_(),\s]+)', str(s))
+    for i, text in enumerate(text_list):
+        if text.isdigit():
+            text_list[i] = int(text)
+        elif text.lstrip('-').isdigit():
+            text_list[i] = int(text)
+    return text_list
