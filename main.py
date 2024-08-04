@@ -65,7 +65,7 @@ def main():
         "padding_spacing": [(5, x) for x in range(-5, 5 + 1, 1)],
     }
     with open(f'{output_dir_root}/variables.json', 'w') as f:
-        json.dump(variables, f)
+        json.dump(variables, f, indent=4)
 
     start = time.perf_counter()
     kwargs = {}
@@ -110,7 +110,7 @@ def run(unit_vector, vector_stddev, particle_width, particle_length, *, padding_
         particle_angles = [particle.angle for particle in particles]
         particles_unit_vector = np.mean(particle_angles)
         particles_stddev = np.std(particle_angles)
-        fig_angle_dist = plot_angle_bins(particle_angles, unit_vector, vector_stddev)
+        fig_angle_dist, _ = plot_angle_bins(particle_angles, unit_vector, vector_stddev)
         fig_angle_dist.savefig(f'{output_directory}\\angle_dist.png')
         logger.info(
             f"Collective unit vector: {particles_unit_vector:0.2f}, with a standard deviation of {particles_stddev:0.2f}")

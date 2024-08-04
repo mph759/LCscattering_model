@@ -93,7 +93,7 @@ def plot_angle_bins(samples, mean, stddev, min_x=0, max_x=180):
     ax.set_ylabel('Probability')
     ax.set_xlabel('Value')
     fig.tight_layout()
-    return fig
+    return fig, ax
 
 
 def init_spacing(particle_length: int, particle_width: int,
