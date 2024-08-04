@@ -101,6 +101,7 @@ def peak_predict(diffraction: Diffraction2D, d_spacings: tuple[float, float]) ->
                                              diffraction_pattern_half[max_value])
         peak_index = np.argmax(masked_pixels)
         peak_locs.append(peak_index)
+    peak_locs = sorted(list(set(peak_locs)))
     return peak_locs
 
 
