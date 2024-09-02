@@ -11,8 +11,8 @@ def plot_saved_angular_corr(data_folders: list[Path], title: str, step_size: flo
     fig, ax = plt.subplots()
     for i, data_folder in enumerate(data_folders):
         reader = ParameterReader(data_folder)
-        angular_correlation = AngularCorrelation.load(data_folder)
         peaks = sorted(reader.params['Peak Locations'])
+        angular_correlation = AngularCorrelation.load(data_folder)
         angular_correlation.plot_line(peaks[peak_num], fig=fig, ax=ax, step=step_size * i, label=data_folder.name.split('_')[-1])
     ax.legend(ncol=((num_folders-1) // legend_nrows) + 1)
     align_ylim(ax, x_range=(0, angular_correlation.num_th // 2), edge_mask=2)

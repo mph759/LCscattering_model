@@ -103,10 +103,12 @@ def chi_squared(samples: np.array, mean: float):
 
 
 def align_ylim(ax: plt.Axes, x_range=(0, 0), scale:float = 1.5, edge_mask:float = 0):
-    lines = ax.get_lines()
-    min_line = lines[0].get_data()[1][x_range[0]+edge_mask:x_range[1] - edge_mask]
+    line_data = [line.get_data()[1][x_range[0]+edge_mask: x_range[1] - edge_mask] for line in ax.get_lines()]
+    min_line = np.min(line_data)
+    max_line = np.max(line_data)
+    del line_data
+
     y_min = scale * np.min(min_line)
-    max_line = lines[-1].get_data()[1][x_range[0]+edge_mask:x_range[1] - edge_mask]
     y_max = scale * np.max(max_line)
     ax.set_ylim(y_min, y_max)
 
