@@ -70,7 +70,7 @@ def pythagorean_sides(a: float, b: float, theta: float) -> tuple[float, float]:
     return x, y
 
 
-def plot_angle_bins(samples, mean, stddev, min_x=0, max_x=180):
+def plot_angle_bins(samples, mean, stddev, min_x=0, max_x=180, view_table: bool = True):
     sample_mean = np.mean(samples)
     sample_stddev = np.std(samples)
     sample_size = len(samples)
@@ -81,20 +81,25 @@ def plot_angle_bins(samples, mean, stddev, min_x=0, max_x=180):
     ax.plot(bins, y, 'r')
     ax.set_xlim(min_x, max_x)
     ax.set_ylim(0, 0.09)
-    ax.text(0.7, 0.87, f'Sample size: {sample_size}', transform=plt.gca().transAxes)
 
-    means = [f'{sample_mean:0.2f}', f'{mean:0.2f}']
-    stddevs = [f'{sample_stddev:0.2f}', f'{stddev:0.2f}']
-    row_labels = ['Mean', 'Stddev']
-    col_labels = ['Sample Set', 'Model']
-    ax.table(cellText=[means, stddevs], rowLabels=row_labels, colLabels=col_labels,
-             colWidths=[0.1] * 2, bbox=[0.7, 0.75, 0.25, 0.1], transform=plt.gca().transAxes, fontsize=16)
+    if view_table:
+        ax.text(0.7, 0.87, f'Sample size: {sample_size}', transform=plt.gca().transAxes)
+        means = [f'{sample_mean:0.2f}', f'{mean:0.2f}']
+        stddevs = [f'{sample_stddev:0.2f}', f'{stddev:0.2f}']
+        row_labels = ['Mean', 'Stddev']
+        col_labels = ['Sample Set', 'Model']
+        ax.table(cellText=[means, stddevs], rowLabels=row_labels, colLabels=col_labels,
+                 colWidths=[0.1] * 2, bbox=[0.7, 0.75, 0.25, 0.1], transform=plt.gca().transAxes, fontsize=16)
 
     ax.yaxis.set_major_formatter(mtick.PercentFormatter(1))
     ax.set_ylabel('Probability')
     ax.set_xlabel('Value')
     fig.tight_layout()
     return fig, ax
+
+def chi_squared(samples: np.array, mean: float):
+    return np.sum(((samples - mean) ** 2) / mean)
+
 
 
 def align_ylim(ax: plt.Axes, x_range=(0, 0), scale:float = 1.5, edge_mask:float = 0):

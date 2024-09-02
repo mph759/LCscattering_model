@@ -10,7 +10,7 @@ if __name__ == '__main__':
     plt.rcParams['mathtext.default'] = 'regular'
 
     root_path = Path().cwd() / r'output\LCscattering-trial_2024-08-03 17-52-54'
-    parameter = 'padding_spacing'
+    parameter = 'unit_vector'
     data_folders = sorted(root_path.glob(f'{parameter}_*'), key=alphanum_key)
     fig, ax = plt.subplots()
     step_size = 1e12

@@ -12,13 +12,14 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.stats import goodness_of_fit, norm
 
 from correlation import PolarDiffraction2D, AngularCorrelation
 from diffraction import Diffraction2D, Diffraction1D
 from particle_types import CalamiticParticle
 from peak_predict import peak_predict
 from spatial import RealSpace
-from utils import logger_setup, generate_positions, init_spacing, plot_angle_bins, ParameterLogger
+from utils import logger_setup, generate_positions, init_spacing, plot_angle_bins, ParameterLogger, chi_squared
 
 
 def main():
@@ -110,6 +111,11 @@ def run(unit_vector, vector_stddev, particle_width, particle_length, *, padding_
         particle_angles = [particle.angle for particle in particles]
         particles_unit_vector = np.mean(particle_angles)
         particles_stddev = np.std(particle_angles)
+        '''
+        particles_gof = goodness_of_fit(norm, particle_angles,
+                                        fit_params={'loc':unit_vector, 'scale':vector_stddev},
+                                        n_mc_samples=999)
+        '''
         fig_angle_dist, _ = plot_angle_bins(particle_angles, unit_vector, vector_stddev)
         fig_angle_dist.savefig(f'{output_directory}\\angle_dist.png')
         logger.info(
@@ -124,10 +130,13 @@ def run(unit_vector, vector_stddev, particle_width, particle_length, *, padding_
 
         # Log particle information
         particle_params = particles[0].params
-        particle_params['Calamitic Particle'].update({'unit_vector': unit_vector, 'unit_vector_stddev': vector_stddev,
-                                   'real_unit_vector': particles_unit_vector,
-                                   'real_unit_vector_stddev': particles_stddev,
-                                   'no. particles': len(particles)})
+        particle_params['Calamitic Particle'].update({
+            'unit_vector': unit_vector, 'unit_vector_stddev': vector_stddev,
+            'real_unit_vector': particles_unit_vector,
+            'real_unit_vector_stddev': particles_stddev,
+            'no. particles': len(particles),
+            # 'angle_goodness_of_fit': particles_gof,
+        })
         log.params.update(particle_params)
 
         # Plot all figures showing, real space, diffraction in 2D and 1D, and the correlation
