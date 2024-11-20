@@ -33,8 +33,8 @@ def main():
     particle_width = 2  # in pixels
     particle_length = 15  # in pixels
     # Note: The unit vector is not the exact angle all the particles will have, but the mean of all the angles
-    unit_vector = 45
-    vector_stddev = 5  # Standard Deviation of the angle, used to generate angles for individual particles
+    unit_vector = 64
+    vector_stddev = 18  # Standard Deviation of the angle, used to generate angles for individual particles
 
     # Initialise how the particles sit in real space
     padding_spacing = (5, 5)
@@ -54,16 +54,25 @@ def main():
     Path(output_dir_root).mkdir(parents=True, exist_ok=True)
     main_logger = logger_setup('main', output_dir_root, stream=True)
     base_run_partial = partial(run, output_dir_root=output_dir_root, grid_max=x_max, particle_width=2,
-                               padding_spacing=padding_spacing, wavelength=wavelength, pixel_size=pixel_size,
-                               dx=dx, npt=npt)
+                               wavelength=wavelength, pixel_size=pixel_size,
+                               dx=dx, npt=npt, padding_spacing=padding_spacing,
+                               # unit_vector=unit_vector,
+                               vector_stddev=vector_stddev,
+                               particle_length=particle_length)
 
     # Run over many variables
+    '''
     variables = {
         "unit_vector": list(range(unit_vector, 90 + vector_stddev, vector_stddev)),
-        "vector_stddev": list(range(vector_stddev, 20, vector_stddev)),
+        "vector_stddev": list(range(vector_stddev, 30, vector_stddev)),
         # "particle_width": list(range(particle_width, np.floor_divide(particle_length, particle_width) + 1, 1)),
         "particle_length": list(range(particle_length, 2 * particle_length + 1, 1)),
         "padding_spacing": [(5, x) for x in range(-5, 5 + 1, 1)],
+    }
+    '''
+    variables = {
+        "unit_vector": list(range(60, 75, 1)),
+        #"vector_stddev": list(range(15, 25, 1)),
     }
     with open(f'{output_dir_root}/variables.json', 'w') as f:
         json.dump(variables, f, indent=4)
@@ -108,6 +117,7 @@ def run(unit_vector, vector_stddev, particle_width, particle_length, *, padding_
         particles = [CalamiticParticle(position, particle_width, particle_length, unit_vector, vector_stddev)
                      for position in positions]
         # Check unit vector matches expected value
+        num_particles = len(particles)
         particle_angles = [particle.angle for particle in particles]
         particles_unit_vector = np.mean(particle_angles)
         particles_stddev = np.std(particle_angles)
@@ -134,7 +144,7 @@ def run(unit_vector, vector_stddev, particle_width, particle_length, *, padding_
             'unit_vector': unit_vector, 'unit_vector_stddev': vector_stddev,
             'real_unit_vector': particles_unit_vector,
             'real_unit_vector_stddev': particles_stddev,
-            'no. particles': len(particles),
+            'no. particles': num_particles,
             # 'angle_goodness_of_fit': particles_gof,
         })
         log.params.update(particle_params)

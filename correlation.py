@@ -162,22 +162,19 @@ class AngularCorrelation:
         else:
             self.__fig_corr_point__, self.__ax_corr_point__ = fig, ax
         if label is None:
-            self.__ax_corr_point__.plot(array)
+            self.__ax_corr_point__.plot(np.linspace(0, 360, self.num_th), array)
         else:
-            self.__ax_corr_point__.plot(array, label=label)
+            self.__ax_corr_point__.plot(np.linspace(0, 360, self.num_th), array, label=label)
         if title is not None:
             self.__ax_corr_point__.set_title(title)
         self.__ax_corr_point__.set_xlabel('$\Theta$ / $^\circ$')
         self.__ax_corr_point__.set_ylabel('Intensity (arb. units)')
-        self.__ax_corr_point__.set_xticks(
-            np.arange(0, self.num_th,
-                      (self.num_th / self.th_max) * 45),
-            np.arange(self.th_min, self.th_max, 45))
-        self.__ax_corr_point__.set_xlim(0, self.num_th / 2)
+
+        self.__ax_corr_point__.set_xlim(0, 180)
         if y_lim is not None:
             self.__ax_corr_point__.set_ylim(y_lim[0], y_lim[1])
         else:
-            align_ylim(self.__ax_corr_point__, x_range=(0,self.num_th//2), edge_mask=2, scale=1.5)
+            align_ylim(self.__ax_corr_point__, x_range=(0,180), edge_mask=2, scale=1.5)
         self.__fig_corr_point__.tight_layout()
         if save_fig:
             self.save_line(array, save_name, save_type, **kwargs)
