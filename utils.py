@@ -13,7 +13,7 @@ import re
 from functools import wraps
 from pathlib import Path
 from stat import S_IREAD
-from typing import Any, TypeAlias
+from typing import Any, TypeAlias, Callable
 
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
@@ -156,6 +156,12 @@ def gaussian_convolve(array: np.ndarray, length: int = 3, stddev: int = 1) -> np
         raise ValueError('The array must be 1D or 2D.')
     blurred = signal.fftconvolve(array, kernel, mode='same')
     return blurred
+
+def convolve_1d(array1: np.ndarray, func: Callable) -> np.ndarray:
+    array1_fft = np.fft.fft(array1)
+    array2_fft = np.fft.fft(func(array1))
+    new_array = np.fft.ifft(array1_fft * array2_fft.conjugate())
+    return new_array
 
 
 # General functions

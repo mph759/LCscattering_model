@@ -1,23 +1,29 @@
+from functools import partial
+
 import numpy as np
+from scipy import signal
 import matplotlib.pyplot as plt
 from pathlib import Path
 from dataclasses import dataclass
+from astropy.modeling.models import Gaussian1D, Lorentz1D, Voigt1D
 
-from utils import alphanum_key, align_ylim, ParameterReader
+from utils import alphanum_key, align_ylim, ParameterReader, convolve_1d
 from correlation import AngularCorrelation
 from post_analysis import plot_saved_angular_corr
 
 
 @dataclass
 class XFM_Experiment:
-    ref_num:int
-    ref_run:int
+    ref_num: int
+    ref_run: int
 
-    def get_runtag(self, run_num:int) -> str:
+    def get_runtag(self, run_num: int) -> str:
         xfm_num = self.ref_num - self.ref_run + run_num
         return f'{xfm_num}_{run_num}'
 
-def display_correlation(data_path: Path, *, scale: float=1, step: int = 0,  ax: plt.Axes | None = None, label: str | None = None,
+
+def display_correlation(data_path: Path, *, scale: float = 1, step: int = 0, ax: plt.Axes | None = None,
+                        label: str | None = None,
                         **kwargs) -> None:
     if ax is None:
         fig, ax = plt.subplots()
@@ -42,10 +48,10 @@ def display_correlation(data_path: Path, *, scale: float=1, step: int = 0,  ax: 
     for i in np.arange(data.shape[0]):
         dline[:] = np.sum(np.sum(tmp[irline - w:irline + w, irline - w:irline + w, :] * (i * i) ** pw, 0), 0)
 
-
     # plot a line from q=q'
-    ax.plot(np.arange(0, 360, 2), (dline*scale)+step, label=label, **kwargs)
+    ax.plot(np.arange(0, 360, 2), (dline * scale) + step, label=label, **kwargs)
     ax.set_xlim([0, 180])
+
 
 def plot_all(well: str, step_size: int = 10):
     tags = ['a', 'b']
@@ -65,12 +71,30 @@ def plot_all(well: str, step_size: int = 10):
     fig.tight_layout()
     plt.show()
 
+def get_indices_array(array):
+    return np.arange(array.shape[0]) - (array.shape[0] // 2)
+
+def triangle(array, *, height: int = 1, width: int = 45):
+    indices_array = get_indices_array(array)
+    array = (width - np.abs(indices_array)) / width
+    array[array < 0] = 0
+    return array
+
+
+def lorentzian(array, *, amplitude: float = 0.1, x_0: float = 0, fwhm: float = 5):
+    indices_array = get_indices_array(array)
+    lorentzian_array = Lorentz1D(amplitude=amplitude, x_0=x_0, fwhm=fwhm)
+    return lorentzian_array(indices_array)
+
+def voigt(array, *, amplitude: float = 0.1, x_0: float = 0, fwhm_L: float = 5, fwhm_G: float = 5):
+    indices_array = get_indices_array(array)
+    voigt_array = Voigt1D(amplitude_L=amplitude, x_0=x_0, fwhm_L=fwhm_L, fwhm_G=fwhm_G)
+    return voigt_array(indices_array)
 
 
 if __name__ == '__main__':
     plt.rcParams['figure.figsize'] = [16, 9]
     plt.rcParams['mathtext.default'] = 'regular'
-
 
     # Experimental Data
     Martin_19545 = XFM_Experiment(121019, 424)
@@ -84,10 +108,8 @@ if __name__ == '__main__':
     run_tag = Martin_19545.get_runtag(run)
     exp_data_path = root_path / well / cycle / f'{run_tag}_n49999_{type_tag}_correlation_sum.npy'
 
-
-
     # Simulated Data
-    data_folder = Path().cwd() / r'output\LCscattering-trial_2024-09-25 13-38-33'
+    data_folder = Path().cwd() / r'output\LCscattering-trial_2024-09-26 09-30-38'
 
     '''
     fig, ax = plt.subplots(figsize=(16, 9))
@@ -102,13 +124,18 @@ if __name__ == '__main__':
     '''
     parameter = 'unit_vector'
     folder_list = sorted(data_folder.glob(f'{parameter}_*'), key=alphanum_key)
-    fig, ax = plot_saved_angular_corr(folder_list, title=f'{parameter}', step_size=0, peak_override=433)
+    triangle_partial = partial(triangle, height=1, width=45)
+    triangle_convolve = partial(convolve_1d, func=triangle_partial)
+    lorentzian_convolve = partial(convolve_1d, func=lorentzian)
+    voigt_partial = partial(voigt, amplitude=2e-12, fwhm_G=55, fwhm_L=6)
+    voigt_convolve = partial(convolve_1d, func=voigt_partial)
+    fig, ax = plot_saved_angular_corr(folder_list, title=f'{parameter}', step_size=0,
+                                      peak_override=433, func=voigt_convolve)
 
     # Plot Experimental data
-    display_correlation(exp_data_path, scale=1e11, ax=ax, label='data', color='k')
+    display_correlation(exp_data_path, scale=1, ax=ax, label='data', color='k')
     ax.legend()
     fig.suptitle(f'{run_tag} {type_tag}')
     align_ylim(ax=ax, x_range=(0, 180), edge_mask=2)
     fig.tight_layout()
     plt.show()
-

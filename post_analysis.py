@@ -1,11 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
+from typing import Optional, Callable
 
 from correlation import AngularCorrelation
 from utils import ParameterReader, align_ylim, alphanum_key
 
 def plot_saved_angular_corr(data_folders: list[Path], title: str, step_size: float=1e12, *,
+                            func: Optional[Callable] = None,
                             peak_num: int = 1, peak_override: int | None = None, legend_nrows:int = 5):
     num_folders = len(data_folders)
     fig, ax = plt.subplots()
@@ -17,9 +19,13 @@ def plot_saved_angular_corr(data_folders: list[Path], title: str, step_size: flo
             peak = peaks[peak_num-1]
         else:
             peak = peak_override
-        angular_correlation.plot_line(peak, fig=fig, ax=ax, step=step_size * i, label=data_folder.name.split('_')[-1])
-    ax.legend(ncol=((num_folders-1) // legend_nrows) + 1)
-    align_ylim(ax, x_range=(0, angular_correlation.num_th // 2), edge_mask=2)
+        angular_correlation.plot_line(peak, fig=fig, ax=ax, step=step_size * i, label=data_folder.name.split('_')[-1], func=func)
+        if i == num_folders - 1:
+            align_ylim(ax, x_range=(0, angular_correlation.num_th // 2), edge_mask=2)
+    if num_folders > 1:
+        ax.legend(ncol=((num_folders-1) // legend_nrows) + 1)
+    else:
+        ax.legend(ncol=1)
     plt.title(title)
     fig.tight_layout()
     return fig, ax

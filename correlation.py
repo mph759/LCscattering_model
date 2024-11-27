@@ -7,6 +7,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from pathlib import Path
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from typing import Optional, Callable
 
 from diffraction import PolarDiffraction2D, Diffraction2D
 from utils import timer, save, ParameterReader, align_ylim
@@ -138,10 +139,12 @@ class AngularCorrelation:
         print(f'Saved angular correlation as {file_name}')
 
     def plot_line(self, point: float, title=None, y_lim: tuple[float, float] = None, *,
+                  func: Optional[Callable] = None,
                   fig: plt.Figure | None = None, ax: plt.Axes | None = None, step: float = 0, label: str | None = None,
                   save_fig: bool = False, save_name: str = None, save_type: str = 'png', **kwargs):
         """
         Plot the angular correlation at a point
+        :param func:
         :param point: r (or q) that you wish to plot
         :param title: title for the plot
         :param y_lim: max and minimum limit of the y-axis (as a tuple). If None (default) will auto-scale
@@ -157,6 +160,8 @@ class AngularCorrelation:
         """
         print(f'Plotting angular correlation at {point}...')
         array = np.real(self.ang_corr[point, :]) + step
+        if func is not None:
+            array = func(array)
         if ax is None:
             self.__fig_corr_point__, self.__ax_corr_point__ = plt.subplots()
         else:
