@@ -1,5 +1,4 @@
 from functools import partial
-
 import numpy as np
 from scipy import signal
 import matplotlib.pyplot as plt
@@ -7,7 +6,7 @@ from pathlib import Path
 from dataclasses import dataclass
 from astropy.modeling.models import Gaussian1D, Lorentz1D, Voigt1D
 
-from utils import alphanum_key, align_ylim, ParameterReader, convolve_1d
+from utils import alphanum_key, align_ylim, ParameterReader, convolve_voigt
 from correlation import AngularCorrelation
 from post_analysis import plot_saved_angular_corr
 
@@ -71,26 +70,6 @@ def plot_all(well: str, step_size: int = 10):
     fig.tight_layout()
     plt.show()
 
-def get_indices_array(array):
-    return np.arange(array.shape[0]) - (array.shape[0] // 2)
-
-def triangle(array, *, height: int = 1, width: int = 45):
-    indices_array = get_indices_array(array)
-    array = (width - np.abs(indices_array)) / width
-    array[array < 0] = 0
-    return array
-
-
-def lorentzian(array, *, amplitude: float = 0.1, x_0: float = 0, fwhm: float = 5):
-    indices_array = get_indices_array(array)
-    lorentzian_array = Lorentz1D(amplitude=amplitude, x_0=x_0, fwhm=fwhm)
-    return lorentzian_array(indices_array)
-
-def voigt(array, *, amplitude: float = 0.1, x_0: float = 0, fwhm_L: float = 5, fwhm_G: float = 5):
-    indices_array = get_indices_array(array)
-    voigt_array = Voigt1D(amplitude_L=amplitude, x_0=x_0, fwhm_L=fwhm_L, fwhm_G=fwhm_G)
-    return voigt_array(indices_array)
-
 
 if __name__ == '__main__':
     plt.rcParams['figure.figsize'] = [16, 9]
@@ -109,33 +88,42 @@ if __name__ == '__main__':
     exp_data_path = root_path / well / cycle / f'{run_tag}_n49999_{type_tag}_correlation_sum.npy'
 
     # Simulated Data
-    data_folder = Path().cwd() / r'output\LCscattering-trial_2024-09-26 09-30-38'
+    data_root = Path(fr'C:\Users\Michael_X13\OneDrive - RMIT University\Research\LCscattering_model\output')
+    data_folder = data_root / r'LCscattering-trial_2025-01-06 11-32-03'# r'LCscattering-trial_2025-01-06 12-01-20' # r'LCscattering-trial_2025-01-06 12-43-55'
 
-    '''
-    fig, ax = plt.subplots(figsize=(16, 9))
-    data_folder = data_folder / r'unit_vector_64'
-    reader = ParameterReader(data_folder)
-    peaks = sorted(reader.params['Peak Locations'])
-    unit_vector = reader.params['Calamitic Particle']['unit_vector']
-    vector_stddev = reader.params['Calamitic Particle']['unit_vector_stddev']
-    angular_correlation = AngularCorrelation.load(data_folder)
-    angular_correlation.plot_line(peaks[0], fig=fig, ax=ax,
-                                  label='Simulation')
-    '''
-    parameter = 'unit_vector'
-    folder_list = sorted(data_folder.glob(f'{parameter}_*'), key=alphanum_key)
-    triangle_partial = partial(triangle, height=1, width=45)
-    triangle_convolve = partial(convolve_1d, func=triangle_partial)
-    lorentzian_convolve = partial(convolve_1d, func=lorentzian)
-    voigt_partial = partial(voigt, amplitude=2e-12, fwhm_G=55, fwhm_L=6)
-    voigt_convolve = partial(convolve_1d, func=voigt_partial)
-    fig, ax = plot_saved_angular_corr(folder_list, title=f'{parameter}', step_size=0,
-                                      peak_override=433, func=voigt_convolve)
+    fixed_parameter = 'unit_vector_64'
+    parameter = 'unit_vector'# 'vector_stddev'
+    search_string = f'{parameter}*' #_{fixed_parameter}'
+    print(f'Searching for folders at {data_folder} with {search_string} in the name.')
+    folder_list = sorted(data_folder.glob(search_string), key=alphanum_key)
+    print(f'Found {len(folder_list)} folders with {search_string} in the name.')
+    convolve_voigt_func = convolve_voigt(amplitude=3.3e-10, fwhm_G=55, fwhm_L=6)
+    len_list = 5
+    folder_list = [folder_list[i:i+len_list] for i in range(0, len(folder_list), len_list)]
 
-    # Plot Experimental data
-    display_correlation(exp_data_path, scale=1, ax=ax, label='data', color='k')
-    ax.legend()
-    fig.suptitle(f'{run_tag} {type_tag}')
-    align_ylim(ax=ax, x_range=(0, 180), edge_mask=2)
-    fig.tight_layout()
+    peak_pixel = 433
+
+    for folder_sublist in folder_list:
+        fig, (ax1, ax) = plt.subplots(nrows=2, figsize=(10, 10), sharex=True)
+        fig, ax = plot_saved_angular_corr(folder_sublist, step_size=0, ax=ax,
+                                          peak_override=peak_pixel, func=convolve_voigt_func)
+        fig, ax1 = plot_saved_angular_corr(folder_sublist, step_size=0,# step_size=2e10,
+                                           peak_override=peak_pixel, ax=ax1)
+
+        # Plot Experimental data
+        display_correlation(exp_data_path, scale=1, ax=ax, label='data', color='k', linestyle='--')
+        display_correlation(exp_data_path, scale=2e9, ax=ax1, label='data', color='k', linestyle='--')
+        if len(folder_sublist) > 5:
+            ncols = len(folder_sublist) // 5 + 1
+        else:
+            ncols = 1
+        ax.legend(ncols=ncols, fontsize='small')
+        ax1.legend(ncols=ncols, fontsize='small')
+        ax.set_title(f'Convolved')
+        ax1.set_title(f'Not convolved')
+        align_ylim(ax=ax, x_range=(0, 180), edge_mask=2)
+        align_ylim(ax=ax1, x_range=(0, 180), edge_mask=2)
+        fig.suptitle(f'{run_tag} {type_tag}')
+
+        fig.tight_layout()
     plt.show()

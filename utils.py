@@ -10,13 +10,15 @@ import sys
 import time
 import json
 import re
-from functools import wraps
+from functools import wraps, partial
 from pathlib import Path
 from stat import S_IREAD
 from typing import Any, TypeAlias, Callable
+from astropy.modeling.models import Gaussian1D, Lorentz1D, Voigt1D
 
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
+from matplotlib.projections.polar import PolarAxes
 import numpy as np
 from scipy import signal
 
@@ -70,30 +72,45 @@ def pythagorean_sides(a: float, b: float, theta: float) -> tuple[float, float]:
     return x, y
 
 
-def plot_angle_bins(samples, mean, stddev, min_x=0, max_x=180, view_table: bool = True):
+def plot_angle_bins(samples, mean: float, stddev: float):
     sample_mean = np.mean(samples)
     sample_stddev = np.std(samples)
     sample_size = len(samples)
-    bins = range(0, 180, 1)
-    fig, ax = plt.subplots()
-    count, bins, ignored = ax.hist(samples, bins=bins, density=True)
+    bins = range(0, 360, 1)
+    fig = plt.figure(figsize=(10, 10))
+    counts, bins = np.histogram(samples, bins=bins, density=True)
+    ax1 = fig.add_subplot()
+    ax1.hist(samples, bins=bins, density=True)
+    ax1.set_xlim(0, 360)
+    ax1.yaxis.set_major_formatter(mtick.PercentFormatter(1))
     y = 1 / (stddev * np.sqrt(2 * np.pi)) * np.exp(- (bins - mean) ** 2 / (2 * stddev ** 2))
-    ax.plot(bins, y, 'r')
-    ax.set_xlim(min_x, max_x)
-    ax.set_ylim(0, 0.09)
+    for i, angle in enumerate(y):
+        if angle < 0:
+            angle += 360
+        angle %= 360
+        y[i] = angle
+    ax1.plot(bins, y, 'r')
+    ax1.set_xticks(range(bins[0], bins[-1], 45))
 
-    if view_table:
-        ax.text(0.7, 0.87, f'Sample size: {sample_size}', transform=plt.gca().transAxes)
-        means = [f'{sample_mean:0.2f}', f'{mean:0.2f}']
-        stddevs = [f'{sample_stddev:0.2f}', f'{stddev:0.2f}']
-        row_labels = ['Mean', 'Stddev']
-        col_labels = ['Sample Set', 'Model']
-        ax.table(cellText=[means, stddevs], rowLabels=row_labels, colLabels=col_labels,
-                 colWidths=[0.1] * 2, bbox=[0.7, 0.75, 0.25, 0.1], transform=plt.gca().transAxes, fontsize=16)
+    ax1.set_ylabel('Probability')
+    ax1.set_xlabel('Angle / \u00B0')
+
+    fig.tight_layout()
+    return fig, ax1
+
+def plot_angle_bins_polar(samples, mean: float, stddev: float):
+    sample_size = len(samples)
+    bins = range(0, 360, 1)
+    fig = plt.figure(figsize=(10, 10))
+
+    ax = fig.add_subplot(projection='polar')
+    counts, bins = np.histogram(samples, bins=bins, density=True)
+    area = counts / sample_size
+    radius = (area / np.pi) ** (1 / 2)
+    ax.bar(np.radians(bins[:-1]), radius, width=1)
 
     ax.yaxis.set_major_formatter(mtick.PercentFormatter(1))
-    ax.set_ylabel('Probability')
-    ax.set_xlabel('Value')
+    ax.set_xticks(np.radians(range(bins[0], bins[-1], 15)))
     fig.tight_layout()
     return fig, ax
 
@@ -157,12 +174,35 @@ def gaussian_convolve(array: np.ndarray, length: int = 3, stddev: int = 1) -> np
     blurred = signal.fftconvolve(array, kernel, mode='same')
     return blurred
 
-def convolve_1d(array1: np.ndarray, func: Callable) -> np.ndarray:
-    array1_fft = np.fft.fft(array1)
-    array2_fft = np.fft.fft(func(array1))
-    new_array = np.fft.ifft(array1_fft * array2_fft.conjugate())
-    return new_array
+def convolve_1d(func: Callable, *args, **kwargs) -> np.ndarray:
+    @wraps(func)
+    def inner(array1: np.ndarray):
+        array1_fft = np.fft.fft(array1)
+        array2_fft = np.fft.fft(func(array1, *args, **kwargs))
+        new_array = np.fft.ifft(array1_fft * array2_fft.conjugate())
+        return new_array
+    return inner
 
+def get_indices_array(array):
+    return np.arange(array.shape[0]) - (array.shape[0] // 2)
+
+def triangle(array, *, height: int = 1, width: int = 45):
+    indices_array = get_indices_array(array)
+    array = (width - np.abs(indices_array)) / width
+    array[array < 0] = 0
+    return array
+
+def lorentzian(array, *, amplitude: float = 0.1, x_0: float = 0, fwhm: float = 5):
+    indices_array = get_indices_array(array)
+    lorentzian_array = Lorentz1D(amplitude=amplitude, x_0=x_0, fwhm=fwhm)
+    return lorentzian_array(indices_array)
+
+def voigt(array, *, amplitude: float = 0.1, x_0: float = 0, fwhm_L: float = 5, fwhm_G: float = 5):
+    indices_array = get_indices_array(array)
+    voigt_array = Voigt1D(amplitude_L=amplitude, x_0=x_0, fwhm_L=fwhm_L, fwhm_G=fwhm_G)
+    return voigt_array(indices_array)
+
+convolve_voigt = partial(convolve_1d, func=voigt)
 
 # General functions
 def timer(func) -> object:
@@ -318,3 +358,17 @@ def alphanum_key(s):
         if text.isdigit() or text.lstrip('-').isdigit():
             text_list[i] = int(text)
     return text_list
+
+if __name__ == '__main__':
+    mean_angle = 0
+    angle_stddev = 2
+    angles = np.random.normal(mean_angle, angle_stddev, int(1e6))
+    for i, angle in enumerate(angles):
+        if angle < 0:
+            angle += 360
+        angle %= 360
+        angles[i] = angle
+    fig, ax = plot_angle_bins(angles, mean_angle, angle_stddev)
+    fig, ax = plot_angle_bins_polar(angles, mean_angle, angle_stddev)
+    plt.show()
+

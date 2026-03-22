@@ -8,10 +8,10 @@ import logging
 import time
 from datetime import datetime, timedelta
 from functools import partial
+from itertools import product
 from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.stats import goodness_of_fit, norm
 
 from correlation import PolarDiffraction2D, AngularCorrelation
 from diffraction import Diffraction2D, Diffraction1D
@@ -20,6 +20,27 @@ from peak_predict import peak_predict
 from spatial import RealSpace
 from utils import logger_setup, generate_positions, init_spacing, plot_angle_bins, ParameterLogger, chi_squared
 
+plt.rcParams['savefig.dpi'] = 300
+plt.rcParams['svg.fonttype'] = 'none'
+plt.rcParams['savefig.format'] = 'svg'
+plt.rcParams['xtick.major.pad'] = 5
+plt.rcParams['figure.figsize'] = (8.27, 11.69 * (2 / 5))
+plt.rcParams['axes.titleweight'] = 'bold'
+plt.rcParams['axes.titlelocation'] = 'left'
+
+def define_variables(**kwargs):
+    variables = kwargs.keys()
+    values = kwargs.values()
+    product_list = list(product(*values))
+    product_dict_list = [{} for _ in range(len(product_list))]
+
+    for i, sub_list in enumerate(product_list):
+        string = ''
+        for k, value in zip(variables, sub_list):
+            product_dict_list[i][k] = value
+            string += f'{k}_{value}-'
+        product_dict_list[i]['tag'] = string[:-1]
+    return product_dict_list
 
 def main():
     """
@@ -49,14 +70,14 @@ def main():
     plt.rcParams['mathtext.default'] = 'regular'
 
     now = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
-    output_dir_root = f'output\\LCscattering-trial_{now}'
+    output_dir_root = fr'C:\Users\Michael_X13\OneDrive - RMIT University\Research\LCscattering_model\output\LCscattering-trial_{now}'
     Path(output_dir_root).mkdir(parents=True, exist_ok=True)
     main_logger = logger_setup('main', output_dir_root, stream=True)
     base_run_partial = partial(run, output_dir_root=output_dir_root, grid_max=x_max, particle_width=2,
                                wavelength=wavelength, pixel_size=pixel_size,
                                dx=dx, npt=npt, padding_spacing=padding_spacing,
-                               # unit_vector=unit_vector,
-                               vector_stddev=vector_stddev,
+                               unit_vector=64,
+                               # vector_stddev=vector_stddev,
                                particle_length=particle_length)
 
     # Run over many variables
@@ -69,28 +90,20 @@ def main():
         "padding_spacing": [(5, x) for x in range(-5, 5 + 1, 1)],
     }
     '''
-    variables = {
-        "unit_vector": list(range(60, 75, 1)),
-        #"vector_stddev": list(range(15, 25, 1)),
-    }
+    variables = define_variables(unit_vector=list(range(0, 90, 1)),
+                                 vector_stddev=list(range(5, 25, 1)),
+                                 particle_length=list(range(15, 31, 1)))
+
     with open(f'{output_dir_root}/variables.json', 'w') as f:
         json.dump(variables, f, indent=4)
 
     start = time.perf_counter()
-    kwargs = {}
-    for i, (k, v) in enumerate(variables.items()):
-        for key, val_range in variables.items():
-            if k != key:
-                kwargs[key] = val_range[0]
-        partial_func = partial(base_run_partial, **kwargs)
-        print(f'Resetting partial function with {kwargs}')
-
-        for val in v:
-            toc = time.perf_counter()
-            print(f'{k} = {val}')
-            partial_func(**{k: val, 'tag': f'{k}_{val}'})
-            tic = time.perf_counter()
-            main_logger.info(f'{k} {val} is done in {tic - toc}s\n')
+    for i, vars in enumerate(variables):
+        toc = time.perf_counter()
+        base_run_partial(**vars)
+        tic = time.perf_counter()
+        tag = vars['tag']
+        main_logger.info(f'{tag} is done in {tic - toc}s\n')
 
     end = time.perf_counter()
     run_time = timedelta(seconds=(end - start))
@@ -125,7 +138,7 @@ def run(unit_vector, vector_stddev, particle_width, particle_length, *, padding_
                                         fit_params={'loc':unit_vector, 'scale':vector_stddev},
                                         n_mc_samples=999)
         '''
-        fig_angle_dist, _ = plot_angle_bins(particle_angles, unit_vector, vector_stddev)
+        fig_angle_dist, _ = plot_angle_bins(particle_angles, unit_vector, vector_stddev)#, view_table=False)
         fig_angle_dist.savefig(f'{output_directory}\\angle_dist.png')
         logger.info(
             f"Collective unit vector: {particles_unit_vector:0.2f}, with a standard deviation of {particles_stddev:0.2f}")
@@ -153,6 +166,7 @@ def run(unit_vector, vector_stddev, particle_width, particle_length, *, padding_
         real_space_title = None
         real_space.plot(real_space_title)
         real_space.plot_zoom(real_space_title)
+        plt.show()
         real_space.save(f'{output_directory}\\2D_model_example', file_type='png', dpi=300, bbox_inches='tight')
         real_space_params = real_space.params
         spatial = {'x_spacing': x_spacing, 'y_spacing': y_spacing,
@@ -184,7 +198,7 @@ def run(unit_vector, vector_stddev, particle_width, particle_length, *, padding_
         polar_plot = PolarDiffraction2D(diffraction_of_real_space,
                                         num_r=diffraction_of_real_space.num_pixels // 2, num_th=720)
         polar_plot.subtract_mean_r()
-        polar_plot.gaussian_convolve()
+        # polar_plot.gaussian_convolve()
 
         polar_plot.plot(clim=5e4)
         # plt.show()
@@ -207,9 +221,10 @@ def run(unit_vector, vector_stddev, particle_width, particle_length, *, padding_
                                    save_name=f'{output_directory}\\angular_line_{peak}',
                                    save_type='png', dpi=300, bbox_inches='tight')
 
-        # plt.show()
+        #plt.show()
         plt.close('all')
 
 
 if __name__ == "__main__":
+    plt.rcParams['font.size'] = 16
     main()

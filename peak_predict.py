@@ -1,3 +1,4 @@
+# noinspection GrazieInspection
 """
 Peak predict in an FFT from real space parameters
 Project: Generating 2D scattering pattern for modelled liquid crystals
@@ -106,4 +107,4 @@ def peak_predict(diffraction: Diffraction2D, d_spacings: tuple[float, float]) ->
 
 
 if __name__ == "__main__":
-    peak_predict()
+    pass

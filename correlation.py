@@ -7,7 +7,9 @@ import numpy as np
 from matplotlib import pyplot as plt
 from pathlib import Path
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+import seaborn as sns
 from typing import Optional, Callable
+from tol_colors import colormaps
 
 from diffraction import PolarDiffraction2D, Diffraction2D
 from utils import timer, save, ParameterReader, align_ylim
@@ -33,6 +35,9 @@ class AngularCorrelation:
         self.__ax_corr__ = None
         self.__fig_corr_point__ = None
         self.__ax_corr_point__ = None
+
+        self.__cmap__ = colormaps['sunset']
+        self.__colorset__ = sns.color_palette('colorblind')
 
     def angular_correlation(self, polar2=None) -> np.ndarray:
         """
@@ -101,13 +106,14 @@ class AngularCorrelation:
         new_correlation.__fig_corr_point__ = None
         return new_correlation
 
-    def plot(self, title=None, clim=None, fig: plt.Figure | None = None, ax: plt.Axes | None = None):
+    def plot(self, title: str | None =None, clim: float | None =None,
+             fig: plt.Figure | None = None, ax: plt.Axes | None = None):
         print(f'Plotting full angular correlation...')
         if ax is None:
             self.__fig_corr__, self.__ax_corr__ = plt.subplots()
         else:
             self.__fig_corr__, self.__ax_corr__ = fig, ax
-        plot = self.__ax_corr__.imshow(np.real(self.ang_corr), aspect='auto')
+        plot = self.__ax_corr__.imshow(np.real(self.ang_corr), cmap=self.__cmap__,aspect='auto')
         self.__ax_corr__.invert_yaxis()
         if title is not None:
             self.__ax_corr__.set_title(title)
@@ -121,7 +127,7 @@ class AngularCorrelation:
                                     np.arange(self.th_min, self.th_max, 45))
 
         # creating new axes on the right side of current axes(ax).
-        # The width of cax will be 5% of ax and the padding between cax and ax will be fixed at 0.05 inch.
+        # The width of cax will be 5% of ax and the padding between cax and ax will be fixed at 0.1 inch.
         colorbar_axes = make_axes_locatable(self.__ax_corr__).append_axes("right", size="5%", pad=0.1)
         self.__fig_corr__.colorbar(plot, cax=colorbar_axes)
         if clim:
@@ -138,10 +144,10 @@ class AngularCorrelation:
         file_name = save(self.__fig_corr__, self.ang_corr, file_name, file_type, **kwargs)
         print(f'Saved angular correlation as {file_name}')
 
-    def plot_line(self, point: float, title=None, y_lim: tuple[float, float] = None, *,
-                  func: Optional[Callable] = None,
+    def plot_line(self, point: float, title: str | None =None, y_lim: tuple[float, float] | None = None, *,
                   fig: plt.Figure | None = None, ax: plt.Axes | None = None, step: float = 0, label: str | None = None,
-                  save_fig: bool = False, save_name: str = None, save_type: str = 'png', **kwargs):
+                  save_fig: bool = False, save_name: str | None = None, save_type: str = 'png',
+                  func: Optional[Callable] | None = None, **kwargs):
         """
         Plot the angular correlation at a point
         :param func:
@@ -167,9 +173,11 @@ class AngularCorrelation:
         else:
             self.__fig_corr_point__, self.__ax_corr_point__ = fig, ax
         if label is None:
-            self.__ax_corr_point__.plot(np.linspace(0, 360, self.num_th), array)
+            self.__ax_corr_point__.plot(np.linspace(0, 360, self.num_th), array,
+                                        col=next(self.__colorset__))
         else:
-            self.__ax_corr_point__.plot(np.linspace(0, 360, self.num_th), array, label=label)
+            self.__ax_corr_point__.plot(np.linspace(0, 360, self.num_th), array,
+                                        label=label, col=next(self.__colorset__))
         if title is not None:
             self.__ax_corr_point__.set_title(title)
         self.__ax_corr_point__.set_xlabel('$\Theta$ / $^\circ$')
@@ -183,6 +191,7 @@ class AngularCorrelation:
         self.__fig_corr_point__.tight_layout()
         if save_fig:
             self.save_line(array, save_name, save_type, **kwargs)
+        return self.__fig_corr_point__
 
     def save_line(self, array, file_name, file_type=None, **kwargs):
         """

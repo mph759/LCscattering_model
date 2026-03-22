@@ -10,6 +10,8 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from pyFAI.azimuthalIntegrator import AzimuthalIntegrator
 from scipy import signal
 from scipy.ndimage import rotate
+from typing import Self, Optional
+from tol_colors import colormaps
 
 from spatial import RealSpace
 from utils import timer, save
@@ -49,6 +51,8 @@ class Diffraction2D:
         # Initialise plotting objects
         self.__fig_2d__ = None
         self.__ax_2d__ = None
+
+        self.__cmap__ = colormaps['PRGn']
 
     @property
     def params(self):
@@ -132,7 +136,7 @@ class Diffraction2D:
         print("Plotting 2D diffraction figure...")
         # Plot the diffraction image
         self.__fig_2d__, self.__ax_2d__ = plt.subplots()
-        plot = self.__ax_2d__.imshow(self.pattern_2d ** 2)
+        plot = self.__ax_2d__.imshow(self.pattern_2d ** 2, cmap=self.__cmap__)
         self.__ax_2d__.invert_yaxis()
         self.__ax_2d__.set_title(title)
 
@@ -160,6 +164,8 @@ class Diffraction2D:
         :param file_type: Type of file you want to save (e.g. npy or jpg). Default npy file
         :return:
         """
+        if file_type is None:
+            file_type = 'npy'
         file_name = save(self.__fig_2d__, self.pattern_2d, file_name, file_type, **kwargs)
         print(f'Saved 2D diffraction pattern as {file_name}')
 
@@ -227,6 +233,8 @@ class PolarDiffraction2D:
         if real_only:
             self._data = np.real(self._data)
 
+        self.__cmap__ = colormaps['PRGn']
+
     @property
     def params(self):
         return {'Polar 2D Diffraction':
@@ -273,7 +281,7 @@ class PolarDiffraction2D:
 
     def plot(self, title=None, clim=None):
         self._fig, self._ax = plt.subplots()
-        plot = self._ax.imshow(self.data, aspect='auto')
+        plot = self._ax.imshow(self.data, cmap=self.__cmap__,aspect='auto')
         self._ax.invert_yaxis()
         self._ax.set_xlabel('$\Theta$ / $^\circ$')
         if self.q_instead:

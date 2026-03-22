@@ -8,6 +8,8 @@ import numpy as np
 from PIL import Image
 from PIL import ImageDraw
 
+from tol_colors import colormaps
+
 from utils import timer, save
 
 
@@ -20,6 +22,7 @@ class RealSpace:
         self.__set_array__()
         self.__fig__ = self.__ax__ = None
         self.__fig_zoom__ = self.__ax_zoom__ = None
+        self.__cmap__ = colormaps['iridescent']
 
     @property
     def grid(self):
@@ -54,7 +57,7 @@ class RealSpace:
         """
         print("Plotting real space figure...")
         self.__fig__, self.__ax__ = plt.subplots()
-        self.__ax__.imshow(self.array, *args, **kwargs)
+        self.__ax__.imshow(self.array, cmap=self.__cmap__,  *args, **kwargs)
         self.__ax__.invert_yaxis()
         if title is not None:
             self.__ax__.set_title(title)
@@ -78,7 +81,7 @@ class RealSpace:
             self.__fig_zoom__, self.__ax_zoom__ = plt.subplots()
         else:
             self.__ax_zoom__ = axes
-        self.__ax_zoom__.imshow(self.array, *args, **kwargs)
+        self.__ax_zoom__.imshow(self.array, cmap=self.__cmap__, *args, **kwargs)
         x_c, y_c = self.grid[0] * 0.5, self.grid[1] * 0.5
         x1, x2 = x_c - zoom_size / 2, x_c + zoom_size / 2
         y1, y2 = y_c - zoom_size / 2, y_c + zoom_size / 2
