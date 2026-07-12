@@ -13,7 +13,7 @@ import re
 from functools import wraps, partial
 from pathlib import Path
 from stat import S_IREAD
-from typing import Any, TypeAlias, Callable
+from typing import Any, TypeAlias, Callable, Optional
 from astropy.modeling.models import Gaussian1D, Lorentz1D, Voigt1D
 
 import matplotlib.pyplot as plt
@@ -117,8 +117,6 @@ def plot_angle_bins_polar(samples, mean: float, stddev: float):
 def chi_squared(samples: np.array, mean: float):
     return np.sum(((samples - mean) ** 2) / mean)
 
-
-
 def align_ylim(ax: plt.Axes, x_range=(0, 0), scale:float = 1.5, edge_mask:float = 0):
     line_data = [line.get_data()[1][x_range[0]+edge_mask: x_range[1] - edge_mask] for line in ax.get_lines()]
     min_line = np.min(line_data)
@@ -174,9 +172,22 @@ def gaussian_convolve(array: np.ndarray, length: int = 3, stddev: int = 1) -> np
     blurred = signal.fftconvolve(array, kernel, mode='same')
     return blurred
 
-def convolve_1d(func: Callable, *args, **kwargs) -> np.ndarray:
+def subtract_mean(array: np.ndarray) -> np.ndarray:
+    mean = np.mean(array)
+    return array - mean
+
+def normalize(array: np.ndarray, max_override: Optional[float] = None, max_search_override: Optional[Callable] = None) -> np.ndarray:
+    if max_override is not None:
+        max_value = max_override
+    elif max_search_override is not None:
+        max_value = np.max(max_search_override(array))
+    else:
+        max_value = np.max(array)
+    return array / max_value
+
+def convolve_1d(func: Callable) -> np.ndarray:
     @wraps(func)
-    def inner(array1: np.ndarray):
+    def inner(array1: np.ndarray, *args: Any, **kwargs: Any) -> np.ndarray:
         array1_fft = np.fft.fft(array1)
         array2_fft = np.fft.fft(func(array1, *args, **kwargs))
         new_array = np.fft.ifft(array1_fft * array2_fft.conjugate())
@@ -202,7 +213,7 @@ def voigt(array, *, amplitude: float = 0.1, x_0: float = 0, fwhm_L: float = 5, f
     voigt_array = Voigt1D(amplitude_L=amplitude, x_0=x_0, fwhm_L=fwhm_L, fwhm_G=fwhm_G)
     return voigt_array(indices_array)
 
-convolve_voigt = partial(convolve_1d, func=voigt)
+convolve_voigt = convolve_1d(voigt)
 
 # General functions
 def timer(func) -> object:

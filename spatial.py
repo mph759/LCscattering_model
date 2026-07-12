@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
 from PIL import ImageDraw
+from pathlib import Path
 
 from tol_colors import colormaps
 
@@ -19,7 +20,7 @@ class RealSpace:
         self._grid = grid
         print(f"Generating real space array with dimensions {self._grid}")
         self.img = Image.new('L', self._grid, 0)
-        self.__set_array__()
+        self.array = np.asarray(self.img)
         self.__fig__ = self.__ax__ = None
         self.__fig_zoom__ = self.__ax_zoom__ = None
         self.__cmap__ = colormaps['iridescent']
@@ -93,14 +94,20 @@ class RealSpace:
         self.__ax_zoom__.set_yticks([])
         return self.__ax_zoom__
 
-    def save(self, file_name, file_type=None, **kwargs):
+    def save(self, file_name, file_type='npy', **kwargs):
         """
         Save the 1D diffraction pattern as a numpy file
         :param file_name: Output file name
         :param file_type: Type of file you want to save (e.g. npy or jpg). Default npy file
         :return:
         """
-        if self.__fig_zoom__:
+        if self.__fig_zoom__ and file_type.lower() != 'npy':
             self.__fig_zoom__.savefig(f'{file_name}_zoom.{file_type}', format=file_type, **kwargs)
         file_name = save(self.__fig__, self.array, file_name, file_type, **kwargs)
         print(f'Saved real space as {file_name}')
+
+    def load(self, file_name: str | Path, **kwargs):
+        file = Path(file_name)
+        self.array = np.load(file)
+
+

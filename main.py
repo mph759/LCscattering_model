@@ -18,15 +18,8 @@ from diffraction import Diffraction2D, Diffraction1D
 from particle_types import CalamiticParticle
 from peak_predict import peak_predict
 from spatial import RealSpace
-from utils import logger_setup, generate_positions, init_spacing, plot_angle_bins, ParameterLogger, chi_squared
-
-plt.rcParams['savefig.dpi'] = 300
-plt.rcParams['svg.fonttype'] = 'none'
-plt.rcParams['savefig.format'] = 'svg'
-plt.rcParams['xtick.major.pad'] = 5
-plt.rcParams['figure.figsize'] = (8.27, 11.69 * (2 / 5))
-plt.rcParams['axes.titleweight'] = 'bold'
-plt.rcParams['axes.titlelocation'] = 'left'
+from utils import logger_setup, generate_positions, init_spacing, plot_angle_bins, ParameterLogger, chi_squared, gaussian_convolve
+from plot_settings import *
 
 def define_variables(**kwargs):
     variables = kwargs.keys()
@@ -53,7 +46,7 @@ def main():
     particle_width = 2  # in pixels
     particle_length = 15  # in pixels
     # Note: The unit vector is not the exact angle all the particles will have, but the mean of all the angles
-    unit_vector = 64
+    unit_vector = 90
     vector_stddev = 18  # Standard Deviation of the angle, used to generate angles for individual particles
 
     # Initialise how the particles sit in real space
@@ -76,8 +69,8 @@ def main():
     base_run_partial = partial(run, output_dir_root=output_dir_root, grid_max=x_max, particle_width=2,
                                wavelength=wavelength, pixel_size=pixel_size,
                                dx=dx, npt=npt, padding_spacing=padding_spacing,
-                               unit_vector=64,
-                               # vector_stddev=vector_stddev,
+                               unit_vector=unit_vector,
+                               #vector_stddev=vector_stddev,
                                particle_length=particle_length)
 
     # Run over many variables
@@ -90,9 +83,8 @@ def main():
         "padding_spacing": [(5, x) for x in range(-5, 5 + 1, 1)],
     }
     '''
-    variables = define_variables(unit_vector=list(range(0, 90, 1)),
-                                 vector_stddev=list(range(5, 25, 1)),
-                                 particle_length=list(range(15, 31, 1)))
+    variables = define_variables(vector_stddev=list(range(1, 6, 1)),)
+                                 # particle_length=list(range(15, 31, 1)))
 
     with open(f'{output_dir_root}/variables.json', 'w') as f:
         json.dump(variables, f, indent=4)
@@ -163,11 +155,12 @@ def run(unit_vector, vector_stddev, particle_width, particle_length, *, padding_
 
         # Plot all figures showing, real space, diffraction in 2D and 1D, and the correlation
         # real_space_title = f'Liquid Crystal Phase of Calamitic Liquid crystals, with unit vector {unit_vector}$^\circ$'
+
         real_space_title = None
-        real_space.plot(real_space_title)
-        real_space.plot_zoom(real_space_title)
-        plt.show()
-        real_space.save(f'{output_directory}\\2D_model_example', file_type='png', dpi=300, bbox_inches='tight')
+        #real_space.plot(real_space_title)
+        #real_space.plot_zoom(real_space_title)
+        # plt.show()
+        real_space.save(f'{output_directory}\\2D_model', file_type='npy') #, dpi=300, bbox_inches='tight')
         real_space_params = real_space.params
         spatial = {'x_spacing': x_spacing, 'y_spacing': y_spacing,
                    'allowed_random_displacement': allowed_displacement}
@@ -178,12 +171,12 @@ def run(unit_vector, vector_stddev, particle_width, particle_length, *, padding_
         diffraction_pattern_title = None
         # Determine the location of peaks
         peak_locs = peak_predict(diffraction_of_real_space, (x_spacing, y_spacing))
-        diffraction_of_real_space.plot(diffraction_pattern_title, clim=1e8, peaks=peak_locs)
+        # diffraction_of_real_space.plot(diffraction_pattern_title, clim=1e8, peaks=peak_locs)
         # plt.show()
-        diffraction_of_real_space.save(f'{output_directory}\\diffraction_pattern_2d', file_type='png',
-                                       dpi=300, bbox_inches='tight')
+        # diffraction_of_real_space.save(f'{output_directory}\\diffraction_pattern_2d', file_type='npy') #, dpi=300, bbox_inches='tight')
         log.params.update(diffraction_of_real_space.params)
 
+        '''
         # Create and plot 1D diffraction pattern of list of 2D diffraction patterns
         diffraction_pattern_1d = Diffraction1D(diffraction_of_real_space)
         # diff_1D_title = f'1D Diffraction pattern of Liquid Crystal Phase of Calamitic Particles'
@@ -191,6 +184,7 @@ def run(unit_vector, vector_stddev, particle_width, particle_length, *, padding_
         diffraction_pattern_1d.plot(diff_1D_title)
         diffraction_pattern_1d.save(f'{output_directory}\\diffraction_pattern_1d', file_type='png',
                                     dpi=300, bbox_inches='tight')
+        '''
 
         log.params.update({"Peak Locations": peak_locs})
 
@@ -198,30 +192,29 @@ def run(unit_vector, vector_stddev, particle_width, particle_length, *, padding_
         polar_plot = PolarDiffraction2D(diffraction_of_real_space,
                                         num_r=diffraction_of_real_space.num_pixels // 2, num_th=720)
         polar_plot.subtract_mean_r()
-        # polar_plot.gaussian_convolve()
 
-        polar_plot.plot(clim=5e4)
+        # polar_plot.plot(clim=5e4)
         # plt.show()
-        polar_plot.save(f'{output_directory}\\polar_plot', file_type='png', dpi=300, bbox_inches='tight')
+        # polar_plot.save(f'{output_directory}\\polar_plot', file_type='png', dpi=300, bbox_inches='tight')
         log.params.update(polar_plot.params)
 
         angular_corr = AngularCorrelation(polar_plot)
+
         angular_corr.plot(clim=5e11)
         # plt.show()
-        angular_corr.save(f'{output_directory}\\angular_corr', file_type='npy',
-                          close_fig=False)
-        angular_corr.save(f'{output_directory}\\angular_corr', file_type='png',
-                          dpi=300, bbox_inches='tight')
+        angular_corr.save(f'{output_directory}\\angular_corr', file_type='npy', close_fig=False)
+        angular_corr.save(f'{output_directory}\\angular_corr', file_type='png', dpi=300, bbox_inches='tight')
 
+        gaussian_convolve_line = partial(gaussian_convolve, length=20, stddev=8)
         for peak in peak_locs:
             angular_corr.plot_line(peak,
                                    title=None,
                                    # f'Angular line plot at {q}, with unit vector {unit_vector}',
+                                   func=gaussian_convolve_line,
                                    save_fig=True,
                                    save_name=f'{output_directory}\\angular_line_{peak}',
                                    save_type='png', dpi=300, bbox_inches='tight')
 
-        #plt.show()
         plt.close('all')
 
 

@@ -52,7 +52,7 @@ class Diffraction2D:
         self.__fig_2d__ = None
         self.__ax_2d__ = None
 
-        self.__cmap__ = colormaps['PRGn']
+        self.__cmap__ = colormaps['incandescent']
 
     @property
     def params(self):

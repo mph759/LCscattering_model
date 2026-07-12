@@ -35,9 +35,18 @@ class AngularCorrelation:
         self.__ax_corr__ = None
         self.__fig_corr_point__ = None
         self.__ax_corr_point__ = None
+        self.__color_settings__()
 
+    def __color_settings__(self):
         self.__cmap__ = colormaps['sunset']
         self.__colorset__ = sns.color_palette('colorblind')
+        self.__color_index__ = 0
+
+    def next_color(self) -> tuple[float, float, float]:
+        self.__color_index__ += 1
+        if self.__color_index__ == len(self.__colorset__):
+            self.__color_index__ = 0
+        return self.__colorset__[self.__color_index__]
 
     def angular_correlation(self, polar2=None) -> np.ndarray:
         """
@@ -104,6 +113,7 @@ class AngularCorrelation:
         new_correlation.__fig_corr__ = None
         new_correlation.__ax_corr_point__ = None
         new_correlation.__fig_corr_point__ = None
+        new_correlation.__color_settings__()
         return new_correlation
 
     def plot(self, title: str | None =None, clim: float | None =None,
@@ -146,7 +156,7 @@ class AngularCorrelation:
 
     def plot_line(self, point: float, title: str | None =None, y_lim: tuple[float, float] | None = None, *,
                   fig: plt.Figure | None = None, ax: plt.Axes | None = None, step: float = 0, label: str | None = None,
-                  save_fig: bool = False, save_name: str | None = None, save_type: str = 'png',
+                  save_fig: bool = False, save_name: str | None = None, save_type: str = 'png', color: str | float | None = None,
                   func: Optional[Callable] | None = None, **kwargs):
         """
         Plot the angular correlation at a point
@@ -165,19 +175,22 @@ class AngularCorrelation:
         :return:
         """
         print(f'Plotting angular correlation at {point}...')
-        array = np.real(self.ang_corr[point, :]) + step
+        array = np.real(self.ang_corr[point, :])
         if func is not None:
             array = func(array)
+        array += step
         if ax is None:
             self.__fig_corr_point__, self.__ax_corr_point__ = plt.subplots()
         else:
             self.__fig_corr_point__, self.__ax_corr_point__ = fig, ax
+        if color is None:
+            color = self.next_color()
         if label is None:
             self.__ax_corr_point__.plot(np.linspace(0, 360, self.num_th), array,
-                                        col=next(self.__colorset__))
+                                        color=color)
         else:
             self.__ax_corr_point__.plot(np.linspace(0, 360, self.num_th), array,
-                                        label=label, col=next(self.__colorset__))
+                                        label=label, color=color)
         if title is not None:
             self.__ax_corr_point__.set_title(title)
         self.__ax_corr_point__.set_xlabel('$\Theta$ / $^\circ$')
@@ -187,7 +200,7 @@ class AngularCorrelation:
         if y_lim is not None:
             self.__ax_corr_point__.set_ylim(y_lim[0], y_lim[1])
         else:
-            align_ylim(self.__ax_corr_point__, x_range=(0,180), edge_mask=2, scale=1.5)
+            align_ylim(self.__ax_corr_point__, x_range=(0,360), edge_mask=2, scale=1.5)
         self.__fig_corr_point__.tight_layout()
         if save_fig:
             self.save_line(array, save_name, save_type, **kwargs)

@@ -1,15 +1,14 @@
 from functools import partial
-import numpy as np
-from scipy import signal
-import matplotlib.pyplot as plt
+from typing import Optional, Callable
 from pathlib import Path
+import numpy as np
+import matplotlib.pyplot as plt
 from dataclasses import dataclass
-from astropy.modeling.models import Gaussian1D, Lorentz1D, Voigt1D
 
-from utils import alphanum_key, align_ylim, ParameterReader, convolve_voigt
-from correlation import AngularCorrelation
-from post_analysis import plot_saved_angular_corr
+from utils import alphanum_key, align_ylim, ParameterReader, normalize
+from post_analysis import plot_saved_angular_corr, postprocessing
 
+from plot_settings import *
 
 @dataclass
 class XFM_Experiment:
@@ -21,8 +20,8 @@ class XFM_Experiment:
         return f'{xfm_num}_{run_num}'
 
 
-def display_correlation(data_path: Path, *, scale: float = 1, step: int = 0, ax: plt.Axes | None = None,
-                        label: str | None = None,
+def display_correlation(data_path: Path, *, scale: float = 1., step: int = 0, ax: Optional[plt.Axes] = None,
+                        label: Optional[str] = None, func:Optional[Callable] = None,
                         **kwargs) -> None:
     if ax is None:
         fig, ax = plt.subplots()
@@ -47,9 +46,11 @@ def display_correlation(data_path: Path, *, scale: float = 1, step: int = 0, ax:
     for i in np.arange(data.shape[0]):
         dline[:] = np.sum(np.sum(tmp[irline - w:irline + w, irline - w:irline + w, :] * (i * i) ** pw, 0), 0)
 
+    if func is not None:
+        dline = func(dline)
     # plot a line from q=q'
     ax.plot(np.arange(0, 360, 2), (dline * scale) + step, label=label, **kwargs)
-    ax.set_xlim([0, 180])
+    ax.set_xlim([0, 360])
 
 
 def plot_all(well: str, step_size: int = 10):
@@ -62,7 +63,7 @@ def plot_all(well: str, step_size: int = 10):
         data_path = root_path / well / cycle
         ax_row[0].set_ylabel(cycle)
         for tag, axes in zip(tags, ax_row):
-            folder_list = sorted(data_path.glob(f'*{tags}_correlation_sum.npy'), key=alphanum_key)
+            folder_list = sorted(data_path.glob(f'*{tags}_*'), key=alphanum_key)
             for n_step, folder in enumerate(folder_list):
                 display_correlation(folder, step=n_step * step_size, ax=axes)
             axes.set_title(tag)
@@ -70,17 +71,20 @@ def plot_all(well: str, step_size: int = 10):
     fig.tight_layout()
     plt.show()
 
+def edge_mask(array: np.ndarray, edge: int =5) -> np.ndarray:
+    return array[edge:-edge]
+
+def edgemask_normalize(array: np.ndarray) -> np.ndarray:
+    return normalize(array, max_search_override=edge_mask)
 
 if __name__ == '__main__':
-    plt.rcParams['figure.figsize'] = [16, 9]
-    plt.rcParams['mathtext.default'] = 'regular'
 
     # Experimental Data
     Martin_19545 = XFM_Experiment(121019, 424)
     root_path = Path(r'C:\Users\Michael_X13\OneDrive - RMIT University\Beamtime\19545_XFM_Martin\data')
-    well = 'CholPel_W1'
+    well = r'CholPel\CholPel_W1'
     # plot_all(well)
-    run = 528
+    run = 455
     cycle = 'Cycle2'
     type_tag = 'a'
 
@@ -88,41 +92,34 @@ if __name__ == '__main__':
     exp_data_path = root_path / well / cycle / f'{run_tag}_n49999_{type_tag}_correlation_sum.npy'
 
     # Simulated Data
-    data_root = Path(fr'C:\Users\Michael_X13\OneDrive - RMIT University\Research\LCscattering_model\output')
-    data_folder = data_root / r'LCscattering-trial_2025-01-06 11-32-03'# r'LCscattering-trial_2025-01-06 12-01-20' # r'LCscattering-trial_2025-01-06 12-43-55'
+    data_root = Path(fr"C:\Users\Michael_X13\OneDrive - RMIT University\Research\LCscattering_model\output")
+    data_folder = data_root / r'LCscattering-trial_2026-07-03 11-17-14'
 
-    fixed_parameter = 'unit_vector_64'
-    parameter = 'unit_vector'# 'vector_stddev'
-    search_string = f'{parameter}*' #_{fixed_parameter}'
+    fixed_parameter = 'unit_vector_90'
+    parameter = 'vector_stddev'
+    search_string = f'*{parameter}_*'
     print(f'Searching for folders at {data_folder} with {search_string} in the name.')
     folder_list = sorted(data_folder.glob(search_string), key=alphanum_key)
     print(f'Found {len(folder_list)} folders with {search_string} in the name.')
-    convolve_voigt_func = convolve_voigt(amplitude=3.3e-10, fwhm_G=55, fwhm_L=6)
-    len_list = 5
+    len_list = 999
     folder_list = [folder_list[i:i+len_list] for i in range(0, len(folder_list), len_list)]
 
-    peak_pixel = 433
+    postprocessing_w_settings = partial(postprocessing, convolve_kwargs={'amplitude':1, 'fwhm_L':30, 'fwhm_G':30})
 
     for folder_sublist in folder_list:
-        fig, (ax1, ax) = plt.subplots(nrows=2, figsize=(10, 10), sharex=True)
-        fig, ax = plot_saved_angular_corr(folder_sublist, step_size=0, ax=ax,
-                                          peak_override=peak_pixel, func=convolve_voigt_func)
-        fig, ax1 = plot_saved_angular_corr(folder_sublist, step_size=0,# step_size=2e10,
-                                           peak_override=peak_pixel, ax=ax1)
+        fig, ax = plt.subplots()
+        fig, ax = plot_saved_angular_corr(folder_sublist, step_size=0, ax=ax, func=postprocessing_w_settings)
 
         # Plot Experimental data
-        display_correlation(exp_data_path, scale=1, ax=ax, label='data', color='k', linestyle='--')
-        display_correlation(exp_data_path, scale=2e9, ax=ax1, label='data', color='k', linestyle='--')
+
+        display_correlation(exp_data_path, scale=1, ax=ax, label='CholPel', color='k', linestyle='--', func=edgemask_normalize)
         if len(folder_sublist) > 5:
             ncols = len(folder_sublist) // 5 + 1
         else:
             ncols = 1
         ax.legend(ncols=ncols, fontsize='small')
-        ax1.legend(ncols=ncols, fontsize='small')
-        ax.set_title(f'Convolved')
-        ax1.set_title(f'Not convolved')
-        align_ylim(ax=ax, x_range=(0, 180), edge_mask=2)
-        align_ylim(ax=ax1, x_range=(0, 180), edge_mask=2)
+        ax.set_ylim(-1.1, 1.1)
+        ax.set_xticks(np.arange(0, 360, step=30))
         fig.suptitle(f'{run_tag} {type_tag}')
 
         fig.tight_layout()
