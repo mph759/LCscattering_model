@@ -219,5 +219,4 @@ def run(unit_vector, vector_stddev, particle_width, particle_length, *, padding_
 
 
 if __name__ == "__main__":
-    plt.rcParams['font.size'] = 16
     main()

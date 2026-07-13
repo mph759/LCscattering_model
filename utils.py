@@ -149,6 +149,11 @@ def init_spacing(particle_length: int, particle_width: int,
     spacing = (x_spacing, y_spacing)
     return spacing, displacement
 
+def convolve(array1: np.array, array2: np.array):
+    array1_convolved = signal.fft(array1)
+    array2_convolved = signal.fft(array2)
+    combined_convolved = signal.ifft(array1_convolved * array2_convolved)
+    return combined_convolved
 
 def gaussian_convolve(array: np.ndarray, length: int = 3, stddev: int = 1) -> np.ndarray:
     """
@@ -172,15 +177,18 @@ def gaussian_convolve(array: np.ndarray, length: int = 3, stddev: int = 1) -> np
     blurred = signal.fftconvolve(array, kernel, mode='same')
     return blurred
 
-def subtract_mean(array: np.ndarray) -> np.ndarray:
-    mean = np.mean(array)
+def subtract_mean(array: np.ndarray, search_override: Optional[Callable] = None) -> np.ndarray:
+    if search_override is not None:
+        mean = np.mean(search_override(array))
+    else:
+        mean = np.mean(array)
     return array - mean
 
-def normalize(array: np.ndarray, max_override: Optional[float] = None, max_search_override: Optional[Callable] = None) -> np.ndarray:
+def normalize(array: np.ndarray, max_override: Optional[float] = None, search_override: Optional[Callable] = None) -> np.ndarray:
     if max_override is not None:
         max_value = max_override
-    elif max_search_override is not None:
-        max_value = np.max(max_search_override(array))
+    elif search_override is not None:
+        max_value = np.max(search_override(array))
     else:
         max_value = np.max(array)
     return array / max_value

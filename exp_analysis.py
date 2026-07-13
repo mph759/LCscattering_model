@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from dataclasses import dataclass
 
 from utils import alphanum_key, align_ylim, ParameterReader, normalize
-from post_analysis import plot_saved_angular_corr, postprocessing
+from post_analysis import plot_saved_angular_corr, postprocessing, halfedgemask_normalize
 
 from plot_settings import *
 
@@ -71,11 +71,6 @@ def plot_all(well: str, step_size: int = 10):
     fig.tight_layout()
     plt.show()
 
-def edge_mask(array: np.ndarray, edge: int =5) -> np.ndarray:
-    return array[edge:-edge]
-
-def edgemask_normalize(array: np.ndarray) -> np.ndarray:
-    return normalize(array, max_search_override=edge_mask)
 
 if __name__ == '__main__':
 
@@ -93,26 +88,29 @@ if __name__ == '__main__':
 
     # Simulated Data
     data_root = Path(fr"C:\Users\Michael_X13\OneDrive - RMIT University\Research\LCscattering_model\output")
-    data_folder = data_root / r'LCscattering-trial_2026-07-03 11-17-14'
+    data_folder = data_root / r'LCscattering-trial_2024-08-03 17-52-54'
 
-    fixed_parameter = 'unit_vector_90'
+    fixed_parameter = 'unit_vector'
+
     parameter = 'vector_stddev'
-    search_string = f'*{parameter}_*'
+    search_string = f'*{fixed_parameter}'
     print(f'Searching for folders at {data_folder} with {search_string} in the name.')
-    folder_list = sorted(data_folder.glob(search_string), key=alphanum_key)
+    folder_list = sorted(data_folder.glob(f'*{fixed_parameter}_6*'), key=alphanum_key)
+    folder_list2 = sorted(data_folder.glob(f'*{fixed_parameter}_7*'), key=alphanum_key)
+    folder_list += folder_list2
     print(f'Found {len(folder_list)} folders with {search_string} in the name.')
     len_list = 999
     folder_list = [folder_list[i:i+len_list] for i in range(0, len(folder_list), len_list)]
 
-    postprocessing_w_settings = partial(postprocessing, convolve_kwargs={'amplitude':1, 'fwhm_L':30, 'fwhm_G':30})
-
+    postprocessing_w_settings = partial(postprocessing, convolve_kwargs={'amplitude':1, 'fwhm_L':0, 'fwhm_G':5})
+    postprocessing_wo_settings = partial(postprocessing)
     for folder_sublist in folder_list:
         fig, ax = plt.subplots()
+        # fig, ax = plot_saved_angular_corr(folder_sublist, step_size=0, ax=ax, func=postprocessing_w_settings)
         fig, ax = plot_saved_angular_corr(folder_sublist, step_size=0, ax=ax, func=postprocessing_w_settings)
-
         # Plot Experimental data
 
-        display_correlation(exp_data_path, scale=1, ax=ax, label='CholPel', color='k', linestyle='--', func=edgemask_normalize)
+        display_correlation(exp_data_path, scale=1, ax=ax, label='CholPel', color='k', linestyle='--', func=postprocessing_wo_settings)
         if len(folder_sublist) > 5:
             ncols = len(folder_sublist) // 5 + 1
         else:
@@ -120,6 +118,7 @@ if __name__ == '__main__':
         ax.legend(ncols=ncols, fontsize='small')
         ax.set_ylim(-1.1, 1.1)
         ax.set_xticks(np.arange(0, 360, step=30))
+        ax.set_xlim(0, 180)
         fig.suptitle(f'{run_tag} {type_tag}')
 
         fig.tight_layout()

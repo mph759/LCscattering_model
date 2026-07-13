@@ -37,15 +37,26 @@ def plot_saved_angular_corr(data_folders: list[Path], title: Optional[str] = Non
         plt.title(title)
     return fig, ax
 
+def edge_mask(array: np.ndarray, edge: int =35) -> np.ndarray:
+    edge_index = (len(array) * edge) // 360
+    return array[edge_index:-edge_index]
+
+def half_edge_mask(array: np.ndarray, edge: int =35) -> np.ndarray:
+    edge_index = (len(array)*edge)//360
+    return array[edge_index:len(array)//2-edge_index]
+
+def edgemask_normalize(array: np.ndarray) -> np.ndarray:
+    return normalize(array, search_override=edge_mask)
+
+def halfedgemask_normalize(array: np.ndarray) -> np.ndarray:
+    return normalize(array, search_override=half_edge_mask)
+
 def postprocessing(array: np.ndarray, convolve_kwargs:Optional[dict] = None) -> np.ndarray:
     # Perform convolvution and mean subtraction on array
-    if convolve_kwargs is None:
-        convolve_kwargs = {'amplitude':1,
-                           'fwhm_L':1,
-                           'fwhm_G':10,}
-    array = convolve_voigt(array, **convolve_kwargs)
-    array = subtract_mean(array)
-    array = normalize(array)
+    if convolve_kwargs is not None:
+        array = convolve_voigt(array, **convolve_kwargs)
+    array = subtract_mean(array, search_override=half_edge_mask)
+    array = normalize(array, search_override=half_edge_mask)
     return array
 
 if __name__ == '__main__':
