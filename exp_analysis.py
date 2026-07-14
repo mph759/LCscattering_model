@@ -5,10 +5,26 @@ import numpy as np
 import matplotlib.pyplot as plt
 from dataclasses import dataclass
 
-from utils import alphanum_key, align_ylim, ParameterReader, normalize
-from post_analysis import plot_saved_angular_corr, postprocessing, halfedgemask_normalize
+import seaborn as sns
+from matplotlib import pyplot
+
+from correlation import AngularCorrelation
+from utils import alphanum_key, align_ylim, ParameterReader, normalize, halfedgemask_normalize, convolve_gaussian, \
+    subtract_mean, half_edge_mask
 
 from plot_settings import *
+
+def analyse_simulation():
+    data_root = Path(fr'C:\Users\Michael_X13\OneDrive - RMIT University\Research\LCscattering_model\output')
+    data_path = data_root / r'LCscattering-trial_2026-05-14 20-47-05'
+    parameter = 'unit_vector'
+    folder_list = sorted(data_path.glob(f'{parameter}_*'), key=alphanum_key)
+    fig, ax = plot_sim_correlation(folder_list, title=f'{parameter}', step_size=0, func=postprocessing)
+
+    fig.tight_layout()
+    plt.show()
+
+
 
 @dataclass
 class XFM_Experiment:
@@ -20,9 +36,9 @@ class XFM_Experiment:
         return f'{xfm_num}_{run_num}'
 
 
-def display_correlation(data_path: Path, *, scale: float = 1., step: int = 0, ax: Optional[plt.Axes] = None,
-                        label: Optional[str] = None, func:Optional[Callable] = None,
-                        **kwargs) -> None:
+def plot_exp_correlation(data_path: Path, *, scale: float = 1., step: int = 0, ax: Optional[plt.Axes] = None,
+                         label: Optional[str] = None, func:Optional[Callable] = None,
+                         **kwargs) -> None:
     if ax is None:
         fig, ax = plt.subplots()
     data = np.load(data_path)
@@ -53,7 +69,7 @@ def display_correlation(data_path: Path, *, scale: float = 1., step: int = 0, ax
     ax.set_xlim([0, 360])
 
 
-def plot_all(well: str, step_size: int = 10):
+def plot_all_exp_correlation(well: str, step_size: int = 10):
     tags = ['a', 'b']
     cycles = ['Cycle2', 'Cycle3']
     fig, ax = plt.subplots(ncols=len(tags), nrows=len(cycles), figsize=(16, 9), sharex=True, sharey='row')
@@ -65,11 +81,50 @@ def plot_all(well: str, step_size: int = 10):
         for tag, axes in zip(tags, ax_row):
             folder_list = sorted(data_path.glob(f'*{tags}_*'), key=alphanum_key)
             for n_step, folder in enumerate(folder_list):
-                display_correlation(folder, step=n_step * step_size, ax=axes)
+                plot_exp_correlation(folder, step=n_step * step_size, ax=axes)
             axes.set_title(tag)
     # fig.legend()
     fig.tight_layout()
     plt.show()
+
+
+def plot_sim_correlation(data_folders: list[Path], title: Optional[str] = None, step_size: float=1e12, *,
+                         peak_num: int = 1, peak_override: int | None = None, legend_nrows: int = 5,
+                         func: Optional[Callable] = None, ax: Optional[plt.Axes] = None,
+                         **func_kwargs: dict[str, float]):
+    num_folders = len(data_folders)
+    if ax is None:
+        fig, ax = plt.subplots()
+    else:
+        fig = ax.figure
+    for i, (data_folder, color) in enumerate(zip(data_folders, sns.color_palette('colorblind'))):
+        angular_correlation = AngularCorrelation.load(data_folder)
+        if not peak_override:
+            reader = ParameterReader(data_folder)
+            peaks = sorted(reader.params['Peak Locations'])
+            peak = peaks[peak_num-1]
+        else:
+            peak = peak_override
+        # angular_correlation.ang_corr=gaussian_convolve(angular_correlation.ang_corr, 10, 3)
+        angular_correlation.plot_line(peak, fig=fig, ax=ax, step=step_size * i, label=data_folder.name, func=func, color=color, **func_kwargs)
+        if i == num_folders - 1:
+            align_ylim(ax, x_range=(0, angular_correlation.num_th // 2), edge_mask=2)
+    if num_folders > 1:
+        ax.legend(ncol=((num_folders-1) // legend_nrows) + 1)
+    else:
+        ax.legend(ncol=1)
+    if title:
+        plt.title(title)
+    return fig, ax
+
+
+def postprocessing(array: np.ndarray, convolve_kwargs:Optional[dict] = None) -> np.ndarray:
+    # Perform convolvution and mean subtraction on array
+    if convolve_kwargs is not None:
+        array = convolve_gaussian(array, **convolve_kwargs)
+    array = subtract_mean(array, search_override=half_edge_mask)
+    array = normalize(array, search_override=half_edge_mask)
+    return array
 
 
 if __name__ == '__main__':
@@ -95,31 +150,30 @@ if __name__ == '__main__':
     parameter = 'vector_stddev'
     search_string = f'*{fixed_parameter}'
     print(f'Searching for folders at {data_folder} with {search_string} in the name.')
-    folder_list = sorted(data_folder.glob(f'*{fixed_parameter}_6*'), key=alphanum_key)
-    folder_list2 = sorted(data_folder.glob(f'*{fixed_parameter}_7*'), key=alphanum_key)
-    folder_list += folder_list2
+    folder_list = sorted(data_folder.glob(f'*{fixed_parameter}_7*'), key=alphanum_key)
     print(f'Found {len(folder_list)} folders with {search_string} in the name.')
     len_list = 999
     folder_list = [folder_list[i:i+len_list] for i in range(0, len(folder_list), len_list)]
 
-    postprocessing_w_settings = partial(postprocessing, convolve_kwargs={'amplitude':1, 'fwhm_L':0, 'fwhm_G':5})
+    postprocessing_w_settings = partial(postprocessing, convolve_kwargs={'amplitude':1,'stddev':3})#{'amplitude':1, 'fwhm_L':0, 'fwhm_G':5})
     postprocessing_wo_settings = partial(postprocessing)
     for folder_sublist in folder_list:
         fig, ax = plt.subplots()
         # fig, ax = plot_saved_angular_corr(folder_sublist, step_size=0, ax=ax, func=postprocessing_w_settings)
-        fig, ax = plot_saved_angular_corr(folder_sublist, step_size=0, ax=ax, func=postprocessing_w_settings)
+        fig, ax = plot_sim_correlation(folder_sublist, step_size=0, ax=ax, func=postprocessing_w_settings)
         # Plot Experimental data
 
-        display_correlation(exp_data_path, scale=1, ax=ax, label='CholPel', color='k', linestyle='--', func=postprocessing_wo_settings)
+        plot_exp_correlation(exp_data_path, scale=1, ax=ax, label='CholPel', color='k', linestyle='--', func=postprocessing_wo_settings)
         if len(folder_sublist) > 5:
             ncols = len(folder_sublist) // 5 + 1
         else:
             ncols = 1
         ax.legend(ncols=ncols, fontsize='small')
-        ax.set_ylim(-1.1, 1.1)
+        ax.set_ylim(-1.5, 1.1)
         ax.set_xticks(np.arange(0, 360, step=30))
         ax.set_xlim(0, 180)
         fig.suptitle(f'{run_tag} {type_tag}')
 
         fig.tight_layout()
     plt.show()
+

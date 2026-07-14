@@ -149,33 +149,6 @@ def init_spacing(particle_length: int, particle_width: int,
     spacing = (x_spacing, y_spacing)
     return spacing, displacement
 
-def convolve(array1: np.array, array2: np.array):
-    array1_convolved = signal.fft(array1)
-    array2_convolved = signal.fft(array2)
-    combined_convolved = signal.ifft(array1_convolved * array2_convolved)
-    return combined_convolved
-
-def gaussian_convolve(array: np.ndarray, length: int = 3, stddev: int = 1) -> np.ndarray:
-    """
-    Utilise fftconvolve to convolve the array with a Gaussian kernel
-    :param array: Array to be "blurred". Can be either 1D or 2D array
-    :param length: Side length of the Gaussian kernel
-    :param stddev: Standard deviation of Gaussian kernel used to convolve the array
-    :return: blurred array
-    """
-    if length is None:
-        length = 3
-    if stddev is None:
-        stddev = 1
-    dim = len(np.shape(array))
-    if dim == 2:
-        kernel = np.outer(signal.windows.gaussian(length, stddev), signal.windows.gaussian(length, stddev))
-    elif dim == 1:
-        kernel = signal.windows.gaussian(length, stddev)
-    else:
-        raise ValueError('The array must be 1D or 2D.')
-    blurred = signal.fftconvolve(array, kernel, mode='same')
-    return blurred
 
 def subtract_mean(array: np.ndarray, search_override: Optional[Callable] = None) -> np.ndarray:
     if search_override is not None:
@@ -192,6 +165,24 @@ def normalize(array: np.ndarray, max_override: Optional[float] = None, search_ov
     else:
         max_value = np.max(array)
     return array / max_value
+
+def edge_mask(array: np.ndarray, edge: int =35) -> np.ndarray:
+    edge_index = (len(array) * edge) // 360
+    return array[edge_index:-edge_index]
+
+
+def half_edge_mask(array: np.ndarray, edge: int =35) -> np.ndarray:
+    edge_index = (len(array)*edge)//360
+    return array[edge_index:len(array)//2-edge_index]
+
+
+def edgemask_normalize(array: np.ndarray) -> np.ndarray:
+    return normalize(array, search_override=edge_mask)
+
+
+def halfedgemask_normalize(array: np.ndarray) -> np.ndarray:
+    return normalize(array, search_override=half_edge_mask)
+
 
 def convolve_1d(func: Callable) -> np.ndarray:
     @wraps(func)
@@ -211,17 +202,23 @@ def triangle(array, *, height: int = 1, width: int = 45):
     array[array < 0] = 0
     return array
 
-def lorentzian(array, *, amplitude: float = 0.1, x_0: float = 0, fwhm: float = 5):
+def lorentzian(array, *, amplitude: float = 1, x_0: float = 0, fwhm: float = 5):
     indices_array = get_indices_array(array)
     lorentzian_array = Lorentz1D(amplitude=amplitude, x_0=x_0, fwhm=fwhm)
     return lorentzian_array(indices_array)
 
-def voigt(array, *, amplitude: float = 0.1, x_0: float = 0, fwhm_L: float = 5, fwhm_G: float = 5):
+def voigt(array, *, amplitude: float = 1, x_0: float = 0, fwhm_L: float = 5, fwhm_G: float = 5):
     indices_array = get_indices_array(array)
     voigt_array = Voigt1D(amplitude_L=amplitude, x_0=x_0, fwhm_L=fwhm_L, fwhm_G=fwhm_G)
     return voigt_array(indices_array)
 
+def gaussian(array, *, amplitude: float = 1, x_0: float = 0, stddev: float = 5):
+    indices_array = get_indices_array(array)
+    gaussian_array = Gaussian1D(amplitude=amplitude, mean=x_0, stddev=stddev)
+    return gaussian_array(indices_array)
+
 convolve_voigt = convolve_1d(voigt)
+convolve_gaussian = convolve_1d(gaussian)
 
 # General functions
 def timer(func) -> object:
