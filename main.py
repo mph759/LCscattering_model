@@ -18,7 +18,7 @@ from diffraction import Diffraction2D, Diffraction1D
 from particle_types import CalamiticParticle
 from peak_predict import peak_predict
 from spatial import RealSpace
-from utils import logger_setup, generate_positions, init_spacing, plot_angle_bins, ParameterLogger, chi_squared, gaussian_convolve
+from utils import logger_setup, generate_positions, init_spacing, plot_angle_bins, ParameterLogger, chi_squared
 from plot_settings import *
 
 def define_variables(**kwargs):
@@ -205,12 +205,11 @@ def run(unit_vector, vector_stddev, particle_width, particle_length, *, padding_
         angular_corr.save(f'{output_directory}\\angular_corr', file_type='npy', close_fig=False)
         angular_corr.save(f'{output_directory}\\angular_corr', file_type='png', dpi=300, bbox_inches='tight')
 
-        gaussian_convolve_line = partial(gaussian_convolve, length=20, stddev=8)
+
         for peak in peak_locs:
             angular_corr.plot_line(peak,
                                    title=None,
                                    # f'Angular line plot at {q}, with unit vector {unit_vector}',
-                                   func=gaussian_convolve_line,
                                    save_fig=True,
                                    save_name=f'{output_directory}\\angular_line_{peak}',
                                    save_type='png', dpi=300, bbox_inches='tight')
