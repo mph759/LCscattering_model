@@ -9,7 +9,7 @@ import seaborn as sns
 from correlation import AngularCorrelation
 from plot_settings import *
 from utils import alphanum_key, align_ylim, ParameterReader, normalize, convolve_gaussian, \
-    subtract_mean, half_edge_mask
+    subtract_mean, half_edge_mask, subtract_mid
 
 
 def analyse_simulation():
@@ -120,9 +120,16 @@ def postprocessing(array: np.ndarray, convolve_kwargs:Optional[dict] = None) -> 
     if convolve_kwargs is not None:
         array = convolve_gaussian(array, **convolve_kwargs)
     array = subtract_mean(array, search_override=half_edge_mask)
-    array = normalize(array, search_override=half_edge_mask)
+    array = normalize(array, search_override=corr_amplitude)
+    array = subtract_mid(array, search_override=half_edge_mask)
     return array
 
+def corr_amplitude(array: np.ndarray) -> float:
+    array = half_edge_mask(array)
+    max_val = np.max(array)
+    min_val = np.min(array)
+    amplitude = np.abs(max_val - min_val)
+    return amplitude
 
 if __name__ == '__main__':
 
@@ -147,7 +154,7 @@ if __name__ == '__main__':
     parameter = 'vector_stddev'
     search_string = f'*{fixed_parameter}'
     print(f'Searching for folders at {data_folder} with {search_string} in the name.')
-    folder_list = sorted(data_folder.glob(f'*{fixed_parameter}_7*'), key=alphanum_key)
+    folder_list = sorted(data_folder.glob(f'*{fixed_parameter}_70*'), key=alphanum_key)
     print(f'Found {len(folder_list)} folders with {search_string} in the name.')
     len_list = 999
     folder_list = [folder_list[i:i+len_list] for i in range(0, len(folder_list), len_list)]
@@ -166,7 +173,7 @@ if __name__ == '__main__':
         else:
             ncols = 1
         ax.legend(ncols=ncols, fontsize='small')
-        ax.set_ylim(-1.8, 1.1)
+        ax.set_ylim(-1.1, 1.1)
         ax.set_xticks(np.arange(0, 360, step=30))
         ax.set_xlim(0, 180)
         fig.suptitle(f'{run_tag} {type_tag}')

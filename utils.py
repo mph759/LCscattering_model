@@ -154,12 +154,21 @@ def init_spacing(particle_length: int, particle_width: int,
 
 
 def subtract_mean(array: np.ndarray, search_override: Optional[Callable] = None) -> np.ndarray:
-    if search_override is not None:
-        mean = np.mean(search_override(array))
-    else:
-        mean = np.mean(array)
+    if search_override is None:
+        def search_override(array: np.ndarray) -> np.ndarray:
+            return array
+    mean = np.mean(search_override(array))
     return array - mean
 
+
+def subtract_mid(array: np.ndarray, search_override: Optional[Callable] = None) -> np.ndarray:
+    if search_override is None:
+        def search_override(array: np.ndarray) -> np.ndarray:
+            return array
+    max_val = np.max(search_override(array))
+    min_val = np.min(search_override(array))
+    mid_val = (max_val + min_val) / 2
+    return array - mid_val
 
 def normalize(array: np.ndarray, max_override: Optional[float] = None,
               search_override: Optional[Callable] = None) -> np.ndarray:
