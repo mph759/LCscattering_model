@@ -10,66 +10,18 @@ import sys
 import time
 import json
 import re
-from functools import wraps, partial
+from functools import wraps
 from pathlib import Path
 from stat import S_IREAD
-from typing import Any, TypeAlias, Callable, Optional
+from typing import Any, Callable, Optional
 from astropy.modeling.models import Gaussian1D, Lorentz1D, Voigt1D
 
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
-from matplotlib.projections.polar import PolarAxes
 import numpy as np
-from scipy import signal
-
-Coordinates: TypeAlias = tuple[int, int]
 
 
 # Specific functions
-def generate_positions(space, maximum, change) -> Coordinates:
-    """
-    Generate a position inside cartesian coordinates, given a rough lattice with random spatial oscillations
-    :param space: Spacing in x and y-dimensions between positions
-    :param maximum: Maximum values in x and y-dimensions
-    :param change: Tuple of allowed deviation from initial lattice spacing
-    :return: A position in Cartesian coordinates inside the grid
-    """
-    # Initial positions, just inside the box
-    x_space, y_space = space
-    x_change, y_change = np.abs(change)
-    x_max, y_max = maximum
-    x = int(x_space / 2)
-    y = int(y_space / 2)
-
-    # Loop while the positions are still inside the box
-    while y < y_max:
-        x_pos = x
-        y_pos = y
-        if x_change != 0:
-            x_pos += np.random.randint(-x_change, x_change)
-        if y_change != 0:
-            y_pos += np.random.randint(-y_change, y_change)
-        yield x_pos, y_pos
-        x += x_space
-
-        # When the position is at the edge of the box, adjust y and reset x
-        if x >= x_max:
-            y += y_space
-            x = x_space
-
-
-def pythagorean_sides(a: float, b: float, theta: float) -> tuple[float, float]:
-    """
-    Calculates the side lengths of a right angle triangle using the Pythagorean formulae
-    :param a: Length of triangle (a)
-    :param b: Width of the triangle (b)
-    :param theta: Angle of the triangle
-    :return: x and y coordinates of the end point
-    """
-    theta_radians = np.deg2rad(theta)
-    x = (abs(np.round(a * np.cos(theta_radians))) + abs(np.round(b * np.sin(theta_radians))))
-    y = (abs(np.round(a * np.sin(theta_radians))) + abs(np.round(b * np.cos(theta_radians))))
-    return x, y
 
 
 def plot_angle_bins(samples, mean: float, stddev: float):
@@ -131,28 +83,6 @@ def align_ylim(ax: plt.Axes, x_range=(0, 0), scale: float = 1.5, edge_mask: floa
     ax.set_ylim(y_min, y_max)
 
 
-def init_spacing(particle_length: int, particle_width: int,
-                 unit_vector: int, padding_spacing: int) -> tuple[tuple[int, int], tuple[float, float]]:
-    """
-    Initializes the spacing of the particles based on the particle length and particle width
-    :param particle_length:
-    :param particle_width:
-    :param unit_vector:
-    :param padding_spacing:
-    :return:
-    """
-    x_spacing, y_spacing = (spacing + padding
-                            for spacing, padding
-                            in zip(pythagorean_sides(particle_length, particle_width, unit_vector), padding_spacing))
-
-    # Allow for particles to move slightly in x and y, depending on the spacing
-    displacement = tuple([np.ceil(spacing / 2) for spacing in padding_spacing])
-    print(f'x spacing: {x_spacing}, y spacing: {y_spacing}')
-    print(f'displacement: {displacement}')
-    spacing = (x_spacing, y_spacing)
-    return spacing, displacement
-
-
 def subtract_mean(array: np.ndarray, search_override: Optional[Callable] = None) -> np.ndarray:
     if search_override is None:
         def search_override(array: np.ndarray) -> np.ndarray:
@@ -191,7 +121,7 @@ def half_edge_mask(array: np.ndarray, edge: int = 35) -> np.ndarray:
     return array[edge_index:len(array) // 2 - edge_index]
 
 
-def convolve_1d(func: Callable) -> np.ndarray:
+def convolve_1d(func: Callable) -> Callable[..., np.ndarray]:
     @wraps(func)
     def inner(array1: np.ndarray, *args: Any, **kwargs: Any) -> np.ndarray:
         array1_fft = np.fft.fft(array1)

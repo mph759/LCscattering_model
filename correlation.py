@@ -9,7 +9,7 @@ from pathlib import Path
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import seaborn as sns
 from typing import Optional, Callable
-#from tol_colors import colormaps
+from tol_colors import colormaps
 from typing import Callable, Optional
 
 from diffraction import PolarDiffraction2D, Diffraction2D
@@ -39,7 +39,7 @@ class AngularCorrelation:
         self.__color_settings__()
 
     def __color_settings__(self):
-        #self.__cmap__ = colormaps['sunset']
+        self.__cmap__ = colormaps['sunset']
         self.__colorset__ = sns.color_palette('colorblind')
         self.__color_index__ = 0
 

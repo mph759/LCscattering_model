@@ -15,10 +15,10 @@ import numpy as np
 
 from correlation import PolarDiffraction2D, AngularCorrelation
 from diffraction import Diffraction2D, Diffraction1D
-from particle_types import CalamiticParticle
+from particle_types import CalamiticParticle, generate_positions, init_spacing, normal_distribution, exact
 from peak_predict import peak_predict
 from spatial import RealSpace
-from utils import logger_setup, generate_positions, init_spacing, plot_angle_bins, ParameterLogger, chi_squared
+from utils import logger_setup, plot_angle_bins, ParameterLogger, chi_squared
 from plot_settings import *
 
 def define_variables(**kwargs):
@@ -35,7 +35,7 @@ def define_variables(**kwargs):
         product_dict_list[i]['tag'] = string[:-1]
     return product_dict_list
 
-def main():
+def liquid_crystal():
     """
     Main function. Should not have to modify this
     """
@@ -63,10 +63,11 @@ def main():
     plt.rcParams['mathtext.default'] = 'regular'
 
     now = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
-    output_dir_root = fr'C:\Users\Michael_X13\OneDrive - RMIT University\Research\LCscattering_model\output\LCscattering-trial_{now}'
+    tag = 'LCscattering-trial'
+    output_dir_root = Path.cwd() / fr'output\{tag}_{now}'
     Path(output_dir_root).mkdir(parents=True, exist_ok=True)
     main_logger = logger_setup('main', output_dir_root, stream=True)
-    base_run_partial = partial(run, output_dir_root=output_dir_root, grid_max=x_max, particle_width=2,
+    base_run_partial = partial(run, output_dir_root=output_dir_root, grid_max=x_max, particle_width=particle_width,
                                wavelength=wavelength, pixel_size=pixel_size,
                                dx=dx, npt=npt, padding_spacing=padding_spacing,
                                unit_vector=unit_vector,
@@ -101,9 +102,54 @@ def main():
     run_time = timedelta(seconds=(end - start))
     main_logger.info(f'Total run time: {run_time}\n')
 
+def crystalline():
+    # Set up directories and logging
+    now = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
+    tag = 'Crystalline-trial'
+    output_dir_root = Path.cwd() / fr'output\{tag}_{now}'
+    Path(output_dir_root).mkdir(parents=True, exist_ok=True)
+    main_logger = logger_setup('main', output_dir_root, stream=True)
+
+
+    # Initialise real space parameters
+    x_max = y_max = int(2 ** 13)
+
+    # Initialise particle parameters
+    particle_width = 2  # in pixels
+    particle_length = 15  # in pixels
+    # Note: The unit vector is not the exact angle all the particles will have, but the mean of all the angles
+    unit_vector = 60
+    vector_stddev = 0  # Standard Deviation of the angle, used to generate angles for individual particles
+
+    # Initialise how the particles sit in real space
+    padding_spacing = (5, 5)
+
+    # Initialise beam and detector parameters
+    wavelength = 0.67018e-10  # metres
+    pixel_size = 75e-6  # metres per pixel
+    npt = 2000  # No. of points for the radial integration
+    dx = 5e-9  # metres
+
+    start = time.perf_counter()
+    run(unit_vector=unit_vector,
+        vector_stddev=vector_stddev,
+        particle_length=particle_length,
+        particle_width=particle_width,
+        padding_spacing=padding_spacing,
+        output_dir_root=output_dir_root,
+        grid_max=x_max,
+        wavelength=wavelength,
+        pixel_size=pixel_size,
+        dx=dx,
+        npt=npt,
+        crystalline=True, tag='crystal')
+
+    end = time.perf_counter()
+    run_time = timedelta(seconds=(end - start))
+    main_logger.info(f'Total run time: {run_time}\n')
 
 def run(unit_vector, vector_stddev, particle_width, particle_length, *, padding_spacing, output_dir_root, tag, grid_max,
-        wavelength, pixel_size, dx, npt):
+        wavelength, pixel_size, dx, npt, crystalline: bool=False):
     output_directory = f'{output_dir_root}\\{tag}'
     with ParameterLogger(output_directory) as log:
         logger = logger_setup('run', output_directory, level=logging.DEBUG)
@@ -115,10 +161,16 @@ def run(unit_vector, vector_stddev, particle_width, particle_length, *, padding_
         x_spacing = padding_spacing[0] + particle_width
 
         # Initialise the generators of the positions and angles for the particles
+        if crystalline:
+            allowed_displacement = (0, 0)
         positions = generate_positions((x_spacing, y_spacing), (grid_max, grid_max), allowed_displacement)
         # Generate the particles
         logger.debug('Generating positions and angles')
-        particles = [CalamiticParticle(position, particle_width, particle_length, unit_vector, vector_stddev)
+        if crystalline:
+            angle_func = partial(exact, unit_vector)
+        else:
+            angle_func = partial(normal_distribution, unit_vector, vector_stddev)
+        particles = [CalamiticParticle(position, particle_width, particle_length, angle_func=angle_func)
                      for position in positions]
         # Check unit vector matches expected value
         num_particles = len(particles)
@@ -157,9 +209,9 @@ def run(unit_vector, vector_stddev, particle_width, particle_length, *, padding_
         # real_space_title = f'Liquid Crystal Phase of Calamitic Liquid crystals, with unit vector {unit_vector}$^\circ$'
 
         real_space_title = None
-        #real_space.plot(real_space_title)
+        real_space.plot(real_space_title)
         #real_space.plot_zoom(real_space_title)
-        # plt.show()
+        plt.show()
         real_space.save(f'{output_directory}\\2D_model', file_type='npy') #, dpi=300, bbox_inches='tight')
         real_space_params = real_space.params
         spatial = {'x_spacing': x_spacing, 'y_spacing': y_spacing,
@@ -171,8 +223,8 @@ def run(unit_vector, vector_stddev, particle_width, particle_length, *, padding_
         diffraction_pattern_title = None
         # Determine the location of peaks
         peak_locs = peak_predict(diffraction_of_real_space, (x_spacing, y_spacing))
-        # diffraction_of_real_space.plot(diffraction_pattern_title, clim=1e8, peaks=peak_locs)
-        # plt.show()
+        diffraction_of_real_space.plot(diffraction_pattern_title, clim=1e8, peaks=peak_locs)
+        plt.show()
         # diffraction_of_real_space.save(f'{output_directory}\\diffraction_pattern_2d', file_type='npy') #, dpi=300, bbox_inches='tight')
         log.params.update(diffraction_of_real_space.params)
 
@@ -218,4 +270,5 @@ def run(unit_vector, vector_stddev, particle_width, particle_length, *, padding_
 
 
 if __name__ == "__main__":
-    main()
+    #liquid_crystal()
+    crystalline()

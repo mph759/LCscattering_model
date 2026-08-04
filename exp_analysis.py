@@ -27,10 +27,18 @@ def analyse_simulation():
 class XFM_Experiment:
     ref_num: int
     ref_run: int
+    root_path: Path
 
     def get_runtag(self, run_num: int) -> str:
         xfm_num = self.ref_num - self.ref_run + run_num
         return f'{xfm_num}_{run_num}'
+
+    def get_run_filename(self, run_num: int, tag:str, super_folders: Optional[str]) -> Path:
+        if super_folders is None:
+            return self.root_path / f'{self.get_runtag(run_num)}_n49999_{tag}_correlation_sum.npy'
+        else:
+            return self.root_path / super_folders / f'{self.get_runtag(run_num)}_n49999_{tag}_correlation_sum.npy'
+
 
 
 def plot_exp_correlation(data_path: Path, *, scale: float = 1., step: int = 0, ax: Optional[plt.Axes] = None,
@@ -73,7 +81,7 @@ def plot_all_exp_correlation(well: str, step_size: int = 10):
     fig.suptitle(f'{well}')
 
     for cycle, ax_row in zip(cycles, ax):
-        data_path = root_path / well / cycle
+        data_path = Martin_19545.root_path / well / cycle
         ax_row[0].set_ylabel(cycle)
         for tag, axes in zip(tags, ax_row):
             folder_list = sorted(data_path.glob(f'*{tags}_*'), key=alphanum_key)
@@ -131,43 +139,48 @@ def corr_amplitude(array: np.ndarray) -> float:
     amplitude = np.abs(max_val - min_val)
     return amplitude
 
+def parameter_search(search_string: str, data_folder: Path, sep_len: Optional[int] = None):
+    print(f'Searching for folders at {data_folder} with {search_string} in the name.')
+    folder_list = sorted(data_folder.glob(f'*{search_string}*'), key=alphanum_key)
+    len_folder_list= len(folder_list)
+    if len_folder_list == 0:
+        raise FileNotFoundError(f'No folders with {search_string} in the name.')
+    else:
+        print(f'Found {len_folder_list} folders with {search_string} in the name.')
+    if sep_len is not None:
+        folder_list = [folder_list[i:i + sep_len] for i in range(0, len_folder_list, sep_len)]
+    if len_folder_list == 1:
+        folder_list = [[folder_list[0]]]
+    return folder_list
+
+
 if __name__ == '__main__':
 
     # Experimental Data
-    Martin_19545 = XFM_Experiment(121019, 424)
-    root_path = Path(r'C:\Users\Michael_X13\OneDrive - RMIT University\Beamtime\19545_XFM_Martin\data')
-    well = r'CholPel\CholPel_W1'
+    Martin_19545 = XFM_Experiment(121019, 424,
+                                  Path(r'C:\Users\Michael_X13\OneDrive - RMIT University\Beamtime\19545_XFM_Martin\data'))
+    well = r'CholPel\CholPel_W1\Cycle2'
     # plot_all(well)
     run = 455
-    cycle = 'Cycle2'
     type_tag = 'a'
-
-    run_tag = Martin_19545.get_runtag(run)
-    exp_data_path = root_path / well / cycle / f'{run_tag}_n49999_{type_tag}_correlation_sum.npy'
+    exp_data_path = Martin_19545.get_run_filename(run, type_tag, super_folders=well)
 
     # Simulated Data
     data_root = Path(fr"C:\Users\Michael_X13\OneDrive - RMIT University\Research\LCscattering_model\output")
     data_folder = data_root / r'LCscattering-trial_2024-08-03 17-52-54'
 
-    fixed_parameter = 'unit_vector'
-
-    parameter = 'vector_stddev'
-    search_string = f'*{fixed_parameter}'
-    print(f'Searching for folders at {data_folder} with {search_string} in the name.')
-    folder_list = sorted(data_folder.glob(f'*{fixed_parameter}_70*'), key=alphanum_key)
-    print(f'Found {len(folder_list)} folders with {search_string} in the name.')
-    len_list = 999
-    folder_list = [folder_list[i:i+len_list] for i in range(0, len(folder_list), len_list)]
+    search_string = f'unit_vector_70'
+    folder_list = parameter_search(search_string, data_folder)
 
     postprocessing_w_settings = partial(postprocessing, convolve_kwargs={'amplitude':1,'stddev':5})#{'amplitude':1, 'fwhm_L':0, 'fwhm_G':5})
     postprocessing_wo_settings = partial(postprocessing)
     for folder_sublist in folder_list:
         fig, ax = plt.subplots()
         # fig, ax = plot_saved_angular_corr(folder_sublist, step_size=0, ax=ax, func=postprocessing_w_settings)
-        fig, ax = plot_sim_correlation(folder_sublist, step_size=0, ax=ax, func=postprocessing_w_settings)
+        fig, ax = plot_sim_correlation(folder_sublist, step_size=0, ax=ax, func=postprocessing_wo_settings)
         # Plot Experimental data
 
-        plot_exp_correlation(exp_data_path, scale=1, ax=ax, label='CholPel', color='k', linestyle='--', func=postprocessing_wo_settings)
+        plot_exp_correlation(exp_data_path, scale=1, ax=ax, color='k', func=postprocessing_wo_settings)
         if len(folder_sublist) > 5:
             ncols = len(folder_sublist) // 5 + 1
         else:
@@ -176,8 +189,6 @@ if __name__ == '__main__':
         ax.set_ylim(-1.1, 1.1)
         ax.set_xticks(np.arange(0, 360, step=30))
         ax.set_xlim(0, 180)
-        fig.suptitle(f'{run_tag} {type_tag}')
-
         fig.tight_layout()
     plt.show()
 
