@@ -182,8 +182,8 @@ def generate_positions(space: Coordinates2D, maximum: Coordinates2D,
 def normal_distribution(mean, stddev):
     return np.random.normal(mean, stddev)
 
-def uniform_distribution(mean, stddev):
-    return np.random.uniform(mean, stddev)
+def uniform_distribution(min, max):
+    return np.random.uniform(min, max)
 
 
 def exact(value):
