@@ -8,6 +8,7 @@ import numpy as np
 from PIL import Image
 from PIL import ImageDraw
 from pathlib import Path
+from typing import Optional
 
 from tol_colors import colormaps
 
@@ -15,15 +16,21 @@ from utils import timer, save
 
 
 class RealSpace:
-    def __init__(self, grid):
+    def __init__(self, grid, file_name: Optional[Path] = None):
 
         self._grid = grid
         print(f"Generating real space array with dimensions {self._grid}")
-        self.img = Image.new('L', self._grid, 0)
+        self.img = self.load_image(file_name)
         self.array = np.asarray(self.img)
         self.__fig__ = self.__ax__ = None
         self.__fig_zoom__ = self.__ax_zoom__ = None
         self.__cmap__ = colormaps['iridescent']
+
+    def load_image(self, file_name: Optional[Path] = None):
+        if file_name is None:
+            return Image.new('L', self._grid, 0)
+        else:
+            return Image.fromarray(np.load(file_name))
 
     @property
     def grid(self):
@@ -49,27 +56,32 @@ class RealSpace:
     def __set_array__(self):
         self.array = np.asarray(self.img)
 
-    def plot(self, title=None, inset_size: int = 100, *args, **kwargs):
+    def plot(self, title=None, inset_size: int = 100, ax: Optional[plt.Axes]=None, *args, **kwargs):
         """
         Plot the 2D real space image
+        :param ax: Matplotlib axes object to plot onto
         :param title: Title text for figure
         :param inset_size: Size of the inset zoomed square in pixels. Default 100
         :return:
         """
         print("Plotting real space figure...")
-        self.__fig__, self.__ax__ = plt.subplots()
+        if ax is None:
+            self.__fig__, self.__ax__ = plt.subplots()
+        else:
+            self.__fig__, self.__ax__ = ax.get_figure(), ax
         self.__ax__.imshow(self.array, cmap=self.__cmap__,  *args, **kwargs)
         self.__ax__.invert_yaxis()
         if title is not None:
             self.__ax__.set_title(title)
         self.__ax__.set_xlabel('X')
         self.__ax__.set_ylabel('Y')
-        self.__fig__.tight_layout()
+        if ax is None:
+            self.__fig__.tight_layout()
         axins = self.__ax__.inset_axes([0.6, 0.6, 0.4, 0.4])
         axins = self.plot_zoom(title=None, zoom_size=inset_size, axes=axins)
         self.__ax__.indicate_inset_zoom(axins)
 
-    def plot_zoom(self, title=None, zoom_size: int = 100, axes=None, *args, **kwargs) -> tuple[Image, Image]:
+    def plot_zoom(self, title=None, zoom_size: int = 100, axes: Optional[plt.Axes] = None, *args, **kwargs) -> plt.Axes:
         """
         Plot the 2D real space image, zoomed in
         :param title: Title text for figure
@@ -105,9 +117,4 @@ class RealSpace:
             self.__fig_zoom__.savefig(f'{file_name}_zoom.{file_type}', format=file_type, **kwargs)
         file_name = save(self.__fig__, self.array, file_name, file_type, **kwargs)
         print(f'Saved real space as {file_name}')
-
-    def load(self, file_name: str | Path, **kwargs):
-        file = Path(file_name)
-        self.array = np.load(file)
-
 

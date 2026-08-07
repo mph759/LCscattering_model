@@ -103,8 +103,9 @@ class CalamiticParticle(PointParticle):
         Calculate the coordinates of the end of the particle, given its length and angle
         :return: The end coordinates of the particle
         """
-        x2, y2 = pythagorean_sides(self.length, 0, self.angle)
-        self._end_position = (int(x2) + self.x1, int(y2) + self.y1)
+        x2 = self.x1 + round(self.length * np.cos(np.radians(self.angle)))
+        y2 = self.y1 + round(self.length * np.sin(np.radians(self.angle)))
+        self._end_position = x2, y2
 
     def _set_angle(self):
         angle = self._angle_func()
@@ -178,6 +179,10 @@ def generate_positions(space: Coordinates2D, maximum: Coordinates2D,
             y += y_space
             x = x_space
 
+def generate_random_positions(num_particles: int, maximum: Coordinates2D) -> Generator[Coordinates2D, Any, None]:
+    for _ in range(num_particles):
+        yield np.random.randint(0, maximum[0]), np.random.randint(0, maximum[1])
+
 
 def normal_distribution(mean, stddev):
     return np.random.normal(mean, stddev)
@@ -190,7 +195,7 @@ def exact(value):
     return value
 
 
-def pythagorean_sides(a: float, b: float, theta: float) -> tuple[float, float]:
+def pythagorean_sides(a: float | int, b: float | int, theta: float | int) -> tuple[int, int]:
     """
     Calculates the side lengths of a right angle triangle using the Pythagorean formulae
     :param a: Length of triangle (a)
@@ -199,7 +204,8 @@ def pythagorean_sides(a: float, b: float, theta: float) -> tuple[float, float]:
     :return: x and y coordinates of the end point
     """
     theta_radians = np.deg2rad(theta)
-    x = (abs(np.round(a * np.cos(theta_radians))) + abs(np.round(b * np.sin(theta_radians))))
-    y = (abs(np.round(a * np.sin(theta_radians))) + abs(np.round(b * np.cos(theta_radians))))
+    x = abs(np.round(a * np.cos(theta_radians))) + abs(np.round(b * np.sin(theta_radians)))
+    y = abs(np.round(a * np.sin(theta_radians))) + abs(np.round(b * np.cos(theta_radians)))
     return x, y
+
 

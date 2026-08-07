@@ -125,7 +125,9 @@ class Diffraction2D:
     def rotate_image(self, rotation):
         self._pattern_2d = rotate(self._pattern_2d, angle=rotation, reshape=False)
 
-    def plot(self, title, clim: float = None, peaks: list[int] = None):
+    def plot(self, title: Optional[str]= None, clim: float = None, peaks: list[int] = None,
+             ax: Optional[plt.Axes]=None, cax: Optional[plt.Axes]=None, cax_orientation: str = 'vertical', **kwargs):
+
         """
         Plot the 2D Diffraction image
         :param title: String to be placed as a title on the figure
@@ -135,10 +137,14 @@ class Diffraction2D:
         """
         print("Plotting 2D diffraction figure...")
         # Plot the diffraction image
-        self.__fig_2d__, self.__ax_2d__ = plt.subplots()
+        if ax is None:
+            self.__fig_2d__, self.__ax_2d__ = plt.subplots()
+        else:
+            self.__fig_2d__, self.__ax_2d__ = ax.get_figure(), ax
         plot = self.__ax_2d__.imshow(self.pattern_2d ** 2, cmap=self.__cmap__)
         self.__ax_2d__.invert_yaxis()
-        self.__ax_2d__.set_title(title)
+        if title is not None:
+            self.__ax_2d__.set_title(title)
 
         if peaks is not None:
             for peak in peaks:
@@ -150,12 +156,17 @@ class Diffraction2D:
 
         # creating new axes on the right side of current axes(ax).
         # The width of cax will be 5% of ax and the padding between cax and ax will be fixed at 0.05 inch.
-        colorbar_axes = make_axes_locatable(self.__ax_2d__).append_axes("right", size="5%", pad=0.1)
-        self.__fig_2d__.colorbar(plot, cax=colorbar_axes)
+        if cax is None:
+            colorbar_axes = make_axes_locatable(self.__ax_2d__).append_axes("right", size="5%", pad=0.1)
+        else:
+            colorbar_axes = cax
+
+        self.__fig_2d__.colorbar(plot, cax=colorbar_axes, orientation=cax_orientation)
         if clim:
             plot.set_clim(0, clim)
 
-        self.__fig_2d__.tight_layout()
+        if ax is None:
+            self.__fig_2d__.tight_layout()
 
     def save(self, file_name, file_type=None, **kwargs):
         """
@@ -279,8 +290,9 @@ class PolarDiffraction2D:
         self._data = signal.fftconvolve(self.data, kernel, mode='same')
         return kernel
 
-    def plot(self, title=None, clim=None):
-        self._fig, self._ax = plt.subplots()
+    def plot(self, title=None, clim=None, ax: Optional[plt.Axes]=None):
+        if ax is None:
+            self._fig, self._ax = plt.subplots()
         plot = self._ax.imshow(self.data, cmap=self.__cmap__,aspect='auto')
         self._ax.invert_yaxis()
         self._ax.set_xlabel('$\Theta$ / $^\circ$')
