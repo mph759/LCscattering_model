@@ -12,6 +12,7 @@ from itertools import product
 from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
 from correlation import PolarDiffraction2D, AngularCorrelation
 from diffraction import Diffraction2D, Diffraction1D
@@ -56,7 +57,7 @@ def smectic():
     particle_length = 15  # in pixels
     # Note: The unit vector is not the exact angle all the particles will have, but the mean of all the angles
     unit_vector = 70
-    vector_stddev = 18  # Standard Deviation of the angle, used to generate angles for individual particles
+    vector_stddev = 10  # Standard Deviation of the angle, used to generate angles for individual particles
 
     # Initialise how the particles sit in real space
     padding_spacing = (5, 5)
@@ -80,7 +81,7 @@ def smectic():
                                wavelength=wavelength, pixel_size=pixel_size,
                                dx=dx, npt=npt, padding_spacing=padding_spacing,
                                #unit_vector=unit_vector,
-                               vector_stddev=vector_stddev,
+                               #vector_stddev=vector_stddev,
                                particle_length=particle_length)
 
     # Run over many variables
@@ -93,8 +94,8 @@ def smectic():
         "padding_spacing": [(5, x) for x in range(-5, 5 + 1, 1)],
     }
     '''
-    variables = define_variables(#vector_stddev=list(range(1, 10, 1)),
-                                 unit_vector=list(range(60, 80,5)),)
+    variables = define_variables(vector_stddev=list(range(5, 25, 5)),
+                                 unit_vector=list(range(0, 100,10)),)
                                  # particle_length=list(range(15, 31, 1)))
 
     with open(f'{output_dir_root}/variables.json', 'w') as f:
@@ -318,6 +319,7 @@ def run(unit_vector, vector_stddev, particle_width, particle_length, *, padding_
         # Check unit vector matches expected value
         num_particles = len(particles)
         particle_angles = [particle.angle for particle in particles]
+        pd.DataFrame(particle_angles).to_csv(f'{output_directory}\\angles.csv')
         particles_unit_vector = np.mean(particle_angles)
         particles_stddev = np.std(particle_angles)
         '''
@@ -420,5 +422,5 @@ if __name__ == "__main__":
     smectic()
     # crystal()
     # liquid()
-    #single()
-    #nematic()
+    # single()
+    # nematic()

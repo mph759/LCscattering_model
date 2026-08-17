@@ -106,6 +106,7 @@ class CalamiticParticle(PointParticle):
         x2 = self.x1 + round(self.length * np.cos(np.radians(self.angle)))
         y2 = self.y1 + round(self.length * np.sin(np.radians(self.angle)))
         self._end_position = x2, y2
+        self._fix_angel()
 
     def _set_angle(self):
         angle = self._angle_func()
@@ -113,6 +114,15 @@ class CalamiticParticle(PointParticle):
             angle += 360
         angle %= 360
         self._angle = angle
+
+    def _fix_angel(self):
+        if self.x1 == self.x2:
+            if self.y1 < self.y2:
+                self._angle = 90
+            else:
+                self._angle = 270
+        else:
+            self._angle = np.arctan((self.y2 - self.y1) / (self.x2 - self.x1))
 
     def create(self, draw_object):
         """

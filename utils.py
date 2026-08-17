@@ -24,31 +24,31 @@ import numpy as np
 # Specific functions
 
 
-def plot_angle_bins(samples, mean: float, stddev: float):
+def plot_angle_bins(samples, mean: float, stddev: float, ax: Optional[plt.Axes] = None):
     sample_mean = np.mean(samples)
     sample_stddev = np.std(samples)
     sample_size = len(samples)
     bins = range(0, 360, 1)
-    fig = plt.figure(figsize=(10, 10))
+    if ax is None:
+        fig, ax = plt.subplots()
     counts, bins = np.histogram(samples, bins=bins, density=True)
-    ax1 = fig.add_subplot()
-    ax1.hist(samples, bins=bins, density=True)
-    ax1.set_xlim(0, 360)
-    ax1.yaxis.set_major_formatter(mtick.PercentFormatter(1))
+    ax.hist(samples, bins=bins, density=True)
+    ax.set_xlim(0, 360)
+    ax.yaxis.set_major_formatter(mtick.PercentFormatter(1))
     y = 1 / (stddev * np.sqrt(2 * np.pi)) * np.exp(- (bins - mean) ** 2 / (2 * stddev ** 2))
     for i, angle in enumerate(y):
         if angle < 0:
             angle += 360
         angle %= 360
         y[i] = angle
-    ax1.plot(bins, y, 'r')
-    ax1.set_xticks(range(bins[0], bins[-1], 45))
+    ax.plot(bins, y, 'r')
+    ax.set_xticks(range(bins[0], bins[-1], 45))
 
-    ax1.set_ylabel('Probability')
-    ax1.set_xlabel('Angle / \u00B0')
+    ax.set_ylabel('Probability')
+    ax.set_xlabel('Angle / \u00B0')
 
     fig.tight_layout()
-    return fig, ax1
+    return fig, ax
 
 
 def plot_angle_bins_polar(samples, mean: float, stddev: float):
