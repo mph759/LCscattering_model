@@ -94,8 +94,8 @@ def smectic():
         "padding_spacing": [(5, x) for x in range(-5, 5 + 1, 1)],
     }
     '''
-    variables = define_variables(vector_stddev=list(range(5, 25, 5)),
-                                 unit_vector=list(range(0, 100,10)),)
+    variables = define_variables(vector_stddev=list(range(1, 10, 1)),
+                                 unit_vector=list(range(10, 100,10)),)
                                  # particle_length=list(range(15, 31, 1)))
 
     with open(f'{output_dir_root}/variables.json', 'w') as f:

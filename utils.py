@@ -33,7 +33,7 @@ def plot_angle_bins(samples, mean: float, stddev: float, ax: Optional[plt.Axes] 
         fig, ax = plt.subplots()
     counts, bins = np.histogram(samples, bins=bins, density=True)
     ax.hist(samples, bins=bins, density=True)
-    ax.set_xlim(0, 360)
+    ax.set_xlim(0, 180)
     ax.yaxis.set_major_formatter(mtick.PercentFormatter(1))
     y = 1 / (stddev * np.sqrt(2 * np.pi)) * np.exp(- (bins - mean) ** 2 / (2 * stddev ** 2))
     for i, angle in enumerate(y):
