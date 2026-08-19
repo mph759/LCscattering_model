@@ -3,10 +3,16 @@ Generating modelled liquid crystals in 2D
 Project: Generating 2D scattering pattern for modelled liquid crystals
 Authored by Michael Hassett from 2023-11-23
 """
-from functools import wraps
+from pathlib import Path
+import pandas as pd
 from typing import Generator, Any, TypeAlias, Callable, Optional
 
+from matplotlib import pyplot as plt
+import matplotlib.ticker as mtick
 import numpy as np
+
+from plot_settings import *
+from utils import ParameterReader
 
 Coordinates2D: TypeAlias = tuple[int, int]
 
@@ -43,6 +49,10 @@ class PointParticle:
         """
         return draw_object.point(self.position, fill=1)
 
+    @property
+    def position_data(self):
+        return [self.x, self.y]
+
 
 class CalamiticParticle(PointParticle):
     def __init__(self, init_position: tuple[int, int], width: int, length: int, angle_func: Callable):
@@ -56,9 +66,7 @@ class CalamiticParticle(PointParticle):
         super().__init__(init_position)
         self._width = width
         self._length = length
-        self._angle_func = angle_func
-        self._set_angle()
-        self._get_end_points()
+        self._get_end_points(angle_func)
 
     @property
     def width(self):
@@ -71,6 +79,10 @@ class CalamiticParticle(PointParticle):
     @property
     def angle(self):
         return self._angle
+
+    @property
+    def init_angle(self):
+        return self._init_angle
 
     @property
     def end_position(self) -> Coordinates2D:
@@ -97,32 +109,27 @@ class CalamiticParticle(PointParticle):
         return {'Calamitic Particle':
                     {'width': self.width,
                      'length': self.length}}
+    @property
+    def position_data(self):
+        return [self.x1, self.y1, self.x2, self.y2, self.init_angle, self.angle]
 
-    def _get_end_points(self):
+    def _get_end_points(self, angle_func: Callable):
         """
         Calculate the coordinates of the end of the particle, given its length and angle
         :return: The end coordinates of the particle
         """
-        x2 = self.x1 + round(self.length * np.cos(np.radians(self.angle)))
-        y2 = self.y1 + round(self.length * np.sin(np.radians(self.angle)))
+        self._init_angle = angle_func() % 360
+
+        x2 = self.x1 + np.round(self.length * np.cos(np.radians(self._init_angle)))
+        y2 = self.y1 + np.round(self.length * np.sin(np.radians(self._init_angle)))
         self._end_position = x2, y2
-        self._fix_angel()
-
-    def _set_angle(self):
-        angle = self._angle_func()
-        while angle < 0:
-            angle += 360
-        angle %= 360
-        self._angle = angle
-
-    def _fix_angel(self):
         if self.x1 == self.x2:
             if self.y1 < self.y2:
                 self._angle = 90
             else:
                 self._angle = 270
         else:
-            self._angle = np.arctan((self.y2 - self.y1) / (self.x2 - self.x1))
+            self._angle = np.rad2deg(np.arctan((self.y2 - self.y1) / (self.x2 - self.x1))) % 360
 
     def create(self, draw_object):
         """
@@ -132,6 +139,10 @@ class CalamiticParticle(PointParticle):
         """
         return draw_object.line([self.position, self.end_position], fill=1, width=self.width)
 
+def write_particle_data(folder: Path, particle_list: list[CalamiticParticle]):
+    file = folder / 'particle_data.csv'
+    pd.DataFrame([particle.position_data for particle in particle_list],
+                 columns=['x1','y1','x2','y2','init_angle','angle']).to_csv(file)
 
 def init_spacing(particle_length: int, particle_width: int,
                  unit_vector: int, padding_spacing: Coordinates2D) -> tuple[Coordinates2D, Coordinates2D]:
@@ -218,4 +229,75 @@ def pythagorean_sides(a: float | int, b: float | int, theta: float | int) -> tup
     y = abs(np.round(a * np.sin(theta_radians))) + abs(np.round(b * np.cos(theta_radians)))
     return x, y
 
+def plot_angle_bins(samples: pd.DataFrame | list, mean: float, stddev: float,
+                    ax: Optional[plt.Axes] = None, svg_friendly: bool = False):
+    sample_mean = np.mean(samples)
+    sample_stddev = np.std(samples)
+    sample_size = len(samples)
+    bins = range(0, 360, 5)
+    if ax is None:
+        fig, ax = plt.subplots()
+    else:
+        fig = ax.get_figure()
+    counts, bins = np.histogram(samples, bins=bins, density=True)
+    ax.hist(samples, bins=bins, density=True)
 
+    ax.yaxis.set_major_formatter(mtick.PercentFormatter(1))
+    if stddev != 0:
+        y = 1 / (stddev * np.sqrt(2 * np.pi)) * np.exp(- (bins - mean) ** 2 / (2 * stddev ** 2))
+        for i, angle in enumerate(y):
+            if angle < 0:
+                angle += 360
+            angle %= 360
+            y[i] = angle
+        ax.plot(bins, y, 'r', alpha=0.5)
+    ax.xaxis.set_major_locator(mtick.MultipleLocator(30))
+    ax.xaxis.set_minor_locator(mtick.MultipleLocator(10))
+    ax.set_xlim(0, 180)
+
+    ax.set_ylabel('Frequency')
+    if svg_friendly:
+        ax.set_xlabel(r'Angle \$ \left( ^\circ \right) \$')
+    else:
+        ax.set_xlabel('Angle (\u00B0)')
+        fig.tight_layout()
+    return fig, ax
+
+
+def plot_angle_bins_polar(samples, mean: float, stddev: float):
+    sample_size = len(samples)
+    bins = range(0, 360, 1)
+    fig = plt.figure(figsize=textsize_square())
+
+    ax = fig.add_subplot(projection='polar')
+    counts, bins = np.histogram(samples, bins=bins, density=True)
+    area = counts / sample_size
+    radius = (area / np.pi) ** (1 / 2)
+    ax.bar(np.radians(bins[:-1]), radius, width=1)
+
+    ax.yaxis.set_major_formatter(mtick.PercentFormatter(1))
+    ax.set_xticks(np.radians(range(bins[0], bins[-1], 15)))
+    fig.tight_layout()
+    return fig, ax
+
+def load_and_plot_angle_bins(folder: Path, **kwargs) -> plt.Axes:
+    reader = ParameterReader(folder)
+    angle_mean = reader.params['Calamitic Particle']['unit_vector']
+    angle_stddev = reader.params['Calamitic Particle']['unit_vector_stddev']
+    particle_data = pd.read_csv(folder / 'particle_data.csv', index_col=0)
+    angles = particle_data['angle']
+    _, ax = plot_angle_bins(angles, angle_mean, angle_stddev, svg_friendly=True, **kwargs)
+    return ax
+
+if __name__ == '__main__':
+    mean_angle = 60
+    angle_stddev = 3
+    angles = np.random.normal(mean_angle, angle_stddev, int(1e6))
+    for i, angle in enumerate(angles):
+        if angle < 0:
+            angle += 360
+        angle %= 360
+        angles[i] = angle
+    fig, ax = plot_angle_bins(angles, mean_angle, angle_stddev)
+    fig, ax = plot_angle_bins_polar(angles, mean_angle, angle_stddev)
+    plt.show()

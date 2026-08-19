@@ -17,57 +17,9 @@ from typing import Any, Callable, Optional
 from astropy.modeling.models import Gaussian1D, Lorentz1D, Voigt1D
 
 import matplotlib.pyplot as plt
-import matplotlib.ticker as mtick
 import numpy as np
 
-
 # Specific functions
-
-
-def plot_angle_bins(samples, mean: float, stddev: float, ax: Optional[plt.Axes] = None):
-    sample_mean = np.mean(samples)
-    sample_stddev = np.std(samples)
-    sample_size = len(samples)
-    bins = range(0, 360, 1)
-    if ax is None:
-        fig, ax = plt.subplots()
-    counts, bins = np.histogram(samples, bins=bins, density=True)
-    ax.hist(samples, bins=bins, density=True)
-    ax.set_xlim(0, 180)
-    ax.yaxis.set_major_formatter(mtick.PercentFormatter(1))
-    y = 1 / (stddev * np.sqrt(2 * np.pi)) * np.exp(- (bins - mean) ** 2 / (2 * stddev ** 2))
-    for i, angle in enumerate(y):
-        if angle < 0:
-            angle += 360
-        angle %= 360
-        y[i] = angle
-    ax.plot(bins, y, 'r')
-    ax.set_xticks(range(bins[0], bins[-1], 45))
-
-    ax.set_ylabel('Probability')
-    ax.set_xlabel('Angle / \u00B0')
-
-    fig.tight_layout()
-    return fig, ax
-
-
-def plot_angle_bins_polar(samples, mean: float, stddev: float):
-    sample_size = len(samples)
-    bins = range(0, 360, 1)
-    fig = plt.figure(figsize=(10, 10))
-
-    ax = fig.add_subplot(projection='polar')
-    counts, bins = np.histogram(samples, bins=bins, density=True)
-    area = counts / sample_size
-    radius = (area / np.pi) ** (1 / 2)
-    ax.bar(np.radians(bins[:-1]), radius, width=1)
-
-    ax.yaxis.set_major_formatter(mtick.PercentFormatter(1))
-    ax.set_xticks(np.radians(range(bins[0], bins[-1], 15)))
-    fig.tight_layout()
-    return fig, ax
-
-
 def chi_squared(samples: np.array, mean: float):
     return np.sum(((samples - mean) ** 2) / mean)
 
@@ -320,16 +272,3 @@ def alphanum_key(s):
             text_list[i] = int(text)
     return text_list
 
-
-if __name__ == '__main__':
-    mean_angle = 0
-    angle_stddev = 2
-    angles = np.random.normal(mean_angle, angle_stddev, int(1e6))
-    for i, angle in enumerate(angles):
-        if angle < 0:
-            angle += 360
-        angle %= 360
-        angles[i] = angle
-    fig, ax = plot_angle_bins(angles, mean_angle, angle_stddev)
-    fig, ax = plot_angle_bins_polar(angles, mean_angle, angle_stddev)
-    plt.show()

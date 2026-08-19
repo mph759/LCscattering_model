@@ -16,11 +16,12 @@ import pandas as pd
 
 from correlation import PolarDiffraction2D, AngularCorrelation
 from diffraction import Diffraction2D, Diffraction1D
-from particle_types import CalamiticParticle, generate_positions, generate_random_positions, init_spacing, normal_distribution, exact, \
-    uniform_distribution
+from particle_types import CalamiticParticle, generate_positions, generate_random_positions, init_spacing, \
+    normal_distribution, exact, \
+    uniform_distribution, write_particle_data, plot_angle_bins
 from peak_predict import peak_predict
 from spatial import RealSpace
-from utils import logger_setup, plot_angle_bins, ParameterLogger, chi_squared
+from utils import logger_setup, ParameterLogger, chi_squared
 from plot_settings import *
 from enum import StrEnum
 
@@ -318,8 +319,9 @@ def run(unit_vector, vector_stddev, particle_width, particle_length, *, padding_
 
         # Check unit vector matches expected value
         num_particles = len(particles)
+        particle_init_angles = [particle.init_angle for particle in particles]
         particle_angles = [particle.angle for particle in particles]
-        pd.DataFrame(particle_angles).to_csv(f'{output_directory}\\angles.csv')
+        write_particle_data(Path(output_directory), particles)
         particles_unit_vector = np.mean(particle_angles)
         particles_stddev = np.std(particle_angles)
         '''
@@ -419,8 +421,8 @@ def run(unit_vector, vector_stddev, particle_width, particle_length, *, padding_
 
 
 if __name__ == "__main__":
-    smectic()
+    #smectic()
     # crystal()
-    # liquid()
+    liquid()
     # single()
     # nematic()

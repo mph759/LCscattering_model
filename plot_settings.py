@@ -1,10 +1,23 @@
 from matplotlib import pyplot as plt
 
+text_width = 6.693
+text_height = 9.331
+
+
+def textsize_scale(y_scale: float | int = 2 / 5, x_scale: float | int = 1) -> tuple[float, float]:
+    x, y = (text_width, text_height)
+    return x * x_scale, y * y_scale
+
+
+def textsize_square(scale: float | int = 1) -> tuple[float, float]:
+    return text_width * scale, text_width * scale
+
+
 plt.rcParams['savefig.dpi'] = 300
 plt.rcParams['svg.fonttype'] = 'none'
 plt.rcParams['savefig.format'] = 'svg'
 plt.rcParams['xtick.major.pad'] = 5
-plt.rcParams['figure.figsize'] = (6.693, 9.331 * (2 / 5))
+plt.rcParams['figure.figsize'] = textsize_scale(2 / 5)
 plt.rcParams['axes.titleweight'] = 'bold'
 plt.rcParams['axes.titlelocation'] = 'left'
 #plt.rcParams['font.size'] = 16

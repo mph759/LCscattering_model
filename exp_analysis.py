@@ -77,7 +77,7 @@ def plot_exp_correlation(data_path: Path, *, scale: float = 1., step: int = 0, a
 def plot_all_exp_correlation(well: str, step_size: int = 10):
     tags = ['a', 'b']
     cycles = ['Cycle2', 'Cycle3']
-    fig, ax = plt.subplots(ncols=len(tags), nrows=len(cycles), figsize=(16, 9), sharex=True, sharey='row')
+    fig, ax = plt.subplots(ncols=len(tags), nrows=len(cycles), figsize=textsize_scale(), sharex=True, sharey='row')
     fig.suptitle(f'{well}')
 
     for cycle, ax_row in zip(cycles, ax):
