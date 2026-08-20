@@ -13,8 +13,9 @@ from scipy.ndimage import rotate
 from typing import Self, Optional
 from tol_colors import colormaps
 
+from plot_utils import AxesLabel, save
 from spatial import RealSpace
-from utils import timer, save
+from utils import timer
 
 
 class Diffraction2D:
@@ -295,7 +296,7 @@ class PolarDiffraction2D:
             self._fig, self._ax = plt.subplots()
         plot = self._ax.imshow(self.data, cmap=self.__cmap__,aspect='auto')
         self._ax.invert_yaxis()
-        self._ax.set_xlabel('$\Theta$ / $^\circ$')
+        self._ax.set_xlabel(AxesLabel.THETA)
         if self.q_instead:
             self._ax.set_ylabel('q')
         else:
@@ -380,7 +381,7 @@ class Diffraction1D:
 
     @property
     def params(self):
-        return {"Diffraction",
+        return {"Diffraction":
                 {'wavelength': self.wavelength,
                  'detector_dist': self.detector_dist,
                  'pixel_size': self.pixel_size,
@@ -488,8 +489,8 @@ class Diffraction1D:
         self.__fig_1d__, self.__ax_1d__ = plt.subplots()
         self.__ax_1d__.plot(self.pattern_1d[int(self.npt // 20):, 0], self.pattern_1d[int(self.npt // 20):, 1])
         self.__ax_1d__.set_title(title)
-        self.__ax_1d__.set_xlabel('q / nm$^{-1}$')
-        self.__ax_1d__.set_ylabel('Arbitrary Intensity')
+        self.__ax_1d__.set_xlabel(AxesLabel.Q_INV_NM)
+        self.__ax_1d__.set_ylabel(AxesLabel.INTENSITY)
         self.__fig_1d__.tight_layout()
 
     def save(self, file_name, file_type=None, **kwargs) -> None:

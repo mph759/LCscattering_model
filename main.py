@@ -9,21 +9,15 @@ import time
 from datetime import datetime, timedelta
 from functools import partial
 from itertools import product
-from pathlib import Path
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
 
 from correlation import PolarDiffraction2D, AngularCorrelation
 from diffraction import Diffraction2D, Diffraction1D
 from particle_types import CalamiticParticle, generate_positions, generate_random_positions, init_spacing, \
-    normal_distribution, exact, \
-    uniform_distribution, write_particle_data, plot_angle_bins
+    normal_distribution, exact, uniform_distribution, write_particle_data, plot_angle_bins
 from peak_predict import peak_predict
 from spatial import RealSpace
 from utils import logger_setup, ParameterLogger, chi_squared
-from plot_settings import *
-from enum import StrEnum
+from plot_utils import *
 
 class Phase(StrEnum):
     LIQUID = 'LIQUID'

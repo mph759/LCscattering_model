@@ -1,15 +1,9 @@
-from pydoc import text
-
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
 from matplotlib.gridspec import GridSpec
-from pathlib import Path
 
 from diffraction import Diffraction2D, RealSpace
 from particle_types import load_and_plot_angle_bins
 from utils import ParameterReader
-from plot_settings import *
+from plot_utils import *
 
 def plot_model_diffraction(data_folder: Path, label: str, angle_dist: bool = False, save: bool = False) -> None:
     reader = ParameterReader(data_folder)

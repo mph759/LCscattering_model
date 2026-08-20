@@ -3,17 +3,14 @@ Correlation analysis of a (simulated) 2D diffraction pattern
 Author: Michael Hassett (Original code by Andrew Martin)
 Created: 2023-12-11, copied from pypadf/fxstools/correlationTools.py
 """
-import numpy as np
-from matplotlib import pyplot as plt
-from pathlib import Path
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import seaborn as sns
-from typing import Optional, Callable
 from tol_colors import colormaps
 from typing import Callable, Optional
 
 from diffraction import PolarDiffraction2D, Diffraction2D
-from utils import timer, save, ParameterReader, align_ylim
+from plot_utils import *
+from utils import timer, ParameterReader
 
 
 class AngularCorrelation:
@@ -118,21 +115,21 @@ class AngularCorrelation:
         return new_correlation
 
     def plot(self, title: str | None =None, clim: float | None =None,
-             fig: plt.Figure | None = None, ax: plt.Axes | None = None):
+             ax: plt.Axes | None = None) -> tuple[plt.Figure, plt.Axes]:
         print(f'Plotting full angular correlation...')
         if ax is None:
             self.__fig_corr__, self.__ax_corr__ = plt.subplots()
         else:
-            self.__fig_corr__, self.__ax_corr__ = fig, ax
+            self.__fig_corr__, self.__ax_corr__ = ax.get_figure(), ax
         plot = self.__ax_corr__.imshow(np.real(self.ang_corr), cmap=self.__cmap__,aspect='auto')
         self.__ax_corr__.invert_yaxis()
         if title is not None:
             self.__ax_corr__.set_title(title)
-        self.__ax_corr__.set_xlabel('$\Theta$ / $^\circ$')
+        self.__ax_corr__.set_xlabel(AxesLabel.THETA)
         if self.q_instead:
-            self.__ax_corr__.set_ylabel('q')
+            self.__ax_corr__.set_ylabel(AxesLabel.Q)
         else:
-            self.__ax_corr__.set_ylabel('r')
+            self.__ax_corr__.set_ylabel(AxesLabel.R)
         self.__ax_corr__.set_xticks(np.arange(0, self.num_th, (
                 self.num_th / self.th_max) * 45),
                                     np.arange(self.th_min, self.th_max, 45))
@@ -144,6 +141,7 @@ class AngularCorrelation:
         if clim:
             plot.set_clim(0, clim)
         self.__fig_corr__.tight_layout()
+        return self.__fig_cor__, self.__ax_corr__
 
     def save(self, file_name, file_type='png', **kwargs):
         """
@@ -196,8 +194,8 @@ class AngularCorrelation:
                                         label=label, color=color)
         if title is not None:
             self.__ax_corr_point__.set_title(title)
-        self.__ax_corr_point__.set_xlabel('$\Theta$ / $^\circ$')
-        self.__ax_corr_point__.set_ylabel('Intensity (arb. units)')
+        self.__ax_corr_point__.set_xlabel(AxesLabel.THETA)
+        self.__ax_corr_point__.set_ylabel(AxesLabel.INTENSITY)
 
         self.__ax_corr_point__.set_xlim(0, 180)
         if y_lim is not None:

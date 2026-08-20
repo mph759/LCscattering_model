@@ -12,7 +12,8 @@ from typing import Optional
 
 from tol_colors import colormaps
 
-from utils import timer, save
+from utils import timer
+from plot_utils import save
 
 
 class RealSpace:

@@ -1,14 +1,12 @@
 from dataclasses import dataclass
 from functools import partial
-from pathlib import Path
 from typing import Optional, Callable
 
-import numpy as np
 import seaborn as sns
 
 from correlation import AngularCorrelation
-from plot_settings import *
-from utils import alphanum_key, align_ylim, ParameterReader, normalize, convolve_gaussian, \
+from plot_utils import *
+from utils import alphanum_key, ParameterReader, normalize, convolve_gaussian, \
     subtract_mean, half_edge_mask, subtract_mid
 
 

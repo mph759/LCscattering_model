@@ -16,23 +16,11 @@ from stat import S_IREAD
 from typing import Any, Callable, Optional
 from astropy.modeling.models import Gaussian1D, Lorentz1D, Voigt1D
 
-import matplotlib.pyplot as plt
 import numpy as np
 
 # Specific functions
 def chi_squared(samples: np.array, mean: float):
     return np.sum(((samples - mean) ** 2) / mean)
-
-
-def align_ylim(ax: plt.Axes, x_range=(0, 0), scale: float = 1.5, edge_mask: float = 0):
-    line_data = [line.get_data()[1][x_range[0] + edge_mask: x_range[1] - edge_mask] for line in ax.get_lines()]
-    min_line = np.min(line_data)
-    max_line = np.max(line_data)
-    del line_data
-
-    y_min = scale * np.min(min_line)
-    y_max = scale * np.max(max_line)
-    ax.set_ylim(y_min, y_max)
 
 
 def subtract_mean(array: np.ndarray, search_override: Optional[Callable] = None) -> np.ndarray:
@@ -233,36 +221,6 @@ def check_existing_ext(file_name: str) -> tuple[str, str]:
     else:
         file_ext = None
     return file_name, file_ext
-
-
-def save(fig: plt.figure, array: np.ndarray, file_name: str, file_type: str = None, close_fig: bool = True,
-         **kwargs) -> str:
-    """
-    Save the figure as a numpy file or as an image
-    :param fig: Figure object to be saved
-    :param array: numpy array to be saved
-    :param file_name: Output file name
-    :param file_type: Type of file you want to save (e.g. npy or jpg).
-    :param close_fig: Boolean for whether to close the figure after saving.
-    If not given, file name is checked for existing extension. Otherwise, default npy file
-    :return:
-    """
-    if file_type is None:
-        file_name, file_type = check_existing_ext(file_name)
-        if file_type is None:
-            file_type = "npy"
-    file_name = fix_file_ext(file_name, file_type)
-    if file_type == "npy":
-        np.save(Path(file_name), array)
-    else:
-        try:
-            fig.savefig(Path(file_name), format=file_type, **kwargs)
-        except ValueError:
-            raise ValueError(f"Format \'{file_type}\' is not supported (supported formats: npy, eps, jpeg, jpg, pdf, "
-                             f"pgf, png, ps, raw, rgba, svg, svgz, tif, tiff, webp)")
-    if close_fig:
-        plt.close(fig)
-    return file_name
 
 
 def alphanum_key(s):
