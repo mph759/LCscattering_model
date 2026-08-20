@@ -230,7 +230,7 @@ def pythagorean_sides(a: float | int, b: float | int, theta: float | int) -> tup
     return x, y
 
 def plot_angle_bins(samples: pd.DataFrame | list, mean: float, stddev: float,
-                    ax: Optional[plt.Axes] = None, svg_friendly: bool = False):
+                    ax: Optional[plt.Axes] = None, svg_friendly: bool = False, x_max: float | int = 180) -> tuple[plt.Figure, plt.Axes]:
     sample_mean = np.mean(samples)
     sample_stddev = np.std(samples)
     sample_size = len(samples)
@@ -253,13 +253,13 @@ def plot_angle_bins(samples: pd.DataFrame | list, mean: float, stddev: float,
         ax.plot(bins, y, 'r', alpha=0.5)
     ax.xaxis.set_major_locator(mtick.MultipleLocator(30))
     ax.xaxis.set_minor_locator(mtick.MultipleLocator(10))
-    ax.set_xlim(0, 180)
+    ax.set_xlim(0, x_max)
 
     ax.set_ylabel('Frequency')
     if svg_friendly:
-        ax.set_xlabel(r'Angle \$ \left( ^\circ \right) \$')
+        ax.set_xlabel(AxesLabel.ANGLE_SVG)
     else:
-        ax.set_xlabel('Angle (\u00B0)')
+        ax.set_xlabel(AxesLabel.ANGLE)
         fig.tight_layout()
     return fig, ax
 

@@ -13,6 +13,7 @@ from tol_colors import colormaps
 from typing import Callable, Optional
 
 from diffraction import PolarDiffraction2D, Diffraction2D
+from plot_settings import AxesLabel
 from utils import timer, save, ParameterReader, align_ylim
 
 
@@ -128,11 +129,11 @@ class AngularCorrelation:
         self.__ax_corr__.invert_yaxis()
         if title is not None:
             self.__ax_corr__.set_title(title)
-        self.__ax_corr__.set_xlabel('$\Theta$ / $^\circ$')
+        self.__ax_corr__.set_xlabel(AxesLabel.THETA)
         if self.q_instead:
-            self.__ax_corr__.set_ylabel('q')
+            self.__ax_corr__.set_ylabel(AxesLabel.Q)
         else:
-            self.__ax_corr__.set_ylabel('r')
+            self.__ax_corr__.set_ylabel(AxesLabel.R)
         self.__ax_corr__.set_xticks(np.arange(0, self.num_th, (
                 self.num_th / self.th_max) * 45),
                                     np.arange(self.th_min, self.th_max, 45))
@@ -196,8 +197,8 @@ class AngularCorrelation:
                                         label=label, color=color)
         if title is not None:
             self.__ax_corr_point__.set_title(title)
-        self.__ax_corr_point__.set_xlabel('$\Theta$ / $^\circ$')
-        self.__ax_corr_point__.set_ylabel('Intensity (arb. units)')
+        self.__ax_corr_point__.set_xlabel(AxesLabel.THETA)
+        self.__ax_corr_point__.set_ylabel(AxesLabel.INTENSITY)
 
         self.__ax_corr_point__.set_xlim(0, 180)
         if y_lim is not None:
