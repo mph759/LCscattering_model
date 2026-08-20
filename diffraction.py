@@ -13,7 +13,7 @@ from scipy.ndimage import rotate
 from typing import Self, Optional
 from tol_colors import colormaps
 
-from plot_utils import AxesLabel, save
+from plot_settings import *
 from spatial import RealSpace
 from utils import timer
 
