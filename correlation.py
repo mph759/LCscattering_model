@@ -141,7 +141,7 @@ class AngularCorrelation:
         if clim:
             plot.set_clim(0, clim)
         self.__fig_corr__.tight_layout()
-        return self.__fig_cor__, self.__ax_corr__
+        return self.__fig_corr__, self.__ax_corr__
 
     def save(self, file_name, file_type='png', **kwargs):
         """

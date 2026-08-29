@@ -1,5 +1,5 @@
 from matplotlib.gridspec import GridSpec
-
+import pandas as pd
 from diffraction import Diffraction2D, RealSpace
 from particle_types import load_and_plot_angle_bins
 from utils import ParameterReader
@@ -60,20 +60,33 @@ def plot_all_model_diffraction() -> None:
     # Simulated Data
     data_root = Path.cwd() / "output"
     crystal_folder = data_root / r'Crystalline-trial_2026-08-06 14-21-03\unit_vector_60'
-    liquid_folder = data_root / r'Liquid-trial_2026-08-07 10-01-43\liquid'
+    liquid_folder = data_root / r'Liquid-trial_2026-08-19 20-52-02\liquid'
     single_folder = data_root / r'Single-trial_2026-08-07 12-50-32\unit_vector_60'
     nematic_folder = data_root / r'Nematic-trial_2026-08-19 20-01-04\unit_vector_60'
-    smectic_folder = data_root / r'LCscattering-trial_2026-08-17 15-59-15\vector_stddev_5-unit_vector_60'
+    smectic_folder = data_root / r'LCscattering-trial_2026-08-20 15-06-41\vector_stddev_5-unit_vector_70'
 
     labels = {'Single': single_folder, 'Nematic': nematic_folder, 'Liquid': liquid_folder, 'Crystal': crystal_folder, 'Smectic': smectic_folder}
-    test = {'Liquid': data_root / r'Liquid-trial_2026-08-19 20-52-02\liquid'}
-    for label, folder in test.items():
+    for label, folder in labels.items():
         if label == 'Smectic' or label == 'Nematic' or label == 'Liquid':
             angle_dist = True
         else:
             angle_dist = False
         plot_model_diffraction(folder, label, angle_dist=angle_dist)
 
+def read_particle_angles():
+    folder = Path.cwd() / "output" / r'Liquid-trial_2026-08-19 20-52-02\liquid'
+    particle_data = pd.read_csv(folder / 'particle_data.csv', index_col=0)
+    init_angles = particle_data['init_angle'] % 180
+    angles = particle_data['angle'] % 180
+    fig, ax = plt.subplots()
+    for angle_list, color in zip([init_angles, angles], ['r','b']):
+        counts, bins = np.histogram(angle_list, bins=range(0, 180, 5), density=True)
+        ax.hist(angle_list, bins=bins, density=True, color=color, alpha=0.5)
+    plt.tight_layout()
+    plt.show()
+
+
 if __name__ == '__main__':
     plot_all_model_diffraction()
+    #read_particle_angles()
 

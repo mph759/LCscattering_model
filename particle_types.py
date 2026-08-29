@@ -234,11 +234,12 @@ def plot_angle_bins(samples: pd.DataFrame | list, mean: float, stddev: float,
     sample_mean = np.mean(samples)
     sample_stddev = np.std(samples)
     sample_size = len(samples)
-    bins = range(0, 360, 5)
+    bins = range(0, 180, 5)
     if ax is None:
         fig, ax = plt.subplots()
     else:
         fig = ax.get_figure()
+    samples = pd.DataFrame(samples) % 180
     counts, bins = np.histogram(samples, bins=bins, density=True)
     ax.hist(samples, bins=bins, density=True)
 

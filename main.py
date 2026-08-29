@@ -294,7 +294,7 @@ def run(unit_vector, vector_stddev, particle_width, particle_length, *, padding_
             num_particles = 1
             positions = [((grid_max - particle_width)//2, (grid_max - particle_length) //2)]
         elif phase is Phase.LIQUID or phase is Phase.NEMATIC:
-            num_particles = int((grid_max / x_spacing) * (grid_max / y_spacing) * 1.01)
+            num_particles = int((grid_max / x_spacing) * (grid_max / y_spacing))
             positions = generate_random_positions(num_particles, (grid_max, grid_max))
         else:
             if phase is Phase.CRYSTAL:
@@ -415,8 +415,8 @@ def run(unit_vector, vector_stddev, particle_width, particle_length, *, padding_
 
 
 if __name__ == "__main__":
-    #smectic()
+    smectic()
     # crystal()
-    liquid()
+    # liquid()
     # single()
     # nematic()
