@@ -1,8 +1,7 @@
 from matplotlib.gridspec import GridSpec
 import pandas as pd
-from diffraction import Diffraction2D, RealSpace
-from particle_types import load_and_plot_angle_bins
-from utils import ParameterReader
+from diffraction import Diffraction2D
+from spatial import load_and_plot_angle_bins, RealSpace
 from plot_utils import *
 
 def plot_model_diffraction(data_folder: Path, label: str, angle_dist: bool = False, save: bool = False) -> None:

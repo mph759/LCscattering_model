@@ -12,10 +12,9 @@ from itertools import product
 
 from correlation import PolarDiffraction2D, AngularCorrelation
 from diffraction import Diffraction2D, Diffraction1D
-from particle_types import CalamiticParticle, generate_positions, generate_random_positions, init_spacing, \
-    normal_distribution, exact, uniform_distribution, write_particle_data, plot_angle_bins
+from spatial import CalamiticParticle, generate_positions, generate_random_positions, init_spacing, \
+    normal_distribution, exact, uniform_distribution, write_particle_data, plot_angle_bins, RealSpace
 from peak_predict import peak_predict
-from spatial import RealSpace
 from utils import logger_setup, ParameterLogger, chi_squared
 from plot_utils import *
 
@@ -63,9 +62,6 @@ def smectic():
     npt = 2000  # No. of points for the radial integration
     dx = 5e-9  # metres
 
-    # Figure formatting - change to suit preference
-    plt.rcParams['figure.figsize'] = [10, 10]
-    plt.rcParams['mathtext.default'] = 'regular'
 
     now = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
     tag = 'LCscattering-trial'
