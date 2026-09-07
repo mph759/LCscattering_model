@@ -6,9 +6,6 @@ from utils import ParameterReader
 from plot_utils import *
 
 def plot_model_diffraction(data_folder: Path, label: str, angle_dist: bool = False, save: bool = False) -> None:
-    reader = ParameterReader(data_folder)
-    grid_size = reader.params['Space']['grid size']
-    real_space = RealSpace(grid=grid_size, file_name=data_folder / '2D_model.npy')
     if angle_dist:
         fig = plt.figure(figsize=textsize_scale(3 / 5))
         gs0 = GridSpec(nrows=2, ncols=2, figure=fig,
@@ -32,14 +29,8 @@ def plot_model_diffraction(data_folder: Path, label: str, angle_dist: bool = Fal
         ax1 = fig.add_subplot(gs0[1])
 
     ax0.set_title('a')
-
+    real_space = RealSpace.load(data_folder)
     real_space.plot(ax=ax0)
-
-    wavelength = reader.params['Diffraction']['wavelength']
-    pixel_size = reader.params['Diffraction']['pixel_size']
-    dx = reader.params['Diffraction']['dx']
-    npt = reader.params['Diffraction']['npt']
-    diffraction_2d = Diffraction2D(real_space, wavelength=wavelength, dx=dx, npt=npt, pixel_size=pixel_size)
 
     ax1.set_title('b',)
     # cax1 = fig.add_subplot(gs0[2], label='cax1')
@@ -47,6 +38,7 @@ def plot_model_diffraction(data_folder: Path, label: str, angle_dist: bool = Fal
         clim = 1.5e2
     else:
         clim = 1e8
+    diffraction_2d = Diffraction2D.load(data_folder)
     diffraction_2d.plot(ax=ax1, clim=clim)  # , cax=cax1)
 
     plt.show()
@@ -56,7 +48,7 @@ def plot_model_diffraction(data_folder: Path, label: str, angle_dist: bool = Fal
         print(f'Saved figure at {data_folder}\LCscattering_{label}')
     plt.close(fig)
 
-def plot_all_model_diffraction() -> None:
+def run_all_plot_model_diffraction() -> None:
     # Simulated Data
     data_root = Path.cwd() / "output"
     crystal_folder = data_root / r'Crystalline-trial_2026-08-06 14-21-03\unit_vector_60'
@@ -87,6 +79,6 @@ def read_particle_angles():
 
 
 if __name__ == '__main__':
-    plot_all_model_diffraction()
+    run_all_plot_model_diffraction()
     #read_particle_angles()
 
