@@ -15,7 +15,7 @@ from tol_colors import colormaps
 
 from plot_utils import *
 from spatial import RealSpace
-from utils import timer
+from utils import timer, ParameterReader
 
 
 class Diffraction2D:
@@ -180,6 +180,18 @@ class Diffraction2D:
             file_type = 'npy'
         file_name = save(self.__fig_2d__, self.pattern_2d, file_name, file_type, **kwargs)
         print(f'Saved 2D diffraction pattern as {file_name}')
+
+    @staticmethod
+    def load(folder_dir: Path):
+        reader = ParameterReader(folder_dir)
+        real_space = RealSpace.load(folder_dir)
+
+        wavelength = reader.params['Diffraction']['wavelength']
+        pixel_size = reader.params['Diffraction']['pixel_size']
+        dx = reader.params['Diffraction']['dx']
+        npt = reader.params['Diffraction']['npt']
+        diffraction_2d = Diffraction2D(real_space, wavelength=wavelength, dx=dx, npt=npt, pixel_size=pixel_size)
+
 
 
 class PolarDiffraction2D:

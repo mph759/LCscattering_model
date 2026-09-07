@@ -12,7 +12,7 @@ from typing import Optional
 
 from tol_colors import colormaps
 
-from utils import timer
+from utils import timer, ParameterReader
 from plot_utils import save
 
 
@@ -118,4 +118,10 @@ class RealSpace:
             self.__fig_zoom__.savefig(f'{file_name}_zoom.{file_type}', format=file_type, **kwargs)
         file_name = save(self.__fig__, self.array, file_name, file_type, **kwargs)
         print(f'Saved real space as {file_name}')
+
+    @staticmethod
+    def load(folder_dir: Path):
+        reader = ParameterReader(folder_dir)
+        grid_size = reader.params['Space']['grid size']
+        return RealSpace(grid=grid_size, file_name=folder_dir / '2D_model.npy')
 
