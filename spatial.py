@@ -61,7 +61,7 @@ class RealSpace:
     def __set_array__(self):
         self.array = np.asarray(self.img)
 
-    def plot(self, title=None, inset_size: int = 100, ax: Optional[plt.Axes]=None, *args, **kwargs):
+    def plot(self, title=None, inset_size: int = 100, ax: Optional[plt.Axes]=None, *args, inset: bool=True, **kwargs):
         """
         Plot the 2D real space image
         :param ax: Matplotlib axes object to plot onto
@@ -82,11 +82,12 @@ class RealSpace:
         self.__ax__.set_ylabel('Y')
         if ax is None:
             self.__fig__.tight_layout()
-        axins = self.__ax__.inset_axes([0.6, 0.6, 0.4, 0.4])
-        axins = self.plot_zoom(title=None, zoom_size=inset_size, axes=axins)
-        self.__ax__.indicate_inset_zoom(axins)
+        if inset:
+            axins = self.__ax__.inset_axes([0.6, 0.6, 0.4, 0.4])
+            axins = self.plot_zoom(title=None, zoom_size=inset_size, ax=axins)
+            self.__ax__.indicate_inset_zoom(axins)
 
-    def plot_zoom(self, title=None, zoom_size: int = 100, axes: Optional[plt.Axes] = None, *args, **kwargs) -> plt.Axes:
+    def plot_zoom(self, title=None, zoom_size: int = 100, ax: Optional[plt.Axes] = None, *args, **kwargs) -> plt.Axes:
         """
         Plot the 2D real space image, zoomed in
         :param title: Title text for figure
@@ -94,11 +95,11 @@ class RealSpace:
         :param axes: Axes object used for plotting. Default None
         :return:
         """
-        if axes is None:
+        if ax is None:
             print("Plotting zoomed-in real space figure...")
             self.__fig_zoom__, self.__ax_zoom__ = plt.subplots()
         else:
-            self.__ax_zoom__ = axes
+            self.__ax_zoom__ = ax
         self.__ax_zoom__.imshow(self.array, cmap=self.__cmap__, *args, **kwargs)
         x_c, y_c = self.grid[0] * 0.5, self.grid[1] * 0.5
         x1, x2 = x_c - zoom_size / 2, x_c + zoom_size / 2

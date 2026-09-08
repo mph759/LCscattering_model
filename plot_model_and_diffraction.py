@@ -1,6 +1,11 @@
+from itertools import chain
+from string import ascii_lowercase
+
 from matplotlib.gridspec import GridSpec
 import pandas as pd
-from diffraction import Diffraction2D
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+from diffraction import Diffraction2D, Diffraction1D
 from spatial import load_and_plot_angle_bins, RealSpace
 from plot_utils import *
 
@@ -64,6 +69,63 @@ def run_all_plot_model_diffraction() -> None:
             angle_dist = False
         plot_model_diffraction(folder, label, angle_dist=angle_dist)
 
+def plot_model_and_angles(data_folder: Path) -> None:
+    fig = plt.figure(figsize=textsize_scale(4/5))
+    ax0 = fig.add_subplot()
+
+    ax0.set_title('a')
+    real_space = RealSpace.load(data_folder)
+    real_space.plot(ax=ax0)
+
+    ax2 = make_axes_locatable(ax0).append_axes("bottom", size="40%", pad=0.8)
+    ax2.set_title('b')
+    load_and_plot_angle_bins(data_folder, ax=ax2)
+    plt.show()
+
+def plot_diffraction_2d_1d(data_folder: Path) -> None:
+    fig, (ax0, ax2) = plt.subplots(figsize=textsize_scale(4/5),
+                                   nrows=2,
+                                   height_ratios=[1, 0.4],
+                                   layout='compressed')
+
+    ax0.set_title('a')
+    diffraction2d = Diffraction2D.load(data_folder)
+    diffraction2d.plot(ax=ax0, clim=1e8)
+
+    ax2.set_title('b')
+    diffraction1d = Diffraction1D(diffraction2d)
+    diffraction1d.plot(ax=ax2)
+    plt.show()
+
+def plot_model_diffraction_w_1d(data_folder: Path) -> None:
+    fig = plt.figure(figsize=textsize_scale(4 / 5))
+    gs0 = GridSpec(nrows=2, ncols=2, figure=fig,
+                   width_ratios=[1, 1.1],
+                   height_ratios=[1, 0.4],
+                   wspace=0.1, hspace=0.2,
+                   left=0.12, right=0.94, top=0.98, bottom=0.1)
+    ax0 = fig.add_subplot(gs0[0, 0])
+    ax1 = fig.add_subplot(gs0[0, 1])
+    ax2 = fig.add_subplot(gs0[1, 0])
+    ax3 = fig.add_subplot(gs0[1, 1])
+
+    ax0.set_title('a')
+    real_space = RealSpace.load(data_folder)
+    real_space.plot(ax=ax0)
+
+    ax2.set_title('c')
+    load_and_plot_angle_bins(data_folder, ax=ax2)
+
+    ax1.set_title('b')
+    diffraction2d = Diffraction2D.load(data_folder)
+    diffraction2d.plot(ax=ax1, clim=1e8)
+
+    ax3.set_title('d')
+    diffraction1d = Diffraction1D(diffraction2d)
+    diffraction1d.plot(ax=ax3)
+    ax3.set_yticks([])
+    plt.show()
+
 def read_particle_angles():
     folder = Path.cwd() / "output" / r'Liquid-trial_2026-08-19 20-52-02\liquid'
     particle_data = pd.read_csv(folder / 'particle_data.csv', index_col=0)
@@ -78,6 +140,12 @@ def read_particle_angles():
 
 
 if __name__ == '__main__':
-    run_all_plot_model_diffraction()
+    smectic_folder = Path.cwd() / "output" / r'LCscattering-trial_2026-08-20 15-06-41\vector_stddev_5-unit_vector_70'
+    #run_all_plot_model_diffraction()
     #read_particle_angles()
+
+    #plot_model_and_angles(smectic_folder)
+    #plot_model_diffraction_w_1d(smectic_folder)
+    plot_diffraction_2d_1d(smectic_folder)
+
 

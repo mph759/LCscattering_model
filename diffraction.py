@@ -488,22 +488,28 @@ class Diffraction1D:
         else:
             return TypeError(f'unsupported operand type(s) for +: \'{type(self)}\' and \'{type(other)}\'')
 
-    def plot(self, title: str) -> None:
+    def plot(self, title: str = None, ax: Optional[plt.Axes] = None) -> None:
         """
         Plot a 1D diffraction pattern
         :param title: Title text for the plotting
         :return:
         """
+        if ax is None:
+            self.__fig_1d__, self.__ax_1d__ = plt.subplots()
+        else:
+            self.__fig_1d__ = ax.figure
+            self.__ax_1d__ = ax
         if self.pattern_1d is None:
             self.create_1d_diffraction()
         # Plot 1D integration
         print("Plotting 1D diffraction figure...")
-        self.__fig_1d__, self.__ax_1d__ = plt.subplots()
         self.__ax_1d__.plot(self.pattern_1d[int(self.npt // 20):, 0], self.pattern_1d[int(self.npt // 20):, 1])
-        self.__ax_1d__.set_title(title)
+        if title is not None:
+            self.__ax_1d__.set_title(title)
         self.__ax_1d__.set_xlabel(AxesLabel.Q_INV_NM)
         self.__ax_1d__.set_ylabel(AxesLabel.INTENSITY)
-        self.__fig_1d__.tight_layout()
+        if ax is None:
+            self.__fig_1d__.tight_layout()
 
     def save(self, file_name, file_type=None, **kwargs) -> None:
         """
