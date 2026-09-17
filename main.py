@@ -11,10 +11,9 @@ from functools import partial
 from itertools import product
 
 from correlation import PolarDiffraction2D, AngularCorrelation
-from diffraction import Diffraction2D, Diffraction1D
+from diffraction import Diffraction2D, Diffraction1D, peak_predict
 from spatial import CalamiticParticle, generate_positions, generate_random_positions, init_spacing, \
     normal_distribution, exact, uniform_distribution, write_particle_data, plot_angle_bins, RealSpace
-from peak_predict import peak_predict
 from utils import logger_setup, ParameterLogger, chi_squared
 from plot_utils import *
 
@@ -70,9 +69,9 @@ def smectic():
     main_logger = logger_setup('main', output_dir_root, stream=True)
     base_run_partial = partial(run, output_dir_root=output_dir_root, grid_max=x_max, particle_width=particle_width,
                                wavelength=wavelength, pixel_size=pixel_size,
-                               dx=dx, npt=npt, padding_spacing=padding_spacing,
+                               dx=dx, npt=npt, #padding_spacing=padding_spacing,
                                #unit_vector=unit_vector,
-                               #vector_stddev=vector_stddev,
+                               vector_stddev=vector_stddev,
                                particle_length=particle_length)
 
     # Run over many variables
@@ -85,9 +84,11 @@ def smectic():
         "padding_spacing": [(5, x) for x in range(-5, 5 + 1, 1)],
     }
     '''
-    variables = define_variables(vector_stddev=list(range(1, 10, 1)),
-                                 unit_vector=list(range(10, 100,10)),)
-                                 # particle_length=list(range(15, 31, 1)))
+    variables = define_variables(#vector_stddev=list(range(1, 10, 1)),
+                                 unit_vector=list(range(45, 95, 5)),
+                                padding_spacing=[(5, x) for x in range(-10, -2, 2)],
+                                 # particle_length=list(range(15, 31, 1))
+                                 )
 
     with open(f'{output_dir_root}/variables.json', 'w') as f:
         json.dump(variables, f, indent=4)
@@ -400,12 +401,8 @@ def run(unit_vector, vector_stddev, particle_width, particle_length, *, padding_
         angular_corr.save(f'{output_directory}\\angular_corr', file_type='png', dpi=300, bbox_inches='tight')
 
         peak = peak_locs[0]
-        angular_corr.plot_line(peak,
-                               title=None,
-                               # f'Angular line plot at {q}, with unit vector {unit_vector}',
-                               save_fig=True,
-                               save_name=f'{output_directory}\\angular_line_{peak}',
-                               save_type='png', dpi=300, bbox_inches='tight')
+        angular_corr.plot_line(peak, title=None, save_fig=True, save_name=f'{output_directory}\\angular_line_{peak}',
+                               save_type='png')
 
         plt.close('all')
 

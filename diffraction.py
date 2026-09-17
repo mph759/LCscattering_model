@@ -471,23 +471,6 @@ class Diffraction1D:
         self._pattern_1d = diffraction_plot[non_zero]
         print("1D diffraction image complete")
 
-    def __add__(self, other):
-        if isinstance(other, Diffraction2D):
-            if self.params == other.params:
-                self._pattern_1d += other.pattern_1d
-                return self
-            else:
-                raise ValueError(f"{self} and {other} do not share the same parameters")
-        else:
-            return TypeError(f'unsupported operand type(s) for +: \'{type(self)}\' and \'{type(other)}\'')
-
-    def __truediv__(self, other):
-        if isinstance(other, int):
-            self._pattern_1d = np.divide(self.pattern_1d, other)
-            return self
-        else:
-            return TypeError(f'unsupported operand type(s) for +: \'{type(self)}\' and \'{type(other)}\'')
-
     def plot(self, title: str = None, ax: Optional[plt.Axes] = None) -> None:
         """
         Plot a 1D diffraction pattern
@@ -539,3 +522,38 @@ class Diffraction1D:
             ax.imshow(kernel)
             fig.plot(block=False)
         return kernel
+
+
+def peak_predict(diffraction: Diffraction2D, d_spacings: tuple[float, float]) -> object:
+    """
+    Predict the peak postion (q) from real space parameters
+    :return: peak_locs: peak positions in q
+    """
+    peak_locs = []
+    num_pixels = diffraction.num_pixels
+    peak_locs_theor = sorted(np.round(np.divide(num_pixels, d_spacings)))
+
+    centre = num_pixels // 2
+    for peak in peak_locs_theor:
+        for new_peak in range(int(peak), centre, int(peak)):
+            if new_peak > centre or new_peak in peak_locs_theor:
+                continue
+            else:
+                peak_locs_theor.append(new_peak)
+
+    diffraction_pattern_half = diffraction.pattern_2d[centre:, centre]
+
+    for i, peak in enumerate(peak_locs_theor):
+        min_value = int(peak - 2)
+        while min_value < 0:
+            min_value += 1
+        max_value = int(peak + 2)
+        while max_value >= centre:
+            max_value -= 1
+        masked_pixels = np.ma.masked_outside(diffraction_pattern_half,
+                                             diffraction_pattern_half[min_value],
+                                             diffraction_pattern_half[max_value])
+        peak_index = np.argmax(masked_pixels)
+        peak_locs.append(peak_index)
+    peak_locs = sorted(list(set(peak_locs)))
+    return peak_locs

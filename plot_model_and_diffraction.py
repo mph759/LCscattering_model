@@ -1,12 +1,10 @@
 from itertools import chain
-from string import ascii_lowercase
-
-from matplotlib.gridspec import GridSpec
 import pandas as pd
-from mpl_toolkits.axes_grid1 import make_axes_locatable
+from typing import Optional
 
 from diffraction import Diffraction2D, Diffraction1D
 from spatial import load_and_plot_angle_bins, RealSpace
+from correlation import AngularCorrelation
 from plot_utils import *
 
 def plot_model_diffraction(data_folder: Path, label: str, angle_dist: bool = False, save: bool = False) -> None:
@@ -53,16 +51,7 @@ def plot_model_diffraction(data_folder: Path, label: str, angle_dist: bool = Fal
     plt.close(fig)
 
 def run_all_plot_model_diffraction() -> None:
-    # Simulated Data
-    data_root = Path.cwd() / "output"
-    crystal_folder = data_root / r'Crystalline-trial_2026-08-06 14-21-03\unit_vector_60'
-    liquid_folder = data_root / r'Liquid-trial_2026-08-19 20-52-02\liquid'
-    single_folder = data_root / r'Single-trial_2026-08-07 12-50-32\unit_vector_60'
-    nematic_folder = data_root / r'Nematic-trial_2026-08-19 20-01-04\unit_vector_60'
-    smectic_folder = data_root / r'LCscattering-trial_2026-08-20 15-06-41\vector_stddev_5-unit_vector_70'
-
-    labels = {'Single': single_folder, 'Nematic': nematic_folder, 'Liquid': liquid_folder, 'Crystal': crystal_folder, 'Smectic': smectic_folder}
-    for label, folder in labels.items():
+    for label, folder in get_folders().items():
         if label == 'Smectic' or label == 'Nematic' or label == 'Liquid':
             angle_dist = True
         else:
@@ -138,14 +127,159 @@ def read_particle_angles():
     plt.tight_layout()
     plt.show()
 
+def get_folders():
+    # Simulated Data
+    data_root = Path.cwd() / "output"
+    crystal_folder = data_root / r'Crystalline-trial_2026-08-06 14-21-03\unit_vector_60'
+    liquid_folder = data_root / r'Liquid-trial_2026-08-19 20-52-02\liquid'
+    single_folder = data_root / r'Single-trial_2026-08-07 12-50-32\unit_vector_60'
+    nematic_folder = data_root / r'Nematic-trial_2026-08-19 20-01-04\unit_vector_60'
+    smectic_folder = data_root / r'LCscattering-trial_2026-08-20 15-06-41\vector_stddev_5-unit_vector_70'
+
+    labels = {'Single': single_folder,
+              'Crystal': crystal_folder,
+              'Smectic': smectic_folder,
+              'Nematic': nematic_folder,
+              'Liquid': liquid_folder,
+              }
+    return labels
+
+
+def plot_2Dcorrelation(folder_dir: Path, label: Optional[str]=None, ax: Optional[plt.Axes]=None, **kwargs) -> None:
+    if ax is None:
+        fig, ax = plt.subplots(figsize=textsize_scale(2/5))
+    else:
+        fig = ax.figure
+
+    corr_2d = AngularCorrelation.load(folder_dir)
+    corr_2d.mean_subtract_by_line()
+    corr_2d.plot(ax=ax, **kwargs)
+    if label is not None:
+        ax.set_title(label)
+
+def plot_2Dcorrelation_comparisons(datasets) -> plt.Figure:
+    norm = colors.Normalize(vmin=0, vmax=1e10)
+    fig = plt.figure(figsize=textsize_scale(4/5))
+    gs0 = GridSpec(3, 3, figure=fig,
+                   height_ratios=[1, 1, 0.05],
+                   wspace=0.05, hspace=0.3,
+                   left=0.075, right=0.95, top=0.95, bottom=0.1)
+    ax1 = fig.add_subplot(gs0[0,0])
+    ax2 = fig.add_subplot(gs0[0,1], sharey=ax1)
+    ax3 = fig.add_subplot(gs0[0,2], sharey=ax1)
+    ax4 = fig.add_subplot(gs0[1,0], sharey=ax1)
+    ax5 = fig.add_subplot(gs0[1,1], sharey=ax1)
+    ax6 = fig.add_subplot(gs0[1,2], sharey=ax1)
+
+    axes = [ax1, ax2, ax3, ax4, ax5, ax6]
+    for ax, letter, folder_dir in zip(axes, ascii_lowercase, datasets):
+        plot_2Dcorrelation(folder_dir=folder_dir, label=letter, ax=ax)
+        if not gs0[:,0]:
+            ax.set_ylabel('')
+            plt.setp(ax.get_yticklabels(), visible=False)
+        if not gs0[1,:]:
+            ax.set_xlabel('')
+            plt.setp(ax.get_xticklabels(), visible=False)
+
+    cax = fig.add_subplot(gs0[2,:])
+    fig.colorbar(ScalarMappable(norm=norm, cmap=AngularCorrelation.cmap), cax=cax,
+                 orientation='horizontal', label='correlation intensity (arb. units)')
+    plt.show()
+    return fig
+
+def plot_2Dcorrelation_compare_blanks(datasets):
+    fig = plt.figure(figsize=textsize_scale(2/5))
+    gs0 = GridSpec(2, 3, figure=fig,
+                   height_ratios=[1, 0.05],
+                   wspace=0.15, hspace=0.5,
+                   left=0.11, right=0.95, top=0.92, bottom=0.15)
+    ax1 = fig.add_subplot(gs0[0, 0])
+    ax1.set_title('a', loc='left', fontweight='bold')
+    cax1 = fig.add_subplot(gs0[1, 0])
+    clim1 = 6e4
+    norm1 = colors.Normalize(vmin=-clim1, vmax=clim1)
+
+    ax2 = fig.add_subplot(gs0[0, 1], sharex=ax1, sharey=ax1, )
+    ax2.set_title('b', loc='left', fontweight='bold')
+    ax3 = fig.add_subplot(gs0[0, 2], sharex=ax1, sharey=ax1)
+    ax3.set_title('c', loc='left', fontweight='bold')
+    cax2 = fig.add_subplot(gs0[1, 1:])
+    clim2 = 1.2e10
+    norm2 = colors.Normalize(vmin=-clim2, vmax=clim2)
+
+    single = datasets['Single']
+    nematic = datasets['Nematic']
+    liquid = datasets['Liquid']
+
+    plot_2Dcorrelation(single, ax=ax1, no_cbar=True, norm=norm1)
+    fig.colorbar(ScalarMappable(norm=norm1, cmap=AngularCorrelation.cmap), cax=cax1,
+                 orientation='horizontal', label=AxesLabel.INTENSITY)
+    #cax1.ticklabel_format(style='sci', axis='x', scilimits=(0, 0))
+
+    plot_2Dcorrelation(nematic, ax=ax2, no_cbar=True, norm=norm2)
+    ax2.set_ylabel('')
+    plt.setp(ax2.get_yticklabels(), visible=False)
+
+    plot_2Dcorrelation(liquid, ax=ax3, no_cbar=True, norm=norm2)
+    ax3.set_ylabel('')
+    plt.setp(ax3.get_yticklabels(), visible=False)
+    fig.colorbar(ScalarMappable(norm=norm2, cmap=AngularCorrelation.cmap), cax=cax2,
+                 orientation='horizontal', label=AxesLabel.INTENSITY)
+    #cax2.set_yticks([])
+    cax2.ticklabel_format(style='sci', axis='x', scilimits=(0, 0))
+    plt.show()
+    return fig
+
+def plot_2Dcorrelation_compare_crystal_smectic(datasets):
+    fig = plt.figure(figsize=textsize_scale(2/5))
+    gs0 = GridSpec(2, 2, figure=fig,
+                   height_ratios=[1, 0.05],
+                   wspace=0.1, hspace=0.5,
+                   left=0.11, right=0.96, top=0.92, bottom=0.15)
+    ax1 = fig.add_subplot(gs0[0, 0])
+    ax1.set_title('a', loc='left', fontweight='bold')
+    cax1 = fig.add_subplot(gs0[1, 0])
+    cax1.set_yticks([])
+    cax1.ticklabel_format(style='sci', axis='x', scilimits=(0, 0))
+    clim1 = 2e7
+    norm1 = colors.Normalize(vmin=-clim1, vmax=clim1)
+
+    ax2 = fig.add_subplot(gs0[0, 1], sharex=ax1, sharey=ax1)
+    ax2.set_title('b', loc='left', fontweight='bold')
+    plt.setp(ax2.get_yticklabels(), visible=False)
+    #ax2.set_yticks([])
+
+    cax2 = fig.add_subplot(gs0[1, 1])
+    cax2.set_yticks([])
+    cax2.ticklabel_format(style='sci', axis='x', scilimits=(0, 0))
+    clim2 = 5e9
+    norm2 = colors.Normalize(vmin=-clim2, vmax=clim2)
+
+    crystal = datasets['Crystal']
+    smectic = datasets['Smectic']
+
+    plot_2Dcorrelation(crystal, ax=ax1, no_cbar=True, norm=norm1)
+
+    plot_2Dcorrelation(smectic, ax=ax2, no_cbar=True, norm=norm2)
+    ax2.set_ylabel('')
+
+    fig.colorbar(ScalarMappable(norm=norm1, cmap=AngularCorrelation.cmap), cax=cax1,
+                 orientation='horizontal', label=AxesLabel.INTENSITY)
+    fig.colorbar(ScalarMappable(norm=norm2, cmap=AngularCorrelation.cmap), cax=cax2,
+                 orientation='horizontal', label=AxesLabel.INTENSITY)
+
+    plt.show()
+    return fig
 
 if __name__ == '__main__':
-    smectic_folder = Path.cwd() / "output" / r'LCscattering-trial_2026-08-20 15-06-41\vector_stddev_5-unit_vector_70'
+    data_folders = get_folders()
+
     #run_all_plot_model_diffraction()
     #read_particle_angles()
 
-    #plot_model_and_angles(smectic_folder)
-    #plot_model_diffraction_w_1d(smectic_folder)
-    plot_diffraction_2d_1d(smectic_folder)
-
+    #plot_model_and_angles(data_folders['Smectic'])
+    #plot_model_diffraction_w_1d(data_folders['Smectic'])
+    #plot_diffraction_2d_1d(data_folders['Smectic'])
+    plot_2Dcorrelation_compare_blanks(datasets=data_folders)
+    plot_2Dcorrelation_compare_crystal_smectic(datasets=data_folders)
 

@@ -8,13 +8,9 @@ import pandas as pd
 from typing import Generator, Any, TypeAlias, Callable, Optional
 
 from PIL import Image, ImageDraw
-from matplotlib import pyplot as plt
 import matplotlib.ticker as mtick
-import numpy as np
-from tol_colors import colormaps
 
 from plot_utils import *
-from plot_utils import save
 from utils import ParameterReader, timer
 
 Coordinates2D: TypeAlias = tuple[int, int]

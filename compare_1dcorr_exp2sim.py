@@ -1,24 +1,16 @@
 from dataclasses import dataclass
 from functools import partial
-from typing import Optional, Callable
+from typing import Optional, Callable, Any
 
 import seaborn as sns
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure, SubFigure
 
 from correlation import AngularCorrelation
+from plot_model_and_diffraction import plot_2Dcorrelation
 from plot_utils import *
 from utils import alphanum_key, ParameterReader, normalize, convolve_gaussian, \
     subtract_mean, half_edge_mask, subtract_mid
-
-
-def analyse_simulation():
-    data_root = Path(fr'C:\Users\Michael_X13\OneDrive - RMIT University\Research\LCscattering_model\output')
-    data_path = data_root / r'LCscattering-trial_2026-05-14 20-47-05'
-    parameter = 'unit_vector'
-    folder_list = sorted(data_path.glob(f'{parameter}_*'), key=alphanum_key)
-    fig, ax = plot_sim_correlation(folder_list, title=f'{parameter}', step_size=0, func=postprocessing)
-
-    fig.tight_layout()
-    plt.show()
 
 
 @dataclass
@@ -36,6 +28,53 @@ class XFM_Experiment:
             return self.root_path / f'{self.get_runtag(run_num)}_n49999_{tag}_correlation_sum.npy'
         else:
             return self.root_path / super_folders / f'{self.get_runtag(run_num)}_n49999_{tag}_correlation_sum.npy'
+
+Martin_19545 = XFM_Experiment(121019, 424,
+                              Path(r'C:\Users\Michael_X13\OneDrive - RMIT University\Beamtime\19545_XFM_Martin\data'))
+
+def analyse_simulation():
+    data_root = Path.cwd() / 'output'
+    data_path = data_root / r'LCscattering-trial_2026-09-17 10-41-38'
+    parameter = 'unit_vector_*-padding_spacing_(5, 8)'
+    variable = 'unit_vector'
+    folder_list = parameter_search(parameter, data_path)
+    fig, ax = plot_sim_correlation(folder_list, #title=f'{parameter}',
+                                   step_size=0, func=partial(simple_postprocessing, convolve_kwargs={'amplitude':1,'stddev':5}),
+                                   palette='plasma', seaborn_palette=True,
+                                   plot_kwargs={'alpha':0.8},
+                                   label_var=variable,
+                                   legend_nrows=2)
+    fig.tight_layout()
+    plt.show()
+
+def determine_corr_point():
+    data_root = Path.cwd() / 'output'
+    data_path = data_root / r'LCscattering-trial_2026-09-17 10-41-38'
+    parameter = 'unit_vector_60-padding_spacing_(5, 8)'
+    variable = 'unit_vector'
+    #peak_index = 0
+    peak_override = 375
+
+    folder = parameter_search(parameter, data_path)[0][0]
+    print(folder)
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=textsize_scale(3/5))
+    ax1.set_title('a')
+    plot_sim_correlation([folder], peak_override=peak_override,#peak_index=peak_index, #title=f'{parameter}',
+                                   step_size=0, func=partial(simple_postprocessing, convolve_kwargs={'amplitude':1,'stddev':5}),
+                                   ax=ax1, palette='plasma', seaborn_palette=True,
+                                   plot_kwargs={'alpha':1},
+                                   label_var=variable,
+                                   legend_nrows=2)
+    clim = 1.2e10
+    norm = colors.Normalize(vmin=-clim, vmax=clim)
+    plot_2Dcorrelation(folder, ax=ax2, norm=norm)
+    ax2.set_title('b')
+    reader = ParameterReader(folder)
+    peak = peak_override #sorted(reader.params['Peak Locations'])[peak_index]
+    ax2.plot([0, (360*2)-1], [peak, peak], color='black', linestyle='dotted', alpha=0.1)
+    fig.suptitle(parameter)
+    fig.tight_layout()
+    plt.show()
 
 
 
@@ -91,25 +130,39 @@ def plot_all_exp_correlation(well: str, step_size: int = 10):
     plt.show()
 
 
-def plot_sim_correlation(data_folders: list[Path], title: Optional[str] = None, step_size: float=1e12, *,
-                         peak_num: int = 1, peak_override: int | None = None, legend_nrows: int = 5,
+def plot_sim_correlation(data_folders: list[Path], title: Optional[str] = None, step_size: float=0, *,
+                         peak_index: int = 0, peak_override: int | None = None,
+                         legend_nrows: int = 5, label_var: Optional[str] = None,
                          func: Optional[Callable] = None, ax: Optional[plt.Axes] = None,
-                         **func_kwargs: dict[str, float]):
+                         palette: Optional[Any] = None, seaborn_palette: bool = False,
+                         plot_kwargs: Optional[dict[str, Any]] = None,
+                         func_kwargs: Optional[dict[str, Any]]= None) -> tuple[
+    Figure | SubFigure, Axes]:
     num_folders = len(data_folders)
     if ax is None:
         fig, ax = plt.subplots()
     else:
         fig = ax.figure
-    for i, (data_folder, color) in enumerate(zip(data_folders, sns.color_palette('colorblind'))):
+    if palette is None:
+        palette = sns.color_palette('colorblind', n_colors=num_folders)
+    else:
+        if seaborn_palette:
+            palette = sns.color_palette(palette, n_colors=num_folders)
+    if label_var is not None:
+        labels = var_listing(label_var, data_folders)
+    else:
+        labels = [folder.name for folder in data_folders]
+    for i, (data_folder, label, color) in enumerate(zip(data_folders, labels, palette)):
         angular_correlation = AngularCorrelation.load(data_folder)
         if not peak_override:
             reader = ParameterReader(data_folder)
             peaks = sorted(reader.params['Peak Locations'])
-            peak = peaks[peak_num-1]
+            peak = peaks[peak_index]
         else:
             peak = peak_override
         # angular_correlation.ang_corr=gaussian_convolve(angular_correlation.ang_corr, 10, 3)
-        angular_correlation.plot_line(peak, fig=fig, ax=ax, step=step_size * i, label=data_folder.name, func=func, color=color, **func_kwargs)
+        angular_correlation.plot_line(peak, ax=ax, step=step_size * i, label=label, color=color,
+                                      plot_kwargs=plot_kwargs, func=func, func_kwargs=func_kwargs)
         if i == num_folders - 1:
             align_ylim(ax, x_range=(0, angular_correlation.num_th // 2), edge_mask=2)
     if num_folders > 1:
@@ -129,6 +182,14 @@ def postprocessing(array: np.ndarray, convolve_kwargs:Optional[dict] = None) -> 
     array = normalize(array, search_override=corr_amplitude)
     array = subtract_mid(array, search_override=half_edge_mask)
     return array
+
+def simple_postprocessing(array: np.ndarray, convolve_kwargs: Optional[dict] = None) -> np.ndarray:
+    if convolve_kwargs is not None:
+        array = convolve_gaussian(array, **convolve_kwargs)
+    array = subtract_mean(array) #, search_override=half_edge_mask)
+    array = normalize(array) #, search_override=corr_amplitude)
+    return array
+
 
 def corr_amplitude(array: np.ndarray) -> float:
     array = half_edge_mask(array)
@@ -151,12 +212,19 @@ def parameter_search(search_string: str, data_folder: Path, sep_len: Optional[in
         folder_list = [[folder_list[0]]]
     return folder_list
 
+def var_listing(var_str: str, folder_list: list[Path]) -> list[str]:
+    var_list = ['']* len(folder_list)
+    for i, folder in enumerate(folder_list):
+        folder_name_list = str(folder.name).split('-')
+        for folder_name in folder_name_list:
+            if var_str in folder_name:
+                var_list[i] = folder_name.split('_')[-1]
+    return var_list
 
-if __name__ == '__main__':
 
+def compare_cholpel2sim():
     # Experimental Data
-    Martin_19545 = XFM_Experiment(121019, 424,
-                                  Path(r'C:\Users\Michael_X13\OneDrive - RMIT University\Beamtime\19545_XFM_Martin\data'))
+
     well = r'CholPel\CholPel_W1\Cycle2'
     # plot_all(well)
     run = 455
@@ -189,4 +257,9 @@ if __name__ == '__main__':
         ax.set_xlim(0, 180)
         fig.tight_layout()
     plt.show()
+
+
+if __name__ == '__main__':
+    #analyse_simulation()
+    determine_corr_point()
 

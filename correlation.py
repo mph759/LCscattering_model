@@ -3,10 +3,10 @@ Correlation analysis of a (simulated) 2D diffraction pattern
 Author: Michael Hassett (Original code by Andrew Martin)
 Created: 2023-12-11, copied from pypadf/fxstools/correlationTools.py
 """
+from matplotlib.ticker import AutoMinorLocator
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import seaborn as sns
-from tol_colors import colormaps
-from typing import Callable, Optional
+from typing import Callable, Optional, Any
 
 from diffraction import PolarDiffraction2D, Diffraction2D
 from plot_utils import *
@@ -14,6 +14,8 @@ from utils import timer, ParameterReader
 
 
 class AngularCorrelation:
+    cmap = colormaps['sunset']
+    colorset = sns.color_palette('colorblind')
     @timer
     def __init__(self, diffraction_2d_polar: PolarDiffraction2D) -> None:
         """
@@ -36,15 +38,13 @@ class AngularCorrelation:
         self.__color_settings__()
 
     def __color_settings__(self):
-        self.__cmap__ = colormaps['sunset']
-        self.__colorset__ = sns.color_palette('colorblind')
         self.__color_index__ = 0
 
     def next_color(self) -> tuple[float, float, float]:
         self.__color_index__ += 1
-        if self.__color_index__ == len(self.__colorset__):
+        if self.__color_index__ == len(self.colorset):
             self.__color_index__ = 0
-        return self.__colorset__[self.__color_index__]
+        return self.colorset[self.__color_index__]
 
     def angular_correlation(self, polar2=None) -> np.ndarray:
         """
@@ -74,6 +74,11 @@ class AngularCorrelation:
         else:
             corr = np.fft.ifft(fpolar.conjugate() * fpolar, axis=1)
         return corr
+
+    def mean_subtract_by_line(self):
+        for i, corr_line in enumerate(self.ang_corr):
+            self.ang_corr[i, :] -= np.average(corr_line)
+
 
     @classmethod
     def load(cls, file_dir: Path | str, num_r=None, num_th=None, r_min=0, r_max=None, th_min=0, th_max=360,
@@ -114,33 +119,35 @@ class AngularCorrelation:
         new_correlation.__color_settings__()
         return new_correlation
 
-    def plot(self, title: str | None =None, clim: float | None =None,
-             ax: plt.Axes | None = None) -> tuple[plt.Figure, plt.Axes]:
+    def plot(self, title: Optional[str] = None, clim: Optional[float] = None,
+             ax: Optional[plt.Axes] = None, no_cbar: bool = False, **kwargs) -> tuple[plt.Figure, plt.Axes]:
         print(f'Plotting full angular correlation...')
         if ax is None:
             self.__fig_corr__, self.__ax_corr__ = plt.subplots()
         else:
             self.__fig_corr__, self.__ax_corr__ = ax.get_figure(), ax
-        plot = self.__ax_corr__.imshow(np.real(self.ang_corr), cmap=self.__cmap__,aspect='auto')
+        plot = self.__ax_corr__.imshow(np.real(self.ang_corr), cmap=self.cmap, aspect='auto', **kwargs)
         self.__ax_corr__.invert_yaxis()
         if title is not None:
             self.__ax_corr__.set_title(title)
-        self.__ax_corr__.set_xlabel(AxesLabel.THETA)
+        self.__ax_corr__.set_xlabel(AxesLabel.ANGLE_SVG)
         if self.q_instead:
             self.__ax_corr__.set_ylabel(AxesLabel.Q)
         else:
             self.__ax_corr__.set_ylabel(AxesLabel.R)
-        self.__ax_corr__.set_xticks(np.arange(0, self.num_th, (
-                self.num_th / self.th_max) * 45),
-                                    np.arange(self.th_min, self.th_max, 45))
+        self.__ax_corr__.set_xticks(np.arange(0, self.num_th, (self.num_th / self.th_max) * 90),
+                                    np.arange(self.th_min, self.th_max, 90))
+        self.__ax_corr__.xaxis.set_minor_locator(AutoMinorLocator(2))
 
-        # creating new axes on the right side of current axes(ax).
-        # The width of cax will be 5% of ax and the padding between cax and ax will be fixed at 0.1 inch.
-        colorbar_axes = make_axes_locatable(self.__ax_corr__).append_axes("right", size="5%", pad=0.1)
-        self.__fig_corr__.colorbar(plot, cax=colorbar_axes)
+        if not no_cbar:
+            # creating new axes on the right side of current axes(ax).
+            # The width of cax will be 5% of ax and the padding between cax and ax will be fixed at 0.1 inch.
+            colorbar_axes = make_axes_locatable(self.__ax_corr__).append_axes("right", size="5%", pad=0.1)
+            self.__fig_corr__.colorbar(plot, cax=colorbar_axes)
         if clim:
             plot.set_clim(0, clim)
-        self.__fig_corr__.tight_layout()
+        if ax is None:
+            self.__fig_corr__.tight_layout()
         return self.__fig_corr__, self.__ax_corr__
 
     def save(self, file_name, file_type='png', **kwargs):
@@ -153,48 +160,57 @@ class AngularCorrelation:
         file_name = save(self.__fig_corr__, self.ang_corr, file_name, file_type, **kwargs)
         print(f'Saved angular correlation as {file_name}')
 
-    def plot_line(self, point: float, title: str | None =None, y_lim: tuple[float, float] | None = None, *,
-                  fig: plt.Figure | None = None, ax: plt.Axes | None = None, step: float = 0, label: str | None = None,
-                  save_fig: bool = False, save_name: str | None = None, save_type: str = 'png', color: str | float | None = None,
-                  func: Optional[Callable] | None = None, **kwargs):
+    def plot_line(self, point: float| int, title: str | None =None, y_lim: tuple[float, float] | None = None, *,
+                  ax: plt.Axes | None = None, step: float = 0, label: str | None = None,
+                  color: Optional[str | float | int] = None, plot_kwargs: dict[str, Any] | None = None,
+                  save_fig: bool = False, save_name: str | None = None, save_type: str = 'png',
+                  save_kwargs: Optional[dict[str, Any]] = None,
+                  func: Optional[Callable] | None = None, func_kwargs: Optional[dict[str, Any]] = None) -> tuple[plt.Figure, plt.Axes]:
         """
         Plot the angular correlation at a point
+        :param color:
+        :param save_kwargs: Any keyword arguments to pass to matplotlib.pyplot.savefig
+        :param plot_kwargs:
         :param func:
         :param point: r (or q) that you wish to plot
         :param title: title for the plot
         :param y_lim: max and minimum limit of the y-axis (as a tuple). If None (default) will auto-scale
-        :param fig: matplotlib Figure
         :param ax: matplotlib Axes
         :param step: step size between plots (for plotting multiple lines)
         :param label: label for the plot (for a legend)
         :param save_fig: Whether to save the figure (default: False)
         :param save_name: File name to save under
         :param save_type: File type to save as (e.g. png or jpg). Default png file
-        :param kwargs: Any keyword arguments to pass to matplotlib.pyplot.savefig
+        :param func_kwargs:
         :return:
         """
+        if func_kwargs is None:
+            func_kwargs = {}
+        if plot_kwargs is None:
+            plot_kwargs = {}
+        if color is None:
+            plot_kwargs['color'] = self.next_color()
+        else:
+            plot_kwargs['color'] = color
+        if label is not None:
+            plot_kwargs['label'] = label
+        if save_kwargs is None:
+            save_kwargs = {}
         print(f'Plotting angular correlation at {point}...')
         array = np.real(self.ang_corr[point, :])
         if func is not None:
-            array = func(array)
+            array = func(array, **func_kwargs)
         array += step
-        if func:
-            array = func(array)
         if ax is None:
             self.__fig_corr_point__, self.__ax_corr_point__ = plt.subplots()
         else:
-            self.__fig_corr_point__, self.__ax_corr_point__ = fig, ax
-        if color is None:
-            color = self.next_color()
-        if label is None:
-            self.__ax_corr_point__.plot(np.linspace(0, 360, self.num_th), array,
-                                        color=color)
-        else:
-            self.__ax_corr_point__.plot(np.linspace(0, 360, self.num_th), array,
-                                        label=label, color=color)
+            self.__fig_corr_point__, self.__ax_corr_point__ = ax.figure, ax
+
+        self.__ax_corr_point__.plot(np.linspace(0, 360, self.num_th), array, **plot_kwargs)
+
         if title is not None:
             self.__ax_corr_point__.set_title(title)
-        self.__ax_corr_point__.set_xlabel(AxesLabel.THETA)
+        self.__ax_corr_point__.set_xlabel(AxesLabel.ANGLE_SVG)
         self.__ax_corr_point__.set_ylabel(AxesLabel.INTENSITY)
 
         self.__ax_corr_point__.set_xlim(0, 180)
@@ -202,9 +218,10 @@ class AngularCorrelation:
             self.__ax_corr_point__.set_ylim(y_lim[0], y_lim[1])
         else:
             align_ylim(self.__ax_corr_point__, x_range=(0,360), edge_mask=2, scale=1.5)
-        self.__fig_corr_point__.tight_layout()
+        if ax is not None:
+            self.__fig_corr_point__.tight_layout()
         if save_fig:
-            self.save_line(array, save_name, save_type, **kwargs)
+            self.save_line(array, save_name, save_type, **save_kwargs)
         return self.__fig_corr_point__
 
     def save_line(self, array, file_name, file_type=None, **kwargs):

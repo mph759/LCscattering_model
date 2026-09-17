@@ -1,6 +1,14 @@
 from pathlib import Path
 import numpy as np
 from matplotlib import pyplot as plt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+from matplotlib.gridspec import GridSpec
+import matplotlib.colors as colors
+from matplotlib.cm import ScalarMappable
+from matplotlib.ticker import AutoMinorLocator
+import seaborn as sns
+from tol_colors import colormaps
+from string import ascii_lowercase
 from enum import StrEnum
 
 from utils import check_existing_ext, fix_file_ext
@@ -20,11 +28,10 @@ def textsize_square(scale: float | int = 1) -> tuple[float, float]:
 class AxesLabel(StrEnum):
     ANGLE = 'Angle (\u00B0)'
     ANGLE_SVG = r'Angle \$ \left( ^\circ \right) \$'
-    THETA = r'$\Theta$ / $^\circ$'
     INTENSITY = r'Intensity (arb. units)'
     Q = r'q'
-    Q_INV_NM = r'q / nm$^{-1}$'
-    R = r'r'
+    Q_INV_NM = r'q \$ \left(  \text{nm}^{-1} \right) \$'
+    R = r'Radius (pixels)'
 
 
 plt.rcParams['savefig.dpi'] = 300
