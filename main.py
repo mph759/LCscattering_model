@@ -17,12 +17,26 @@ from spatial import CalamiticParticle, generate_positions, generate_random_posit
 from utils import logger_setup, ParameterLogger, chi_squared
 from plot_utils import *
 
+
 class Phase(StrEnum):
     LIQUID = 'LIQUID'
     CRYSTAL = 'CRYSTAL'
     SMECTIC = 'SMECTIC'
     NEMATIC = 'NEMATIC'
     SINGLE = 'SINGLE'
+
+
+def standard_run():
+    # Initialise real space parameters
+    grid_size = int(2 ** 13)
+
+    # Initialise beam and detector parameters
+    wavelength = 0.67018e-10  # metres
+    pixel_size = 75e-6  # metres per pixel
+    npt = 2000  # No. of points for the radial integration
+    dx = 5e-9  # metres
+    return partial(run, wavelength=wavelength, pixel_size=pixel_size, npt=npt, dx=dx, grid_max=grid_size)
+
 
 def define_variables(**kwargs):
     variables = kwargs.keys()
@@ -38,41 +52,19 @@ def define_variables(**kwargs):
         product_dict_list[i]['tag'] = string[:-1]
     return product_dict_list
 
+
 def smectic():
     """
     Main function. Should not have to modify this
     """
-    # Initialise real space parameters
-    x_max = y_max = int(2 ** 13)
-
     # Initialise particle parameters
-    particle_width = 2  # in pixels
-    particle_length = 15  # in pixels
+    particle_length = 24  # in pixels
     # Note: The unit vector is not the exact angle all the particles will have, but the mean of all the angles
     unit_vector = 70
     vector_stddev = 10  # Standard Deviation of the angle, used to generate angles for individual particles
 
     # Initialise how the particles sit in real space
     padding_spacing = (5, 5)
-
-    # Initialise beam and detector parameters
-    wavelength = 0.67018e-10  # metres
-    pixel_size = 75e-6  # metres per pixel
-    npt = 2000  # No. of points for the radial integration
-    dx = 5e-9  # metres
-
-
-    now = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
-    tag = 'LCscattering-trial'
-    output_dir_root = Path.cwd() / fr'output\{tag}_{now}'
-    Path(output_dir_root).mkdir(parents=True, exist_ok=True)
-    main_logger = logger_setup('main', output_dir_root, stream=True)
-    base_run_partial = partial(run, output_dir_root=output_dir_root, grid_max=x_max, particle_width=particle_width,
-                               wavelength=wavelength, pixel_size=pixel_size,
-                               dx=dx, npt=npt, #padding_spacing=padding_spacing,
-                               #unit_vector=unit_vector,
-                               vector_stddev=vector_stddev,
-                               particle_length=particle_length)
 
     # Run over many variables
     '''
@@ -84,11 +76,23 @@ def smectic():
         "padding_spacing": [(5, x) for x in range(-5, 5 + 1, 1)],
     }
     '''
-    variables = define_variables(#vector_stddev=list(range(1, 10, 1)),
+    variables = define_variables(vector_stddev=list(range(2, 22, 2)),
                                  unit_vector=list(range(45, 95, 5)),
-                                padding_spacing=[(5, x) for x in range(-10, -2, 2)],
-                                 # particle_length=list(range(15, 31, 1))
+                                 #padding_spacing=[(5, x) for x in range(10, 20, 2)],
+                                 #particle_length=list(range(15, 33, 2))
                                  )
+
+    now = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
+    tag = 'LCscattering-trial'
+    output_dir_root = Path.cwd() / fr'output\{tag}_{now}'
+    Path(output_dir_root).mkdir(parents=True, exist_ok=True)
+    main_logger = logger_setup('main', output_dir_root, stream=True)
+    base_run_partial = partial(standard_run(), output_dir_root=output_dir_root,
+                               padding_spacing=padding_spacing,
+                               #unit_vector=unit_vector,
+                               vector_stddev=vector_stddev,
+                               particle_length=particle_length,
+                               )
 
     with open(f'{output_dir_root}/variables.json', 'w') as f:
         json.dump(variables, f, indent=4)
@@ -105,29 +109,18 @@ def smectic():
     run_time = timedelta(seconds=(end - start))
     main_logger.info(f'Total run time: {run_time}\n')
 
+
 def crystal():
     tag = 'Crystalline-trial'
 
     # Initialise particle parameters
-    particle_width = 2  # in pixels
     particle_length = 15  # in pixels
     # Note: The unit vector is not the exact angle all the particles will have, but the mean of all the angles
     unit_vector = 60
-    vector_stddev = 0  # Standard Deviation of the angle, used to generate angles for individual particles
 
     # Initialise how the particles sit in real space
     padding_spacing = (5, 5)
 
-    # Initialise real space parameters
-    x_max = y_max = int(2 ** 13)
-
-
-    ######## DON'T CHANGE BELOW ########
-    # Initialise beam and detector parameters
-    wavelength = 0.67018e-10  # metres
-    pixel_size = 75e-6  # metres per pixel
-    npt = 2000  # No. of points for the radial integration
-    dx = 5e-9  # metres
 
     # Set up directories and logging
     now = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
@@ -136,17 +129,18 @@ def crystal():
     main_logger = logger_setup('main', output_dir_root, stream=True)
 
     start = time.perf_counter()
-    run(output_dir_root=output_dir_root, grid_max=x_max, particle_width=particle_width,
-        wavelength=wavelength, pixel_size=pixel_size,
-        dx=dx, npt=npt, padding_spacing=padding_spacing,
-        unit_vector=unit_vector,
-        vector_stddev=vector_stddev,
-        particle_length=particle_length, phase=Phase.CRYSTAL,
-        tag=f'unit_vector_{unit_vector}')
+    standard_run(tag)(phase=Phase.CRYSTAL,
+                   output_dir_root=output_dir_root,
+                   padding_spacing=padding_spacing,
+                   unit_vector=unit_vector,
+                   vector_stddev=0,
+                   particle_length=particle_length,
+                   tag=f'unit_vector_{unit_vector}')
 
     end = time.perf_counter()
     run_time = timedelta(seconds=(end - start))
     main_logger.info(f'Total run time: {run_time}\n')
+
 
 def liquid():
     tag = 'Liquid-trial'
@@ -161,16 +155,6 @@ def liquid():
     # Initialise how the particles sit in real space
     padding_spacing = (5, 5)
 
-    # Initialise real space parameters
-    x_max = y_max = int(2 ** 13)
-
-    ######## DON'T CHANGE BELOW ########
-    # Initialise beam and detector parameters
-    wavelength = 0.67018e-10  # metres
-    pixel_size = 75e-6  # metres per pixel
-    npt = 2000  # No. of points for the radial integration
-    dx = 5e-9  # metres
-
     # Set up directories and logging
     now = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
     output_dir_root = Path.cwd() / fr'output\{tag}_{now}'
@@ -178,23 +162,22 @@ def liquid():
     main_logger = logger_setup('main', output_dir_root, stream=True)
 
     start = time.perf_counter()
-    run(output_dir_root=output_dir_root, grid_max=x_max, particle_width=particle_width,
-        wavelength=wavelength, pixel_size=pixel_size,
-        dx=dx, npt=npt, padding_spacing=padding_spacing,
-        unit_vector=unit_vector,
-        vector_stddev=vector_stddev,
-        particle_length=particle_length, phase=Phase.LIQUID,
-        tag='liquid')
+    standard_run()(output_dir_root=output_dir_root,
+                   padding_spacing=padding_spacing,
+                   unit_vector=unit_vector,
+                   vector_stddev=vector_stddev,
+                   particle_length=particle_length, phase=Phase.LIQUID,
+                   tag='liquid')
 
     end = time.perf_counter()
     run_time = timedelta(seconds=(end - start))
     main_logger.info(f'Total run time: {run_time}\n')
 
+
 def single():
     tag = 'Single-trial'
 
     # Initialise particle parameters
-    particle_width = 2  # in pixels
     particle_length = 15  # in pixels
     # Note: The unit vector is not the exact angle all the particles will have, but the mean of all the angles
     unit_vector = 60
@@ -203,16 +186,6 @@ def single():
     # Initialise how the particles sit in real space
     padding_spacing = (5, 5)
 
-    # Initialise real space parameters
-    x_max = y_max = int(2 ** 13)
-
-    ######## DON'T CHANGE BELOW ########
-    # Initialise beam and detector parameters
-    wavelength = 0.67018e-10  # metres
-    pixel_size = 75e-6  # metres per pixel
-    npt = 2000  # No. of points for the radial integration
-    dx = 5e-9  # metres
-
     # Set up directories and logging
     now = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
     output_dir_root = Path.cwd() / fr'output\{tag}_{now}'
@@ -220,23 +193,22 @@ def single():
     main_logger = logger_setup('main', output_dir_root, stream=True)
 
     start = time.perf_counter()
-    run(output_dir_root=output_dir_root, grid_max=x_max, particle_width=particle_width,
-        wavelength=wavelength, pixel_size=pixel_size,
-        dx=dx, npt=npt, padding_spacing=padding_spacing,
-        unit_vector=unit_vector,
-        vector_stddev=vector_stddev,
-        particle_length=particle_length, phase=Phase.SINGLE,
-        tag=f'unit_vector_{unit_vector}')
+    standard_run()(output_dir_root=output_dir_root,
+                   padding_spacing=padding_spacing,
+                   unit_vector=unit_vector,
+                   vector_stddev=vector_stddev,
+                   particle_length=particle_length, phase=Phase.SINGLE,
+                   tag=f'unit_vector_{unit_vector}')
 
     end = time.perf_counter()
     run_time = timedelta(seconds=(end - start))
     main_logger.info(f'Total run time: {run_time}\n')
 
+
 def nematic():
     tag = 'Nematic-trial'
 
     # Initialise particle parameters
-    particle_width = 2  # in pixels
     particle_length = 15  # in pixels
     # Note: The unit vector is not the exact angle all the particles will have, but the mean of all the angles
     unit_vector = 60
@@ -245,16 +217,6 @@ def nematic():
     # Initialise how the particles sit in real space
     padding_spacing = (5, 5)
 
-    # Initialise real space parameters
-    x_max = y_max = int(2 ** 13)
-
-    ######## DON'T CHANGE BELOW ########
-    # Initialise beam and detector parameters
-    wavelength = 0.67018e-10  # metres
-    pixel_size = 75e-6  # metres per pixel
-    npt = 2000  # No. of points for the radial integration
-    dx = 5e-9  # metres
-
     # Set up directories and logging
     now = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
     output_dir_root = Path.cwd() / fr'output\{tag}_{now}'
@@ -262,25 +224,28 @@ def nematic():
     main_logger = logger_setup('main', output_dir_root, stream=True)
 
     start = time.perf_counter()
-    run(output_dir_root=output_dir_root, grid_max=x_max, particle_width=particle_width,
-        wavelength=wavelength, pixel_size=pixel_size,
-        dx=dx, npt=npt, padding_spacing=padding_spacing,
-        unit_vector=unit_vector,
-        vector_stddev=vector_stddev,
-        particle_length=particle_length, phase=Phase.NEMATIC,
-        tag=f'unit_vector_{unit_vector}')
+    standard_run()(output_dir_root=output_dir_root,
+                   padding_spacing=padding_spacing,
+                unit_vector=unit_vector,
+                vector_stddev=vector_stddev,
+                particle_length=particle_length, phase=Phase.NEMATIC,
+                tag=f'unit_vector_{unit_vector}')
 
     end = time.perf_counter()
     run_time = timedelta(seconds=(end - start))
     main_logger.info(f'Total run time: {run_time}\n')
 
-def run(unit_vector, vector_stddev, particle_width, particle_length, *, padding_spacing, output_dir_root, tag, grid_max,
-        wavelength, pixel_size, dx, npt, phase: Phase=Phase.SMECTIC):
+
+def run(unit_vector, vector_stddev, particle_length, *, padding_spacing, output_dir_root, tag, grid_max,
+        wavelength, pixel_size, dx, npt, phase: Phase = Phase.SMECTIC):
+
     output_directory = f'{output_dir_root}\\{tag}'
+    print(phase)
     with ParameterLogger(output_directory) as log:
         logger = logger_setup('run', output_directory, level=logging.DEBUG)
 
         # Initialise the spacing in x and y, and the allowed displacement from that lattice
+        particle_width = 2
         spacing, allowed_displacement = init_spacing(particle_length, particle_width,
                                                      unit_vector, padding_spacing)
         x_spacing, y_spacing = spacing
@@ -289,7 +254,7 @@ def run(unit_vector, vector_stddev, particle_width, particle_length, *, padding_
         # Initialise the generators of the positions and angles for the
         if phase is Phase.SINGLE:
             num_particles = 1
-            positions = [((grid_max - particle_width)//2, (grid_max - particle_length) //2)]
+            positions = [((grid_max - particle_width) // 2, (grid_max - particle_length) // 2)]
         elif phase is Phase.LIQUID or phase is Phase.NEMATIC:
             num_particles = int((grid_max / x_spacing) * (grid_max / y_spacing))
             positions = generate_random_positions(num_particles, (grid_max, grid_max))
@@ -306,7 +271,8 @@ def run(unit_vector, vector_stddev, particle_width, particle_length, *, padding_
         elif phase is Phase.SMECTIC or phase is Phase.NEMATIC:
             angle_func = partial(normal_distribution, unit_vector, vector_stddev)
 
-        particles = [CalamiticParticle(position, particle_width, particle_length, angle_func=angle_func) for position in positions]
+        particles = [CalamiticParticle(position, particle_width, particle_length, angle_func=angle_func) for position in
+                     positions]
 
         # Check unit vector matches expected value
         num_particles = len(particles)
@@ -320,10 +286,11 @@ def run(unit_vector, vector_stddev, particle_width, particle_length, *, padding_
                                         fit_params={'loc':unit_vector, 'scale':vector_stddev},
                                         n_mc_samples=999)
         '''
-        if phase is not Phase.CRYSTAL or phase is not Phase.SINGLE:
-            fig_angle_dist, _ = plot_angle_bins(particle_angles, unit_vector, vector_stddev)#, view_table=False)
+        if phase is not Phase.CRYSTAL and phase is not Phase.SINGLE:
+            fig_angle_dist, _ = plot_angle_bins(particle_angles, unit_vector, vector_stddev)
             fig_angle_dist.savefig(f'{output_directory}\\angle_dist.png')
-        logger.info(f"Collective unit vector: {particles_unit_vector:0.2f}, with a standard deviation of {particles_stddev:0.2f}")
+            logger.info(
+                f"Collective unit vector: {particles_unit_vector:0.2f}, with a standard deviation of {particles_stddev:0.2f}")
 
         # Create the space for the particles and place them in real space
         real_space = RealSpace((grid_max, grid_max))
@@ -350,7 +317,7 @@ def run(unit_vector, vector_stddev, particle_width, particle_length, *, padding_
         real_space.plot(real_space_title)
         #real_space.plot_zoom(real_space_title)
         #plt.show()
-        real_space.save(f'{output_directory}\\2D_model', file_type='npy') #, dpi=300, bbox_inches='tight')
+        real_space.save(f'{output_directory}\\2D_model', file_type='npy')  #, dpi=300, bbox_inches='tight')
         real_space.save(f'{output_directory}\\2D_model', file_type='png', dpi=300, bbox_inches='tight')
         real_space_params = real_space.params
         spatial = {'x_spacing': x_spacing, 'y_spacing': y_spacing,
@@ -364,7 +331,8 @@ def run(unit_vector, vector_stddev, particle_width, particle_length, *, padding_
         peak_locs = peak_predict(diffraction_of_real_space, (x_spacing, y_spacing))
         if phase is not Phase.LIQUID or phase is not Phase.SINGLE:
             diffraction_of_real_space.plot(diffraction_pattern_title, clim=1e8, peaks=peak_locs)
-            diffraction_of_real_space.save(f'{output_directory}\\diffraction_pattern_2d_peaks', file_type='png', dpi=300, bbox_inches='tight')
+            diffraction_of_real_space.save(f'{output_directory}\\diffraction_pattern_2d_peaks', file_type='png',
+                                           dpi=300, bbox_inches='tight')
 
         diffraction_of_real_space.plot(diffraction_pattern_title, clim=1e8)
         diffraction_of_real_space.save(f'{output_directory}\\diffraction_pattern_2d', file_type='png', dpi=300,
