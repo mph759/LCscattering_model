@@ -29,9 +29,11 @@ class AxesLabel(StrEnum):
     ANGLE = 'Angle (\u00B0)'
     ANGLE_SVG = r'Angle \$ \left( ^\circ \right) \$'
     INTENSITY = r'Intensity (arb. units)'
-    Q = r'q'
+    Q = r'q (inverse pixels)'
     Q_INV_NM = r'q \$ \left(  \text{nm}^{-1} \right) \$'
     R = r'Radius (pixels)'
+    X = 'X (pixels)'
+    Y= 'Y (pixels)'
 
 
 plt.rcParams['savefig.dpi'] = 300

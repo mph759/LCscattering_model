@@ -6,8 +6,7 @@ import seaborn as sns
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure, SubFigure
 
-from correlation import AngularCorrelation
-from plot_model_and_diffraction import plot_2Dcorrelation
+from correlation import AngularCorrelation, plot_2Dcorrelation
 from plot_utils import *
 from utils import alphanum_key, ParameterReader, normalize, convolve_gaussian, \
     subtract_mean, half_edge_mask, subtract_mid
@@ -34,12 +33,12 @@ Martin_19545 = XFM_Experiment(121019, 424,
 
 def analyse_simulation():
     data_root = Path.cwd() / 'output'
-    data_path = data_root / r'LCscattering-trial_2026-09-17 10-41-38'
-    parameter = 'unit_vector_*-padding_spacing_(5, 8)'
-    variable = 'unit_vector'
+    data_path = data_root / r'LCscattering-trial_2026-09-24 16-44-40'
+    parameter = 'vector_stddev_*-unit_vector_60'
+    variable = 'unit_vector_stddev'
     folder_list = parameter_search(parameter, data_path)
     fig, ax = plot_sim_correlation(folder_list, #title=f'{parameter}',
-                                   step_size=0, func=partial(simple_postprocessing, convolve_kwargs={'amplitude':1,'stddev':5}),
+                                   step_size=0.5, func=partial(postprocessing, convolve_kwargs={'amplitude':1,'stddev':5}),
                                    palette='plasma', seaborn_palette=True,
                                    plot_kwargs={'alpha':0.8},
                                    label_var=variable,
@@ -136,7 +135,8 @@ def plot_sim_correlation(data_folders: list[Path], title: Optional[str] = None, 
                          func: Optional[Callable] = None, ax: Optional[plt.Axes] = None,
                          palette: Optional[Any] = None, seaborn_palette: bool = False,
                          plot_kwargs: Optional[dict[str, Any]] = None,
-                         func_kwargs: Optional[dict[str, Any]]= None) -> tuple[
+                         func_kwargs: Optional[dict[str, Any]]= None,
+                         legend_kwargs: Optional[dict[str, Any]]=None) -> tuple[
     Figure | SubFigure, Axes]:
     num_folders = len(data_folders)
     if ax is None:
@@ -165,10 +165,13 @@ def plot_sim_correlation(data_folders: list[Path], title: Optional[str] = None, 
                                       plot_kwargs=plot_kwargs, func=func, func_kwargs=func_kwargs)
         if i == num_folders - 1:
             align_ylim(ax, x_range=(0, angular_correlation.num_th // 2), edge_mask=2)
+    set_legend_kwargs = {'loc': 'upper center', 'bbox_to_anchor': (0.5, -0.2), 'frameon': False}
+    if legend_kwargs is not None:
+        set_legend_kwargs.update(legend_kwargs)
     if num_folders > 1:
-        ax.legend(ncol=((num_folders-1) // legend_nrows) + 1)
+        ax.legend(ncol=((num_folders-1) // legend_nrows) + 1, **set_legend_kwargs)
     else:
-        ax.legend(ncol=1)
+        ax.legend(ncol=1, **set_legend_kwargs)
     if title:
         plt.title(title)
     return fig, ax
@@ -187,7 +190,7 @@ def simple_postprocessing(array: np.ndarray, convolve_kwargs: Optional[dict] = N
     if convolve_kwargs is not None:
         array = convolve_gaussian(array, **convolve_kwargs)
     array = subtract_mean(array) #, search_override=half_edge_mask)
-    array = normalize(array) #, search_override=corr_amplitude)
+    #array = normalize(array) #, search_override=corr_amplitude)
     return array
 
 
@@ -215,11 +218,18 @@ def parameter_search(search_string: str, data_folder: Path, sep_len: Optional[in
 def var_listing(var_str: str, folder_list: list[Path]) -> list[str]:
     var_list = ['']* len(folder_list)
     for i, folder in enumerate(folder_list):
-        folder_name_list = str(folder.name).split('-')
-        for folder_name in folder_name_list:
-            if var_str in folder_name:
-                var_list[i] = folder_name.split('_')[-1]
-    return var_list
+        reader = ParameterReader(folder)
+        if var_str == 'padding_spacing':
+            x_spacing = int(reader.params['Space']['x_spacing'])
+            y_spacing = int(reader.params['Space']['y_spacing'])
+            var_list[i] = f'({x_spacing}, {y_spacing})'
+        else:
+            if var_str == 'vector_stddev':
+                var_list[i] = reader.params['Calamitic Particle']['unit_vector_stddev']
+            else:
+                var_list[i] = reader.params['Calamitic Particle'][var_str]
+    sorted_var_list = sorted(var_list, key=alphanum_key)
+    return sorted_var_list
 
 
 def compare_cholpel2sim():
@@ -260,6 +270,6 @@ def compare_cholpel2sim():
 
 
 if __name__ == '__main__':
-    #analyse_simulation()
-    determine_corr_point()
+    analyse_simulation()
+    #determine_corr_point()
 

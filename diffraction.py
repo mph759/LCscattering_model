@@ -162,7 +162,7 @@ class Diffraction2D:
         else:
             colorbar_axes = cax
 
-        self.__fig_2d__.colorbar(plot, cax=colorbar_axes, orientation=cax_orientation)
+        self.__fig_2d__.colorbar(plot, cax=colorbar_axes, orientation=cax_orientation, label=AxesLabel.INTENSITY)
         if clim:
             plot.set_clim(0, clim)
 

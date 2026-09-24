@@ -1,20 +1,40 @@
-from itertools import chain
 import pandas as pd
+from functools import partial
 from typing import Optional
 
 from diffraction import Diffraction2D, Diffraction1D
 from spatial import load_and_plot_angle_bins, RealSpace
-from correlation import AngularCorrelation
+from correlation import AngularCorrelation, plot_2Dcorrelation
 from plot_utils import *
+from utils import ParameterReader
+from compare_1dcorr_exp2sim import simple_postprocessing, postprocessing
 
-def plot_model_diffraction(data_folder: Path, label: str, angle_dist: bool = False, save: bool = False) -> None:
+
+def get_folders():
+    # Simulated Data
+    data_root = Path.cwd() / "output"
+    crystal_folder = data_root / r'Crystalline-trial_2026-08-06 14-21-03\unit_vector_60'
+    liquid_folder = data_root / r'Liquid-trial_2026-08-19 20-52-02\liquid'
+    single_folder = data_root / r'Single-trial_2026-08-07 12-50-32\unit_vector_60'
+    nematic_folder = data_root / r'Nematic-trial_2026-08-19 20-01-04\unit_vector_60'
+    smectic_folder = data_root / r'LCscattering-trial_2026-09-17 10-41-38\unit_vector_60-padding_spacing_(5, 8)'
+
+    labels = {'Single': single_folder,
+              'Crystal': crystal_folder,
+              'Smectic': smectic_folder,
+              'Nematic': nematic_folder,
+              'Liquid': liquid_folder,
+              }
+    return labels
+
+def plot_model_diffraction(data_folder: Path, label: str, angle_dist: bool = False, save_option: bool = False) -> None:
     if angle_dist:
         fig = plt.figure(figsize=textsize_scale(3 / 5))
         gs0 = GridSpec(nrows=2, ncols=2, figure=fig,
                        width_ratios=[1, 1.1],
                        height_ratios=[1, 0.4],
                        wspace=0.05, hspace=0.3,
-                       left=0.12, right=0.94, top=0.95, bottom=0.1)
+                       left=0.11, right=0.9, top=0.95, bottom=0.1)
         ax0 = fig.add_subplot(gs0[0, 0])
         ax1 = fig.add_subplot(gs0[0, 1])
         ax2 = fig.add_subplot(gs0[1, :])
@@ -26,7 +46,7 @@ def plot_model_diffraction(data_folder: Path, label: str, angle_dist: bool = Fal
         gs0 = GridSpec(nrows=1, ncols=2, figure=fig,
                        width_ratios=[1, 1.1],
                        wspace=0.05, hspace=0.01,
-                       left=0.1, right=0.94, top=0.95, bottom=0.05)
+                       left=0.11, right=0.9, top=0.95, bottom=0.05)
         ax0 = fig.add_subplot(gs0[0])
         ax1 = fig.add_subplot(gs0[1])
 
@@ -44,19 +64,19 @@ def plot_model_diffraction(data_folder: Path, label: str, angle_dist: bool = Fal
     diffraction_2d.plot(ax=ax1, clim=clim)  # , cax=cax1)
 
     plt.show()
-    if save:
+    if save_option:
         fig.savefig(data_folder / f'LCscattering_{label}.png', dpi=300)
         fig.savefig(data_folder / f'LCscattering_{label}.svg', dpi=300)
         print(f'Saved figure at {data_folder}\LCscattering_{label}')
     plt.close(fig)
 
-def run_all_plot_model_diffraction() -> None:
+def run_all_plot_model_diffraction(save_option: bool= False) -> None:
     for label, folder in get_folders().items():
         if label == 'Smectic' or label == 'Nematic' or label == 'Liquid':
             angle_dist = True
         else:
             angle_dist = False
-        plot_model_diffraction(folder, label, angle_dist=angle_dist)
+        plot_model_diffraction(folder, label, angle_dist=angle_dist, save_option=save_option)
 
 def plot_model_and_angles(data_folder: Path) -> None:
     fig = plt.figure(figsize=textsize_scale(4/5))
@@ -127,35 +147,6 @@ def read_particle_angles():
     plt.tight_layout()
     plt.show()
 
-def get_folders():
-    # Simulated Data
-    data_root = Path.cwd() / "output"
-    crystal_folder = data_root / r'Crystalline-trial_2026-08-06 14-21-03\unit_vector_60'
-    liquid_folder = data_root / r'Liquid-trial_2026-08-19 20-52-02\liquid'
-    single_folder = data_root / r'Single-trial_2026-08-07 12-50-32\unit_vector_60'
-    nematic_folder = data_root / r'Nematic-trial_2026-08-19 20-01-04\unit_vector_60'
-    smectic_folder = data_root / r'LCscattering-trial_2026-08-20 15-06-41\vector_stddev_5-unit_vector_70'
-
-    labels = {'Single': single_folder,
-              'Crystal': crystal_folder,
-              'Smectic': smectic_folder,
-              'Nematic': nematic_folder,
-              'Liquid': liquid_folder,
-              }
-    return labels
-
-
-def plot_2Dcorrelation(folder_dir: Path, label: Optional[str]=None, ax: Optional[plt.Axes]=None, **kwargs) -> None:
-    if ax is None:
-        fig, ax = plt.subplots(figsize=textsize_scale(2/5))
-    else:
-        fig = ax.figure
-
-    corr_2d = AngularCorrelation.load(folder_dir)
-    corr_2d.mean_subtract_by_line()
-    corr_2d.plot(ax=ax, **kwargs)
-    if label is not None:
-        ax.set_title(label)
 
 def plot_2Dcorrelation_comparisons(datasets) -> plt.Figure:
     norm = colors.Normalize(vmin=0, vmax=1e10)
@@ -183,7 +174,7 @@ def plot_2Dcorrelation_comparisons(datasets) -> plt.Figure:
 
     cax = fig.add_subplot(gs0[2,:])
     fig.colorbar(ScalarMappable(norm=norm, cmap=AngularCorrelation.cmap), cax=cax,
-                 orientation='horizontal', label='correlation intensity (arb. units)')
+                 orientation='horizontal', label=AxesLabel.INTENSITY)
     plt.show()
     return fig
 
@@ -271,15 +262,42 @@ def plot_2Dcorrelation_compare_crystal_smectic(datasets):
     plt.show()
     return fig
 
+def plot_1Dcorrelation(folder_dir: Path, peak: int, ax: Optional[plt.Axes], **kwargs):
+    if ax is None:
+        fig, ax = plt.subplots(figsize=textsize_scale(2/5))
+    corr_2d = AngularCorrelation.load(folder_dir)
+    corr_2d.mean_subtract_by_line()
+    corr_2d.plot_line_w_width(point=peak, ax=ax,
+                      func=partial(simple_postprocessing, convolve_kwargs={'amplitude':1,'stddev':5}),
+                      **kwargs)
+    return ax
+
+
+def plot_1Dcorrelation_compare_crystal_smectic(datasets, index: Optional[int] = None):
+    fig, ax = plt.subplots(figsize=textsize_scale(2/5))
+    crystal = datasets['Crystal']
+    smectic = datasets['Smectic']
+
+    for dataset, color in zip([crystal, smectic], sns.color_palette('colorblind', n_colors=2)):
+        reader = ParameterReader(dataset)
+        peaks = reader.params['Peak Locations']
+        if index is None:
+            peak = peaks[0]
+        else:
+            peak = peaks[index]
+        plot_1Dcorrelation(dataset, ax=ax, peak=peak, color=color)
+    plt.show()
+
+
 if __name__ == '__main__':
     data_folders = get_folders()
 
-    #run_all_plot_model_diffraction()
+    #run_all_plot_model_diffraction(save_option=True)
     #read_particle_angles()
 
     #plot_model_and_angles(data_folders['Smectic'])
-    #plot_model_diffraction_w_1d(data_folders['Smectic'])
     #plot_diffraction_2d_1d(data_folders['Smectic'])
-    plot_2Dcorrelation_compare_blanks(datasets=data_folders)
-    plot_2Dcorrelation_compare_crystal_smectic(datasets=data_folders)
+    # plot_2Dcorrelation_compare_blanks(datasets=data_folders)
+    #plot_2Dcorrelation_compare_crystal_smectic(datasets=data_folders)
 
+    plot_1Dcorrelation_compare_crystal_smectic(data_folders)

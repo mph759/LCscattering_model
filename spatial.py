@@ -74,8 +74,8 @@ class RealSpace:
         self.__ax__.invert_yaxis()
         if title is not None:
             self.__ax__.set_title(title)
-        self.__ax__.set_xlabel('X')
-        self.__ax__.set_ylabel('Y')
+        self.__ax__.set_xlabel(AxesLabel.X)
+        self.__ax__.set_ylabel(AxesLabel.Y)
         if ax is None:
             self.__fig__.tight_layout()
         if inset:

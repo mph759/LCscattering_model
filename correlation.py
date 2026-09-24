@@ -3,6 +3,9 @@ Correlation analysis of a (simulated) 2D diffraction pattern
 Author: Michael Hassett (Original code by Andrew Martin)
 Created: 2023-12-11, copied from pypadf/fxstools/correlationTools.py
 """
+from pathlib import Path
+
+from matplotlib import pyplot
 from matplotlib.ticker import AutoMinorLocator
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import seaborn as sns
@@ -10,6 +13,7 @@ from typing import Callable, Optional, Any
 
 from diffraction import PolarDiffraction2D, Diffraction2D
 from plot_utils import *
+from plot_utils import textsize_scale
 from utils import timer, ParameterReader
 
 
@@ -160,7 +164,7 @@ class AngularCorrelation:
         file_name = save(self.__fig_corr__, self.ang_corr, file_name, file_type, **kwargs)
         print(f'Saved angular correlation as {file_name}')
 
-    def plot_line(self, point: float| int, title: str | None =None, y_lim: tuple[float, float] | None = None, *,
+    def plot_line(self, point: int, title: str | None =None, y_lim: tuple[float, float] | None = None, *,
                   ax: plt.Axes | None = None, step: float = 0, label: str | None = None,
                   color: Optional[str | float | int] = None, plot_kwargs: dict[str, Any] | None = None,
                   save_fig: bool = False, save_name: str | None = None, save_type: str = 'png',
@@ -223,6 +227,84 @@ class AngularCorrelation:
         if save_fig:
             self.save_line(array, save_name, save_type, **save_kwargs)
         return self.__fig_corr_point__
+
+    def plot_line_w_width(self, point: int, width: int = 3, title: str | None =None, y_lim: tuple[float, float] | None = None, *,
+                  ax: plt.Axes | None = None, step: float = 0, label: str | None = None,
+                  color: Optional[str | float | int] = None, plot_kwargs: dict[str, Any] | None = None,
+                  save_fig: bool = False, save_name: str | None = None, save_type: str = 'png',
+                  save_kwargs: Optional[dict[str, Any]] = None,
+                  func: Optional[Callable] | None = None, func_kwargs: Optional[dict[str, Any]] = None) -> tuple[plt.Figure, plt.Axes]:
+        """
+        Plot the angular correlation at a point
+        :param color:
+        :param save_kwargs: Any keyword arguments to pass to matplotlib.pyplot.savefig
+        :param plot_kwargs:
+        :param func:
+        :param point: r (or q) that you wish to plot
+        :param title: title for the plot
+        :param y_lim: max and minimum limit of the y-axis (as a tuple). If None (default) will auto-scale
+        :param ax: matplotlib Axes
+        :param step: step size between plots (for plotting multiple lines)
+        :param label: label for the plot (for a legend)
+        :param save_fig: Whether to save the figure (default: False)
+        :param save_name: File name to save under
+        :param save_type: File type to save as (e.g. png or jpg). Default png file
+        :param func_kwargs:
+        :return:
+        """
+        if func_kwargs is None:
+            func_kwargs = {}
+        if plot_kwargs is None:
+            plot_kwargs = {}
+        if color is None:
+            plot_kwargs['color'] = self.next_color()
+        else:
+            plot_kwargs['color'] = color
+        if label is not None:
+            plot_kwargs['label'] = label
+        if save_kwargs is None:
+            save_kwargs = {}
+        print(f'Plotting angular correlation at {point}...')
+
+        array = np.sum(np.real(self.ang_corr[point:point+width, :]), axis=0)
+        if func is not None:
+            array = func(array, **func_kwargs)
+        array += step
+        if ax is None:
+            self.__fig_corr_point__, self.__ax_corr_point__ = plt.subplots()
+        else:
+            self.__fig_corr_point__, self.__ax_corr_point__ = ax.figure, ax
+
+        self.__ax_corr_point__.plot(np.linspace(0, 360, self.num_th), array, **plot_kwargs)
+
+        if title is not None:
+            self.__ax_corr_point__.set_title(title)
+        self.__ax_corr_point__.set_xlabel(AxesLabel.ANGLE_SVG)
+        self.__ax_corr_point__.set_ylabel(AxesLabel.INTENSITY)
+
+        self.__ax_corr_point__.set_xlim(0, 180)
+        if y_lim is not None:
+            self.__ax_corr_point__.set_ylim(y_lim[0], y_lim[1])
+        else:
+            align_ylim(self.__ax_corr_point__, x_range=(0,360), edge_mask=2, scale=1.5)
+        if ax is not None:
+            self.__fig_corr_point__.tight_layout()
+        if save_fig:
+            self.save_line(array, save_name, save_type, **save_kwargs)
+        return self.__fig_corr_point__
+
+    def plot_n_peak(self, file_dir, peak_index, **kwargs):
+        reader = ParameterReader(file_dir)
+        peaks = reader.params['Peak Locations']
+        self.plot_line(point=peaks[peak_index], **kwargs)
+
+    def plot_n_peak_w_width(self, file_dir: Path, peak_index: int, width: Optional[int] = None, **kwargs):
+        reader = ParameterReader(file_dir)
+        peaks = reader.params['Peak Locations']
+        if width is not None:
+            kwargs['width'] = width
+        self.plot_line_w_width(point=peaks[peak_index], **kwargs)
+
 
     def save_line(self, array, file_name, file_type=None, **kwargs):
         """
@@ -367,3 +449,16 @@ def pearsonCorrelation_2D(arr1, arr2, *, lim=None, angular: bool = False):
         c2 = a2 - np.average(a2)
         pc = np.sum(c1 * c2) / np.sqrt(np.sum(c1 * c1) * np.sum(c2 * c2))
     return pc
+
+
+def plot_2Dcorrelation(folder_dir: Path, label: Optional[str]=None, ax: Optional[plt.Axes]=None, **kwargs) -> None:
+    if ax is None:
+        fig, ax = plt.subplots(figsize=textsize_scale(2/5))
+    else:
+        fig = ax.figure
+
+    corr_2d = AngularCorrelation.load(folder_dir)
+    corr_2d.mean_subtract_by_line()
+    corr_2d.plot(ax=ax, **kwargs)
+    if label is not None:
+        ax.set_title(label)
