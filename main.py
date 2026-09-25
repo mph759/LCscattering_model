@@ -26,18 +26,6 @@ class Phase(StrEnum):
     SINGLE = 'SINGLE'
 
 
-def standard_run():
-    # Initialise real space parameters
-    grid_size = int(2 ** 13)
-
-    # Initialise beam and detector parameters
-    wavelength = 0.67018e-10  # metres
-    pixel_size = 75e-6  # metres per pixel
-    npt = 2000  # No. of points for the radial integration
-    dx = 5e-9  # metres
-    return partial(run, wavelength=wavelength, pixel_size=pixel_size, npt=npt, dx=dx, grid_max=grid_size)
-
-
 def define_variables(**kwargs):
     variables = kwargs.keys()
     values = kwargs.values()
@@ -121,7 +109,6 @@ def crystal():
     # Initialise how the particles sit in real space
     padding_spacing = (5, 5)
 
-
     # Set up directories and logging
     now = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
     output_dir_root = Path.cwd() / fr'output\{tag}_{now}'
@@ -130,12 +117,12 @@ def crystal():
 
     start = time.perf_counter()
     standard_run(tag)(phase=Phase.CRYSTAL,
-                   output_dir_root=output_dir_root,
-                   padding_spacing=padding_spacing,
-                   unit_vector=unit_vector,
-                   vector_stddev=0,
-                   particle_length=particle_length,
-                   tag=f'unit_vector_{unit_vector}')
+                      output_dir_root=output_dir_root,
+                      padding_spacing=padding_spacing,
+                      unit_vector=unit_vector,
+                      vector_stddev=0,
+                      particle_length=particle_length,
+                      tag=f'unit_vector_{unit_vector}')
 
     end = time.perf_counter()
     run_time = timedelta(seconds=(end - start))
@@ -225,19 +212,30 @@ def nematic():
     start = time.perf_counter()
     standard_run()(output_dir_root=output_dir_root,
                    padding_spacing=padding_spacing,
-                unit_vector=unit_vector,
-                vector_stddev=vector_stddev,
-                particle_length=particle_length, phase=Phase.NEMATIC,
-                tag=f'unit_vector_{unit_vector}')
+                   unit_vector=unit_vector,
+                   vector_stddev=vector_stddev,
+                   particle_length=particle_length, phase=Phase.NEMATIC,
+                   tag=f'unit_vector_{unit_vector}')
 
     end = time.perf_counter()
     run_time = timedelta(seconds=(end - start))
     main_logger.info(f'Total run time: {run_time}\n')
 
 
+def standard_run():
+    # Initialise real space parameters
+    grid_size = int(2 ** 13)
+
+    # Initialise beam and detector parameters
+    wavelength = 0.67018e-10  # metres
+    pixel_size = 75e-6  # metres per pixel
+    npt = 2000  # No. of points for the radial integration
+    dx = 5e-9  # metres
+    return partial(run, wavelength=wavelength, pixel_size=pixel_size, npt=npt, dx=dx, grid_max=grid_size)
+
+
 def run(unit_vector, vector_stddev, particle_length, *, padding_spacing, output_dir_root, tag, grid_max,
         wavelength, pixel_size, dx, npt, phase: Phase = Phase.SMECTIC):
-
     output_directory = f'{output_dir_root}\\{tag}'
     print(phase)
     with ParameterLogger(output_directory) as log:
