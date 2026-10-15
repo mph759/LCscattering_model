@@ -39,13 +39,13 @@ def analyse_simulation():
     parameter = 'lattice_spacing'
     variable = 'lattice_spacing'
     folder_list = parameter_search(parameter, data_path)
-    fig, ax = plot_sim_correlation(folder_list,  #title=f'{parameter}',
-                                   step_size=0.7,
-                                   func=partial(postprocessing, convolve_kwargs={'amplitude': 1, 'stddev': 6}),
-                                   palette='plasma', seaborn_palette=True,
-                                   plot_kwargs={'alpha': 0.8},
-                                   label_var=variable,
-                                   legend_nrows=2)
+    fig, ax = plot_sim_correlations(folder_list,  #title=f'{parameter}',
+                                    step_size=0.7,
+                                    func=partial(postprocessing, convolve_kwargs={'amplitude': 1, 'stddev': 6}),
+                                    palette='plasma', seaborn_palette=True,
+                                    plot_kwargs={'alpha': 0.8},
+                                    label_var=variable,
+                                    legend_nrows=2)
     fig.tight_layout()
     plt.show()
 
@@ -62,13 +62,13 @@ def determine_corr_point():
     print(folder)
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=textsize_scale(3 / 5))
     ax1.set_title('a')
-    plot_sim_correlation([folder], peak_override=peak_override,  #peak_index=peak_index, #title=f'{parameter}',
-                         step_size=0,
-                         func=partial(simple_postprocessing, convolve_kwargs={'amplitude': 1, 'stddev': 5}),
-                         ax=ax1, palette='plasma', seaborn_palette=True,
-                         plot_kwargs={'alpha': 1},
-                         label_var=variable,
-                         legend_nrows=2)
+    plot_sim_correlations([folder], peak_override=peak_override,  #peak_index=peak_index, #title=f'{parameter}',
+                          step_size=0,
+                          func=partial(simple_postprocessing, convolve_kwargs={'amplitude': 1, 'stddev': 5}),
+                          ax=ax1, palette='plasma', seaborn_palette=True,
+                          plot_kwargs={'alpha': 1},
+                          label_var=variable,
+                          legend_nrows=2)
     clim = 1.2e10
     norm = colors.Normalize(vmin=-clim, vmax=clim)
     plot_2Dcorrelation(folder, ax=ax2, norm=norm)
@@ -133,14 +133,14 @@ def plot_all_exp_correlation(well: str, step_size: int = 10):
     plt.show()
 
 
-def plot_sim_correlation(data_folders: list[Path], title: Optional[str] = None, step_size: float = 0, *,
-                         peak_index: int = 0, peak_override: int | None = None,
-                         legend_nrows: int = 5, label_var: Optional[str] = None,
-                         func: Optional[Callable] = None, ax: Optional[plt.Axes] = None,
-                         palette: Optional[Any] = None, seaborn_palette: bool = False,
-                         plot_kwargs: Optional[dict[str, Any]] = None,
-                         func_kwargs: Optional[dict[str, Any]] = None,
-                         legend_kwargs: Optional[dict[str, Any]] = None) -> tuple[
+def plot_sim_correlations(data_folders: list[Path], title: Optional[str] = None, step_size: float = 0, *,
+                          peak_index: int = 0, peak_override: int | None = None,
+                          legend_nrows: int = 5, label_var: Optional[str] = None,
+                          func: Optional[Callable] = None, ax: Optional[plt.Axes] = None,
+                          palette: Optional[Any] = None, seaborn_palette: bool = False,
+                          plot_kwargs: Optional[dict[str, Any]] = None,
+                          func_kwargs: Optional[dict[str, Any]] = None,
+                          legend_kwargs: Optional[dict[str, Any]] = None) -> tuple[
     Figure | SubFigure, Axes]:
     num_folders = len(data_folders)
     if ax is None:
@@ -261,7 +261,7 @@ def compare_cholpel2sim():
     for folder_sublist in folder_list:
         fig, ax = plt.subplots()
         # fig, ax = plot_saved_angular_corr(folder_sublist, step_size=0, ax=ax, func=postprocessing_w_settings)
-        fig, ax = plot_sim_correlation(folder_sublist, step_size=0, ax=ax, func=postprocessing_wo_settings)
+        fig, ax = plot_sim_correlations(folder_sublist, step_size=0, ax=ax, func=postprocessing_wo_settings)
         # Plot Experimental data
 
         plot_exp_correlation(exp_data_path, scale=1, ax=ax, color='k', func=postprocessing_wo_settings)
