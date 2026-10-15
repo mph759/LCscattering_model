@@ -13,7 +13,7 @@ from itertools import product
 from correlation import PolarDiffraction2D, AngularCorrelation
 from diffraction import Diffraction2D, Diffraction1D, peak_predict
 from spatial import CalamiticParticle, generate_positions, generate_random_positions, init_spacing, \
-    normal_distribution, exact, uniform_distribution, write_particle_data, plot_angle_bins, RealSpace
+    normal_distribution, exact, uniform_distribution, write_particle_data, plot_angle_bins, RealSpace, Coordinates2D
 from utils import logger_setup, ParameterLogger, chi_squared
 from plot_utils import *
 
@@ -46,13 +46,14 @@ def smectic():
     Main function. Should not have to modify this
     """
     # Initialise particle parameters
-    particle_length = 24  # in pixels
+    particle_length = 15  # in pixels
     # Note: The unit vector is not the exact angle all the particles will have, but the mean of all the angles
     unit_vector = 70
     vector_stddev = 10  # Standard Deviation of the angle, used to generate angles for individual particles
 
     # Initialise how the particles sit in real space
-    padding_spacing = (5, 5)
+    lattice_spacing = (7, 19)
+    allowed_displacement = (2, 2)
 
     # Run over many variables
     '''
@@ -64,9 +65,9 @@ def smectic():
         "padding_spacing": [(5, x) for x in range(-5, 5 + 1, 1)],
     }
     '''
-    variables = define_variables(vector_stddev=list(range(2, 22, 2)),
-                                 unit_vector=list(range(45, 95, 5)),
-                                 #padding_spacing=[(5, x) for x in range(10, 20, 2)],
+    variables = define_variables(#vector_stddev=list(range(2, 22, 2)),
+                                 #unit_vector=list(range(45, 95, 5)),
+                                 lattice_spacing=[(7, x) for x in list(range(25,30,1))],
                                  #particle_length=list(range(15, 33, 2))
                                  )
 
@@ -76,8 +77,9 @@ def smectic():
     Path(output_dir_root).mkdir(parents=True, exist_ok=True)
     main_logger = logger_setup('main', output_dir_root, stream=True)
     base_run_partial = partial(standard_run(), output_dir_root=output_dir_root,
-                               padding_spacing=padding_spacing,
-                               #unit_vector=unit_vector,
+                               lattice_spacing=lattice_spacing,
+                               allowed_displacement=allowed_displacement,
+                               unit_vector=unit_vector,
                                vector_stddev=vector_stddev,
                                particle_length=particle_length,
                                )
@@ -107,7 +109,8 @@ def crystal():
     unit_vector = 60
 
     # Initialise how the particles sit in real space
-    padding_spacing = (5, 5)
+    lattice_spacing = (7, 19)
+    allowed_displacement = (0, 0)
 
     # Set up directories and logging
     now = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
@@ -118,7 +121,8 @@ def crystal():
     start = time.perf_counter()
     standard_run(tag)(phase=Phase.CRYSTAL,
                       output_dir_root=output_dir_root,
-                      padding_spacing=padding_spacing,
+                      lattice_spacing=lattice_spacing,
+                      allowed_displacement=allowed_displacement,
                       unit_vector=unit_vector,
                       vector_stddev=0,
                       particle_length=particle_length,
@@ -139,7 +143,7 @@ def liquid():
     vector_stddev = 0  # Standard Deviation of the angle, used to generate angles for individual particles
 
     # Initialise how the particles sit in real space
-    padding_spacing = (5, 5)
+    lattice_spacing = (7, 19)
 
     # Set up directories and logging
     now = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
@@ -149,7 +153,7 @@ def liquid():
 
     start = time.perf_counter()
     standard_run()(output_dir_root=output_dir_root,
-                   padding_spacing=padding_spacing,
+                   lattice_spacing=lattice_spacing,
                    unit_vector=unit_vector,
                    vector_stddev=vector_stddev,
                    particle_length=particle_length, phase=Phase.LIQUID,
@@ -169,9 +173,6 @@ def single():
     unit_vector = 60
     vector_stddev = 0  # Standard Deviation of the angle, used to generate angles for individual particles
 
-    # Initialise how the particles sit in real space
-    padding_spacing = (5, 5)
-
     # Set up directories and logging
     now = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
     output_dir_root = Path.cwd() / fr'output\{tag}_{now}'
@@ -180,7 +181,6 @@ def single():
 
     start = time.perf_counter()
     standard_run()(output_dir_root=output_dir_root,
-                   padding_spacing=padding_spacing,
                    unit_vector=unit_vector,
                    vector_stddev=vector_stddev,
                    particle_length=particle_length, phase=Phase.SINGLE,
@@ -201,7 +201,7 @@ def nematic():
     vector_stddev = 5  # Standard Deviation of the angle, used to generate angles for individual particles
 
     # Initialise how the particles sit in real space
-    padding_spacing = (5, 5)
+    lattice_spacing = (7, 19)
 
     # Set up directories and logging
     now = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
@@ -211,7 +211,7 @@ def nematic():
 
     start = time.perf_counter()
     standard_run()(output_dir_root=output_dir_root,
-                   padding_spacing=padding_spacing,
+                   lattice_spacing=lattice_spacing,
                    unit_vector=unit_vector,
                    vector_stddev=vector_stddev,
                    particle_length=particle_length, phase=Phase.NEMATIC,
@@ -234,31 +234,28 @@ def standard_run():
     return partial(run, wavelength=wavelength, pixel_size=pixel_size, npt=npt, dx=dx, grid_max=grid_size)
 
 
-def run(unit_vector, vector_stddev, particle_length, *, padding_spacing, output_dir_root, tag, grid_max,
+def run(unit_vector, vector_stddev, particle_length, *,  output_dir_root, tag, grid_max,
+        lattice_spacing: Coordinates2D = None, allowed_displacement: Coordinates2D = None,
         wavelength, pixel_size, dx, npt, phase: Phase = Phase.SMECTIC):
     output_directory = f'{output_dir_root}\\{tag}'
-    print(phase)
     with ParameterLogger(output_directory) as log:
         logger = logger_setup('run', output_directory, level=logging.DEBUG)
 
         # Initialise the spacing in x and y, and the allowed displacement from that lattice
         particle_width = 2
-        spacing, allowed_displacement = init_spacing(particle_length, particle_width,
-                                                     unit_vector, padding_spacing)
-        x_spacing, y_spacing = spacing
-        x_spacing = padding_spacing[0] + particle_width
-
+        x_spacing, y_spacing = lattice_spacing
         # Initialise the generators of the positions and angles for the
         if phase is Phase.SINGLE:
             num_particles = 1
             positions = [((grid_max - particle_width) // 2, (grid_max - particle_length) // 2)]
         elif phase is Phase.LIQUID or phase is Phase.NEMATIC:
+
             num_particles = int((grid_max / x_spacing) * (grid_max / y_spacing))
             positions = generate_random_positions(num_particles, (grid_max, grid_max))
         else:
             if phase is Phase.CRYSTAL:
                 allowed_displacement = (0, 0)
-            positions = generate_positions((x_spacing, y_spacing), (grid_max, grid_max), allowed_displacement)
+            positions = generate_positions(lattice_spacing, (grid_max, grid_max), allowed_displacement)
         # Generate the particles
         logger.debug('Generating positions and angles')
         if phase is Phase.CRYSTAL or phase is Phase.SINGLE:
@@ -373,8 +370,9 @@ def run(unit_vector, vector_stddev, particle_length, *, padding_spacing, output_
 
 
 if __name__ == "__main__":
-    smectic()
-    # crystal()
-    # liquid()
-    # single()
+
+    #crystal()
+    #liquid()
+    #single()
     # nematic()
+    smectic()
