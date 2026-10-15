@@ -33,12 +33,12 @@ Martin_19545 = XFM_Experiment(121019, 424,
 
 def analyse_simulation():
     data_root = Path.cwd() / 'output'
-    data_path = data_root / r'LCscattering-trial_2026-09-24 16-44-40'
-    parameter = 'vector_stddev_*-unit_vector_60'
-    variable = 'unit_vector_stddev'
+    data_path = data_root / r'LCscattering-trial_2026-10-14 21-17-59'
+    parameter = 'lattice_spacing'
+    variable = 'lattice_spacing'
     folder_list = parameter_search(parameter, data_path)
     fig, ax = plot_sim_correlation(folder_list, #title=f'{parameter}',
-                                   step_size=0.5, func=partial(postprocessing, convolve_kwargs={'amplitude':1,'stddev':5}),
+                                   step_size=0.7, func=partial(postprocessing, convolve_kwargs={'amplitude':1,'stddev':6}),
                                    palette='plasma', seaborn_palette=True,
                                    plot_kwargs={'alpha':0.8},
                                    label_var=variable,
@@ -140,7 +140,7 @@ def plot_sim_correlation(data_folders: list[Path], title: Optional[str] = None, 
     Figure | SubFigure, Axes]:
     num_folders = len(data_folders)
     if ax is None:
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=textsize_scale(1/2))
     else:
         fig = ax.figure
     if palette is None:
@@ -165,7 +165,7 @@ def plot_sim_correlation(data_folders: list[Path], title: Optional[str] = None, 
                                       plot_kwargs=plot_kwargs, func=func, func_kwargs=func_kwargs)
         if i == num_folders - 1:
             align_ylim(ax, x_range=(0, angular_correlation.num_th // 2), edge_mask=2)
-    set_legend_kwargs = {'loc': 'upper center', 'bbox_to_anchor': (0.5, -0.2), 'frameon': False}
+    set_legend_kwargs = {'loc': 'upper center', 'bbox_to_anchor': (0.5, -0.15), 'frameon': False}
     if legend_kwargs is not None:
         set_legend_kwargs.update(legend_kwargs)
     if num_folders > 1:
@@ -219,7 +219,7 @@ def var_listing(var_str: str, folder_list: list[Path]) -> list[str]:
     var_list = ['']* len(folder_list)
     for i, folder in enumerate(folder_list):
         reader = ParameterReader(folder)
-        if var_str == 'padding_spacing':
+        if var_str == 'lattice_spacing':
             x_spacing = int(reader.params['Space']['x_spacing'])
             y_spacing = int(reader.params['Space']['y_spacing'])
             var_list[i] = f'({x_spacing}, {y_spacing})'
