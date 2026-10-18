@@ -299,9 +299,9 @@ def generate_positions(space: Coordinates2D, maximum: Coordinates2D,
         x_pos = x
         y_pos = y
         if x_change != 0:
-            x_pos += np.random.randint(-x_change, x_change)
+            x_pos = np.round(np.random.normal(x_pos, x_change))
         if y_change != 0:
-            y_pos += np.random.randint(-y_change, y_change)
+            y_pos = np.round(np.random.normal(y_pos, y_change))
         yield x_pos, y_pos
         x += x_space
 

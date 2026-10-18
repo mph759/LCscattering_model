@@ -49,10 +49,10 @@ def smectic():
     particle_length = 15  # in pixels
     # Note: The unit vector is not the exact angle all the particles will have, but the mean of all the angles
     unit_vector = 70
-    vector_stddev = 10  # Standard Deviation of the angle, used to generate angles for individual particles
+    vector_stddev = 1  # Standard Deviation of the angle, used to generate angles for individual particles
 
     # Initialise how the particles sit in real space
-    lattice_spacing = (7, 19)
+    lattice_spacing = (7, 12)
     allowed_displacement = (2, 2)
 
     # Run over many variables
@@ -65,10 +65,9 @@ def smectic():
         "padding_spacing": [(5, x) for x in range(-5, 5 + 1, 1)],
     }
     '''
-    variables = define_variables(#vector_stddev=list(range(2, 22, 2)),
-                                 #unit_vector=list(range(45, 95, 5)),
-                                 lattice_spacing=[(7, x) for x in list(range(25,30,1))],
-                                 #particle_length=list(range(15, 33, 2))
+    variables = define_variables(#unit_vector=list(range(45, 95, 5)),
+                                 #lattice_spacing=[(7, x) for x in list(range(25,30,1))],
+                                 particle_length=list(range(20, 32, 2))
                                  )
 
     now = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
@@ -363,7 +362,7 @@ def run(unit_vector, vector_stddev, particle_length, *,  output_dir_root, tag, g
         angular_corr.save(f'{output_directory}\\angular_corr', file_type='png', dpi=300, bbox_inches='tight')
 
         peak = peak_locs[0]
-        angular_corr.plot_line(peak, title=None, save_fig=True, save_name=f'{output_directory}\\angular_line_{peak}',
+        angular_corr.plot_line_w_width(peak, width=5,  title=None, save_fig=True, save_name=f'{output_directory}\\angular_line_{peak}',
                                save_type='png')
 
         plt.close('all')

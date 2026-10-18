@@ -228,7 +228,7 @@ class AngularCorrelation:
             self.save_line(array, save_name, save_type, **save_kwargs)
         return self.__fig_corr_point__
 
-    def plot_line_w_width(self, point: int, width: int = 3, title: str | None =None, y_lim: tuple[float, float] | None = None, *,
+    def plot_line_w_width(self, point: int, width: int = 5, title: str | None =None, y_lim: tuple[float, float] | None = None, *,
                   ax: plt.Axes | None = None, step: float = 0, label: str | None = None,
                   color: Optional[str | float | int] = None, plot_kwargs: dict[str, Any] | None = None,
                   save_fig: bool = False, save_name: str | None = None, save_type: str = 'png',
@@ -266,7 +266,7 @@ class AngularCorrelation:
             save_kwargs = {}
         print(f'Plotting angular correlation at {point}...')
 
-        array = np.sum(np.real(self.ang_corr[point:point+width, :]), axis=0)
+        array = np.sum(np.real(self.ang_corr[point-width:point+width, :]), axis=0)
         if func is not None:
             array = func(array, **func_kwargs)
         array += step

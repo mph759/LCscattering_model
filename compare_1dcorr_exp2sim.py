@@ -35,9 +35,9 @@ Martin_19545 = XFM_Experiment(121019, 424,
 
 def analyse_simulation():
     data_root = Path.cwd() / 'output'
-    data_path = data_root / r'LCscattering-trial_2026-10-14 21-17-59'
-    parameter = 'lattice_spacing'
-    variable = 'lattice_spacing'
+    data_path = data_root / r'LCscattering-trial_2026-10-16 14-01-16'
+    parameter = 'particle_length_'
+    variable = 'length'
     folder_list = parameter_search(parameter, data_path)
     fig, ax = plot_sim_correlations(folder_list,  #title=f'{parameter}',
                                     step_size=0.7,
@@ -165,7 +165,7 @@ def plot_sim_correlations(data_folders: list[Path], title: Optional[str] = None,
         else:
             peak = peak_override
         # angular_correlation.ang_corr=gaussian_convolve(angular_correlation.ang_corr, 10, 3)
-        angular_correlation.plot_line(peak, ax=ax, step=step_size * i, label=label, color=color,
+        angular_correlation.plot_line_w_width(peak, width=5, ax=ax, step=step_size * i, label=label, color=color,
                                       plot_kwargs=plot_kwargs, func=func, func_kwargs=func_kwargs)
         if i == num_folders - 1:
             align_ylim(ax, x_range=(0, angular_correlation.num_th // 2), edge_mask=2)
