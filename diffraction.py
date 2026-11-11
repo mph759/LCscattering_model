@@ -524,26 +524,26 @@ class Diffraction1D:
         return kernel
 
 
-def peak_predict(diffraction: Diffraction2D, d_spacings: tuple[float, float]) -> object:
+def peak_predict(diffraction: Diffraction2D, d_spacings: float) -> object:
     """
     Predict the peak postion (q) from real space parameters
     :return: peak_locs: peak positions in q
     """
     peak_locs = []
     num_pixels = diffraction.num_pixels
-    peak_locs_theor = sorted(np.round(np.divide(num_pixels, d_spacings)))
+    peak_locs_theor = np.round(np.divide(num_pixels, d_spacings))
+    peak_locs_list = [peak_locs_theor]
 
     centre = num_pixels // 2
-    for peak in peak_locs_theor:
-        for new_peak in range(int(peak), centre, int(peak)):
-            if new_peak > centre or new_peak in peak_locs_theor:
-                continue
-            else:
-                peak_locs_theor.append(new_peak)
+    for new_peak in range(int(peak_locs_theor), centre, int(peak_locs_theor)):
+        if new_peak > centre or new_peak in peak_locs_list:
+            continue
+        else:
+            peak_locs_list.append(new_peak)
 
     diffraction_pattern_half = diffraction.pattern_2d[centre:, centre]
 
-    for i, peak in enumerate(peak_locs_theor):
+    for i, peak in enumerate(peak_locs_list):
         min_value = int(peak - 2)
         while min_value < 0:
             min_value += 1

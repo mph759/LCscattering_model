@@ -35,9 +35,9 @@ Martin_19545 = XFM_Experiment(121019, 424,
 
 def analyse_simulation():
     data_root = Path.cwd() / 'output'
-    data_path = data_root / r'LCscattering-trial_2026-10-16 14-01-16'
-    parameter = 'particle_length_'
-    variable = 'length'
+    data_path = data_root / r'LCscattering-trial_2026-11-12 09-40-11'
+    parameter = 'unit_vector'
+    variable = 'unit_vector'
     folder_list = parameter_search(parameter, data_path)
     fig, ax = plot_sim_correlations(folder_list,  #title=f'{parameter}',
                                     step_size=0.7,
@@ -104,6 +104,7 @@ def plot_exp_correlation(data_path: Path, *, scale: float = 1., step: int = 0, a
         for j in np.arange(data.shape[1]):
             tmp[i, j, :] = data[i, j, :] - 1 * np.average(data[i, j, :])
     pw = 0
+
     for i in np.arange(data.shape[0]):
         dline[:] = np.sum(np.sum(tmp[irline - w:irline + w, irline - w:irline + w, :] * (i * i) ** pw, 0), 0)
 

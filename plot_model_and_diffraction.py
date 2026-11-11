@@ -17,7 +17,7 @@ def get_folders():
     liquid_folder = data_root / r'Liquid-trial_2026-08-19 20-52-02\liquid'
     single_folder = data_root / r'Single-trial_2026-08-07 12-50-32\unit_vector_60'
     nematic_folder = data_root / r'Nematic-trial_2026-08-19 20-01-04\unit_vector_60'
-    smectic_folder = data_root / r'LCscattering-trial_2026-09-17 10-41-38\unit_vector_60-padding_spacing_(5, 8)'
+    smectic_folder = data_root / r'LCscattering-trial_2026-11-12 09-40-11\unit_vector_45'
 
     labels = {'Single': single_folder,
               'Crystal': crystal_folder,
@@ -292,7 +292,8 @@ def plot_1Dcorrelation_compare_crystal_smectic(datasets, index: Optional[int] = 
 if __name__ == '__main__':
     data_folders = get_folders()
 
-    #run_all_plot_model_diffraction(save_option=True)
+    #run_all_plot_model_diffraction()#save_option=True)
+    plot_model_diffraction(data_folders['Smectic'], 'Smectic', angle_dist=True)#, save_option=save_option)
     #read_particle_angles()
 
     #plot_model_and_angles(data_folders['Smectic'])
@@ -300,4 +301,4 @@ if __name__ == '__main__':
     # plot_2Dcorrelation_compare_blanks(datasets=data_folders)
     #plot_2Dcorrelation_compare_crystal_smectic(datasets=data_folders)
 
-    plot_1Dcorrelation_compare_crystal_smectic(data_folders)
+    #plot_1Dcorrelation_compare_crystal_smectic(data_folders)

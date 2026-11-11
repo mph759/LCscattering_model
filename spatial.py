@@ -275,9 +275,34 @@ def init_spacing(particle_length: int, particle_width: int,
     spacing = (x_spacing, y_spacing)
     return spacing, displacement
 
+def generate_sma_positions(space: Coordinates2D, maximum: Coordinates2D,
+                           change: Coordinates2D) -> Generator[Coordinates2D, Any, None]:
+    """
+        Generate a position inside cartesian coordinates, given a rough lattice with random spatial oscillations
+        :rtype: Generator[
+        Coordinates2D, Any, None]
+        :param space: Spacing in x and y-dimensions between positions
+        :param maximum: Maximum values in x and y-dimensions
+        :param change: Tuple of allowed deviation from initial lattice spacing
+        :return: A position in Cartesian coordinates inside the grid
+        """
+    # Initial positions, just inside the box
+    x_space, y_space = space
+    x_change, y_change = np.abs(change)
+    x_max, y_max = maximum
+    x_num = int(x_max/x_space)
 
-def generate_positions(space: Coordinates2D, maximum: Coordinates2D,
-                       change: Coordinates2D) -> Generator[Coordinates2D, Any, None]:
+    # Loop while the positions are still inside the box
+    for y in range(0, y_max, y_space):
+        for x in range(x_num):
+            x_pos = np.random.randint(0, x_max)
+            y_pos = y + np.random.randint(-y_change, y_change)
+            yield x_pos, y_pos
+
+
+
+def generate_crystal_positions(space: Coordinates2D, maximum: Coordinates2D,
+                               change: Coordinates2D) -> Generator[Coordinates2D, Any, None]:
     """
     Generate a position inside cartesian coordinates, given a rough lattice with random spatial oscillations
     :rtype: Generator[

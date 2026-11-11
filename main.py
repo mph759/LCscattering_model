@@ -12,8 +12,9 @@ from itertools import product
 
 from correlation import PolarDiffraction2D, AngularCorrelation
 from diffraction import Diffraction2D, Diffraction1D, peak_predict
-from spatial import CalamiticParticle, generate_positions, generate_random_positions, init_spacing, \
-    normal_distribution, exact, uniform_distribution, write_particle_data, plot_angle_bins, RealSpace, Coordinates2D
+from spatial import CalamiticParticle, generate_crystal_positions, generate_random_positions, init_spacing, \
+    normal_distribution, exact, uniform_distribution, write_particle_data, plot_angle_bins, RealSpace, Coordinates2D, \
+    generate_sma_positions
 from utils import logger_setup, ParameterLogger, chi_squared
 from plot_utils import *
 
@@ -52,7 +53,7 @@ def smectic():
     vector_stddev = 1  # Standard Deviation of the angle, used to generate angles for individual particles
 
     # Initialise how the particles sit in real space
-    lattice_spacing = (7, 12)
+    lattice_spacing = (5, 12)
     allowed_displacement = (2, 2)
 
     # Run over many variables
@@ -65,9 +66,10 @@ def smectic():
         "padding_spacing": [(5, x) for x in range(-5, 5 + 1, 1)],
     }
     '''
-    variables = define_variables(#unit_vector=list(range(45, 95, 5)),
+    variables = define_variables(#vector_stddev=list(range(2, 22, 2)),
+                                 unit_vector=list(range(45, 95, 5)),
                                  #lattice_spacing=[(7, x) for x in list(range(25,30,1))],
-                                 particle_length=list(range(20, 32, 2))
+                                 #particle_length=list(range(15, 33, 2))
                                  )
 
     now = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
@@ -251,10 +253,12 @@ def run(unit_vector, vector_stddev, particle_length, *,  output_dir_root, tag, g
 
             num_particles = int((grid_max / x_spacing) * (grid_max / y_spacing))
             positions = generate_random_positions(num_particles, (grid_max, grid_max))
-        else:
-            if phase is Phase.CRYSTAL:
-                allowed_displacement = (0, 0)
-            positions = generate_positions(lattice_spacing, (grid_max, grid_max), allowed_displacement)
+        elif phase is Phase.CRYSTAL:
+            allowed_displacement = (0, 0)
+            positions = generate_crystal_positions(lattice_spacing, (grid_max, grid_max), allowed_displacement)
+        elif phase is Phase.SMECTIC:
+            positions = generate_sma_positions(lattice_spacing, (grid_max, grid_max), allowed_displacement)
+
         # Generate the particles
         logger.debug('Generating positions and angles')
         if phase is Phase.CRYSTAL or phase is Phase.SINGLE:
@@ -321,7 +325,9 @@ def run(unit_vector, vector_stddev, particle_length, *,  output_dir_root, tag, g
         # diffraction_pattern_title = f'2D Diffraction pattern of Liquid Crystal Phase of Calamitic Particles'
         diffraction_pattern_title = None
         # Determine the location of peaks
-        peak_locs = peak_predict(diffraction_of_real_space, (x_spacing, y_spacing))
+        peak_locs = peak_predict(diffraction_of_real_space, y_spacing)
+        if phase is Phase.CRYSTAL:
+            peak_locs.append(peak_predict(diffraction_of_real_space, x_spacing))
         if phase is not Phase.LIQUID or phase is not Phase.SINGLE:
             diffraction_of_real_space.plot(diffraction_pattern_title, clim=1e8, peaks=peak_locs)
             diffraction_of_real_space.save(f'{output_directory}\\diffraction_pattern_2d_peaks', file_type='png',
