@@ -364,12 +364,12 @@ def pythagorean_sides(a: float | int, b: float | int, theta: float | int) -> tup
     y = abs(np.round(a * np.sin(theta_radians))) + abs(np.round(b * np.cos(theta_radians)))
     return x, y
 
-def plot_angle_bins(samples: pd.DataFrame | list, mean: float, stddev: float,
+def plot_angle_bins(samples: pd.DataFrame | list, mean: float, stddev: float, bin_range: int = 5,
                     ax: Optional[plt.Axes] = None, svg_friendly: bool = False, x_max: float | int = 180) -> tuple[plt.Figure, plt.Axes]:
     sample_mean = np.mean(samples)
     sample_stddev = np.std(samples)
     sample_size = len(samples)
-    bins = range(0, 180, 5)
+    bins = range(0, 180, bin_range)
     if ax is None:
         fig, ax = plt.subplots()
     else:
